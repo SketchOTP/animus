@@ -220,6 +220,15 @@ async def cron_trigger_api(req: Request) -> Response:
 
         job = trigger_job(job_id)
         _audit("TRIGGER", job_id=job_id, result="ok" if job else "missing")
+        if job:
+            try:
+                from token_usage import record_token_usage
+
+                prov = str(job.get("provider") or job.get("hermes_provider") or "").strip() or "hermes"
+                model = str(job.get("model") or "").strip() or ""
+                record_token_usage(prov, model or "(job)", None, None, "cron", str(job.get("id") or job_id))
+            except Exception as exc:
+                log.debug("cron token record skipped: %s", exc)
         return JSONResponse(job or {"error": "Not found"}, status_code=200 if job else 404)
     except Exception as exc:
         log.exception("cron_trigger_api failed")

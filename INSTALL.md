@@ -13,7 +13,15 @@
 ./installer/install.sh
 ```
 
+The installer can **pre-download** the same Piper voice bundle as the server (`installer/fetch-piper-voices.sh` when `curl` exists; six models, ~380 MB). The running ANIMUS server also **downloads those models automatically** when Piper is installed but no voices are on disk — see `docs/tts.md`. Skip both with `SKIP_ANIMUS_PIPER_VOICES=1`.
+
 Default HTTP port is **3001** (`CHAT_PORT` in `animus.env.example`).
+
+### Desktop shortcut (PC install)
+
+`installer/install.sh` runs `installer/create-desktop-launcher.sh` after `animus.env` exists. On **Linux** with `DISPLAY` or `WAYLAND_DISPLAY`, it adds `~/.local/share/applications/animus.desktop` and copies to your **Desktop** when present (`xdg-open` → same URL as the app, so browser storage matches post-setup use). On **macOS**, it drops **`ANIMUS.webloc`** on the Desktop. The step is skipped in Docker, CI, headless Linux, and when `SKIP_ANIMUS_DESKTOP_LAUNCHER=1` is set in the environment.
+
+After the in-app wizard finishes on a **desktop** browser, ANIMUS may offer a one-time download of the same shortcut (phones keep the usual **PWA install** path only). Optional: `GET /api/animus/desktop-launcher` (add `?fmt=webloc` on Mac).
 
 ## Manual install
 
@@ -63,6 +71,7 @@ The compose file should expose **3001** for ANIMUS chat (`CHAT_PORT`). If `curl`
 
 ## Troubleshooting
 
+- **In-app “Check for updates” / git errors** — Updates compare your install to `origin/main`. You need a **git clone** (or an unpacked tree that still has commit history and a tracking `main` branch). A plain copy of the folder without `.git`, or `git init` with no commits, cannot receive updates through the UI; clone from GitHub or re-install from a release that sets up `git` as in `installer/install.sh`.
 - **Port in use** — change `CHAT_PORT` in `animus.env`.
 - **`hermes` not found** — ensure the venv where you installed Hermes Agent is on `PATH`, or set `HERMES_BIN`.
 - **Empty model list** — call `POST /api/models/refresh` with a valid `HERMES_API_KEY`, or finish the setup wizard.

@@ -230,6 +230,13 @@
     .conv-del:hover{color:var(--danger)}
     @media(max-width:640px){.conv-del{opacity:.5}}
     .notif-item{border-left:3px solid rgba(245,158,11,.45)}
+    .conv-item.notif-item.notif-item-unread{
+      background:var(--accent);color:#fff;
+      border-left:3px solid rgba(255,255,255,.45)}
+    .conv-item.notif-item.notif-item-unread:hover{background:var(--accent2);color:#fff}
+    .conv-item.notif-item.notif-item-unread .conv-name{color:#fff;font-weight:600}
+    .conv-item.notif-item.notif-item-unread .conv-del{color:rgba(255,255,255,.9);opacity:.85}
+    .conv-item.notif-item.notif-item-unread:hover .conv-del{opacity:1;color:#fff}
     .notif-empty{padding:8px 14px 12px;font-size:13px;color:var(--muted);line-height:1.4}
 
     /* skills panel */
@@ -405,7 +412,7 @@
     .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
     /* ── Header ── */
-    .header{height:56px;display:flex;align-items:center;gap:10px;
+    .header{height:60px;display:flex;align-items:center;gap:10px;
       padding:0 12px;border-bottom:1px solid var(--border);background:var(--bg);flex-shrink:0}
     .icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;
       padding:8px;border-radius:8px;display:flex;align-items:center;
@@ -418,7 +425,7 @@
       .header{height:60px;padding:0 8px}
     }
     .header-title-cluster{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
-    .header-title-cluster .header-title{flex:1;min-width:0;font-size:17px;font-weight:600;
+    .header-title-cluster .header-title{flex:1;min-width:0;font-size:20px;font-weight:600;
       overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 
     /* Project context bar */
@@ -602,6 +609,52 @@
     .token-usage-section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
     .token-usage-table{border-top:1px solid var(--border);padding-top:10px;font-size:12px;color:var(--muted2)}
     .token-usage-table .token-usage-row{font-size:12px}
+    .help-guide-modal{max-width:min(960px,98vw);max-height:94dvh}
+    .help-center-shell{display:flex;flex-direction:column;flex:1;min-height:0;gap:0;padding-top:4px}
+    .help-center-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 12px 0;border-bottom:1px solid var(--border);flex-shrink:0}
+    .help-center-tab{border:1px solid var(--border);background:var(--surface2);color:var(--muted2);
+      padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font:inherit;
+      transition:background .12s,color .12s,border-color .12s}
+    .help-center-tab:hover{color:var(--text);background:var(--surface3)}
+    .help-center-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .help-center-panels{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+    .help-center-panel{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden;padding-top:12px}
+    .help-center-panel.active{display:flex}
+    .help-home-lead{font-size:14px;color:var(--text);line-height:1.55;margin:0 0 10px}
+    .help-home-sub{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 8px}
+    .help-topic-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:6px}
+    .help-topic-card{text-align:left;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+      background:var(--surface2);cursor:pointer;font:inherit;color:var(--text);transition:background .12s,border-color .12s}
+    .help-topic-card:hover{border-color:var(--accent);background:var(--surface3)}
+    .help-topic-card .htc-title{font-weight:700;font-size:14px;margin-bottom:4px}
+    .help-topic-card .htc-desc{font-size:12px;color:var(--muted);line-height:1.35}
+    .help-home-shortcuts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+    .help-home-shortcut{border:1px dashed var(--border);background:var(--surface);color:var(--text);
+      padding:8px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;font:inherit;transition:border-color .12s,background .12s}
+    .help-home-shortcut:hover{border-color:var(--accent);background:var(--surface2)}
+    .help-topics-split{display:flex;gap:12px;flex:1;min-height:0}
+    .help-topic-nav{width:min(230px,36%);flex-shrink:0;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:8px;background:var(--surface)}
+    .help-topic-nav button{display:block;width:100%;text-align:left;padding:8px 10px;margin:2px 0;border:none;border-radius:8px;
+      background:transparent;color:var(--text);font-size:13px;cursor:pointer;font:inherit;line-height:1.3}
+    .help-topic-nav button:hover{background:var(--surface2)}
+    .help-guide-main-scroll{flex:1;min-width:0;overflow:auto;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:14px;line-height:1.55}
+    .help-guide-main-scroll h1{font-size:1.2rem;margin:0 0 .55em}
+    .help-guide-main-scroll h2{font-size:1.08rem;margin:1.1em 0 .35em;scroll-margin-top:12px}
+    .help-guide-main-scroll h3{font-size:1rem;margin:.85em 0 .3em}
+    .help-guide-main-scroll p{margin:.5em 0}
+    .help-guide-main-scroll ul,.help-guide-main-scroll ol{margin:.4em 0 .6em 1.2em}
+    .help-guide-main-scroll table{font-size:13px;border-collapse:collapse;width:100%;margin:.6em 0}
+    .help-guide-main-scroll th,.help-guide-main-scroll td{border:1px solid var(--border);padding:6px 8px;text-align:left}
+    .help-guide-main-scroll code{font-size:12px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+    .help-faq-scroll{flex:1;min-height:0;overflow:auto}
+    .help-ask-wrap{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;gap:10px}
+    .help-ask-intro{font-size:13px;color:var(--muted);margin:0;line-height:1.45}
+    .help-ask-row{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;flex-shrink:0}
+    .help-chat-log{display:flex;flex-direction:column;gap:8px;flex:1;min-height:80px;max-height:36vh;overflow:auto;padding:4px 0;font-size:13px}
+    .help-chat-msg{padding:10px 12px;border-radius:10px;line-height:1.45}
+    .help-chat-msg.user{align-self:flex-end;background:var(--surface2);border:1px solid var(--border);max-width:92%}
+    .help-chat-msg.bot{align-self:flex-start;background:var(--surface3);border:1px solid var(--border);max-width:96%}
+    .help-chat-msg.bot.help-chat-err{border-color:var(--danger);color:var(--danger)}
     [data-enable-toggle="false"] .skill-enable-toggle{display:none !important}
     .skills-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border)}
     .skill-detail-readme{font-size:13px;line-height:1.5;margin-top:10px}
@@ -637,6 +690,38 @@
     .chat-backend-field.field input[type="radio"]{
       width:auto;min-width:18px;height:18px;margin-top:3px;padding:0;
       flex-shrink:0;accent-color:var(--accent);align-self:flex-start}
+    /* Read aloud: same as chat-backend — global .field input{width:100%} breaks TTS radios */
+    #ttsBackendRadios input[type="radio"]{
+      width:auto;min-width:18px;max-width:none;height:18px;margin-top:3px;padding:0;
+      flex-shrink:0;accent-color:var(--accent);align-self:flex-start;
+      background:transparent;border:none;border-radius:0;outline:none}
+    #ttsBackendRadios label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+      font-weight:500;color:var(--text);margin-bottom:0;font-size:14px;line-height:1.45;min-width:0}
+    #ttsBackendRadios label span{flex:1;min-width:0;overflow-wrap:anywhere}
+    /* SSH host modal: same .field input{width:100%} breaks auth radios */
+    #sshFormAuthRadios input[type="radio"]{
+      width:auto;min-width:18px;max-width:none;height:18px;margin-top:3px;padding:0;
+      flex-shrink:0;accent-color:var(--accent);align-self:flex-start;
+      background:transparent;border:none;border-radius:0;outline:none}
+    #sshFormAuthRadios label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+      font-weight:500;color:var(--text);margin-bottom:0;font-size:14px;line-height:1.45;min-width:0;width:100%}
+    #sshFormAuthRadios label span{flex:1;min-width:0;overflow-wrap:anywhere}
+    .ssh-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;min-width:0;
+      padding:6px 0;cursor:pointer}
+    .ssh-toggle-row .ssh-toggle-label{font-size:14px;font-weight:600;color:var(--muted2);flex:1;min-width:0;line-height:1.35}
+    .ssh-toggle-hint{font-size:12px;color:var(--muted);margin:2px 0 0;line-height:1.4}
+    .ssh-toggle-ui{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
+    .ssh-toggle-row input[type="checkbox"]{
+      position:absolute;opacity:0;width:0;height:0;margin:0;padding:0;pointer-events:none}
+    .ssh-toggle-track{
+      position:absolute;inset:0;border-radius:999px;background:var(--surface3);
+      border:1px solid var(--border);transition:background .15s,border-color .15s}
+    .ssh-toggle-knob{
+      position:absolute;top:2px;left:3px;width:20px;height:20px;border-radius:50%;
+      background:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .15s,transform .15s}
+    .ssh-toggle-row input:focus-visible + .ssh-toggle-track{outline:2px solid var(--accent);outline-offset:2px}
+    .ssh-toggle-row input:checked + .ssh-toggle-track{background:var(--accent);border-color:var(--accent)}
+    .ssh-toggle-row input:checked + .ssh-toggle-track .ssh-toggle-knob{left:23px}
     .chat-backend-txt{flex:1;min-width:0}
     .chat-backend-title{font-weight:700;color:var(--text);display:block}
     .chat-backend-desc{font-size:12px;color:var(--muted);font-weight:400;
@@ -707,7 +792,7 @@
 
       /* header */
       .header{height:64px}
-      .header-title-cluster .header-title{font-size:19px}
+      .header-title-cluster .header-title{font-size:22px}
       .icon-btn{width:52px;height:52px}
 
       /* sidebar tabs (5 across: Chats / Skills / Cron / Plan / Settings) */
@@ -784,7 +869,7 @@
 </head>
 <body>
 <div id="splash-screen" class="splash-screen" aria-busy="true" aria-label="Loading">
-  <img class="splash-screen__logo" src="/animus_machinae.png?v=ghost-v3" alt="" width="1024" height="1024" decoding="sync" fetchpriority="high">
+  <img class="splash-screen__logo" src="/ANIMUSLOGO.png?v=animus-logo-1" alt="" width="1254" height="1254" decoding="sync" fetchpriority="high">
 </div>
 <script>
 (function () {
@@ -967,6 +1052,7 @@
           <button type="button" class="btn btn-ghost" id="skillsUpdateAllBtn">Update all</button>
         </div>
         <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <button type="button" class="btn btn-ghost" id="skillsCreateBtn" style="flex-shrink:0">Create skill</button>
           <input type="text" class="skills-search" id="skillsInstallInput" placeholder="Install from URL, path, or name…" style="flex:1;min-width:160px;margin:0" autocomplete="off">
           <button type="button" class="btn" id="skillsInstallBtn">Install</button>
         </div>
@@ -1091,34 +1177,65 @@
           <button class="btn btn-ghost" id="notifyTestBtn" style="min-height:40px;padding:8px 12px">Send test notification</button>
         </div>
         <div id="notifyStatus" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
-        <div class="field" style="margin-top:14px;margin-bottom:0">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="notifSidebarBadgesToggle" style="width:18px;height:18px;flex-shrink:0">
-            <span>Show unread badge on Notifications (project sidebar)</span>
+        <div style="margin-top:14px">
+          <label class="ssh-toggle-row" title="Unread count next to Notifications in the project sidebar">
+            <span class="ssh-toggle-label">Show unread badge on Notifications (project sidebar)</span>
+            <span class="ssh-toggle-ui">
+              <input type="checkbox" id="notifSidebarBadgesToggle" />
+              <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+            </span>
           </label>
-          <small>When off, the count next to Notifications stays hidden; read/unread tracking still runs when you expand the section or open a notification chat.</small>
+          <small style="display:block;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4">When off, the count stays hidden; read/unread tracking still runs when you expand the section or open a notification thread.</small>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
         <div class="section-label" style="padding:0 0 8px 0">Screen</div>
-        <div class="field" style="margin-bottom:12px">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="wakeLockToggle" style="width:18px;height:18px;flex-shrink:0">
-            <span>Keep screen awake while ANIMUS is working</span>
+        <div style="margin-bottom:12px">
+          <label class="ssh-toggle-row" title="Wake Lock API while a chat stream is active">
+            <span class="ssh-toggle-label">Keep screen awake while ANIMUS is working</span>
+            <span class="ssh-toggle-ui">
+              <input type="checkbox" id="wakeLockToggle" />
+              <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+            </span>
           </label>
-          <small>Uses the Wake Lock API (Android Chrome/PWA). ANIMUS releases the lock when work finishes.</small>
+          <small style="display:block;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4">Uses the Wake Lock API (Android Chrome/PWA). ANIMUS releases the lock when work finishes.</small>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
         <div class="section-label" style="padding:0 0 8px 0">Read aloud</div>
-        <div class="field" style="margin-bottom:12px">
-          <label for="ttsVoiceSelect">Text-to-speech voice</label>
-          <select id="ttsVoiceSelect" style="width:100%;padding:12px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;font-family:inherit">
-            <option value="auto:british_male">Automatic — British English male (when available)</option>
-            <option value="auto:quality_en">Automatic — best English quality on this device</option>
-          </select>
-          <small id="ttsVoiceHint" style="display:block;margin-top:6px">Uses the browser Web Speech API (no cloud). The speaker button uses the voice you choose here. On Android Chrome, open the list and pick <b>Google UK English Male</b> if you want that exact voice.</small>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-            <button type="button" class="btn btn-ghost" id="ttsPreviewBtn" style="min-height:40px;padding:8px 12px">Preview voice</button>
-            <button type="button" class="btn btn-ghost" id="ttsRefreshVoicesBtn" style="min-height:40px;padding:8px 12px">Refresh voice list</button>
+        <div class="field" style="margin-bottom:12px;display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--text)">Voice engine</div>
+            <div id="ttsBackendRadios" style="display:flex;flex-direction:column;gap:8px">
+              <label style="cursor:pointer">
+                <input type="radio" name="ttsBackend" value="browser" id="ttsBackendBrowser" />
+                <span>Browser voices (Web Speech API — works on every device)</span>
+              </label>
+              <label id="ttsBackendPiperLabel" style="cursor:pointer">
+                <input type="radio" name="ttsBackend" value="piper" id="ttsBackendPiper" />
+                <span>Piper (local on server, higher quality when the <code>piper</code> binary and voice models are installed)</span>
+              </label>
+            </div>
+            <small id="ttsBackendHint" style="display:block;margin-top:8px;color:var(--muted);line-height:1.45"></small>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:14px">
+            <label for="ttsVoiceSelect" id="ttsVoiceSelectLabel" style="display:block;font-weight:600;font-size:13px;margin-bottom:8px;color:var(--text)">Voice</label>
+            <select id="ttsVoiceSelect" style="width:100%;padding:12px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;font-family:inherit">
+              <option value="auto:british_male">Automatic — British English male (when available)</option>
+              <option value="auto:british_female">Automatic — British English female (when available)</option>
+              <option value="auto:us_male">Automatic — US English male (when available)</option>
+              <option value="auto:us_female">Automatic — US English female (when available)</option>
+              <option value="auto:au_male">Automatic — Australian English male (when available)</option>
+              <option value="auto:au_female">Automatic — Australian English female (when available)</option>
+              <option value="auto:quality_en">Automatic — best English quality on this device</option>
+            </select>
+            <small id="ttsVoiceHint" style="display:block;margin-top:8px;line-height:1.45;color:var(--muted)">Uses the browser Web Speech API (no cloud). The speaker button uses the voice you choose here. On Android Chrome, open the list and pick <b>Google UK English Male</b> if you want that exact voice.</small>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:14px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--text)">Test</div>
+            <button type="button" class="btn btn-ghost" id="ttsPreviewBtn" style="min-height:40px;padding:8px 14px;align-self:flex-start">Preview voice</button>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px">
+              <button type="button" class="btn btn-ghost" id="ttsRefreshVoicesBtn" style="min-height:40px;padding:8px 12px">Refresh voice list</button>
+              <a class="btn btn-ghost" id="ttsPiperVoicesLink" style="min-height:40px;padding:8px 12px;display:none" href="https://huggingface.co/rhasspy/piper-voices" target="_blank" rel="noopener">Download more voices</a>
+            </div>
           </div>
         </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
@@ -1141,11 +1258,30 @@
         </div>
         <div id="checkAnimusUpdatesStatus" style="font-size:13px;color:var(--muted);margin:6px 0 0 0"></div>
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+        <div class="section-label" style="padding:0 0 8px 0">Integrations</div>
+        <div id="slackIntegrationPanel" style="margin-bottom:12px;padding:12px;border:1px solid var(--border);border-radius:10px">
+          <div style="font-weight:600;margin-bottom:6px">Slack</div>
+          <div id="slackIntegrationStatus" style="font-size:13px;color:var(--muted);margin-bottom:10px">—</div>
+          <button type="button" class="btn btn-ghost" id="slackConfigureBtn" style="min-height:40px;padding:8px 12px">Configure Slack</button>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+        <div class="section-label" style="padding:0 0 8px 0">Connections</div>
+        <div id="settingsSshHostsSection" style="margin-bottom:12px;padding:12px;border:1px solid var(--border);border-radius:10px">
+          <div style="font-weight:600;margin-bottom:6px">SSH hosts</div>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 10px 0;line-height:1.45">Hosts you add here appear when creating a remote project. See <code>docs/ssh.md</code>.</p>
+          <div id="sshHostsListEl" style="font-size:13px;color:var(--muted2);margin-bottom:10px">Loading…</div>
+          <button type="button" class="btn btn-ghost" id="sshHostAddBtn" style="min-height:40px;padding:8px 12px">+ Add SSH host</button>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
         <div class="section-label" style="padding:0 0 8px 0">Token usage</div>
         <p style="font-size:13px;color:var(--muted);margin:0 0 12px 0;line-height:1.45">
           Tracks provider-reported input/output tokens per day so you can compare costs and validate accuracy.
         </p>
         <button type="button" class="btn btn-ghost" id="tokenUsageBtn" style="min-height:40px;padding:8px 12px">Open token usage tracker</button>
+        <hr style="border:none;border-top:1px solid var(--border);margin:22px 0 18px" aria-hidden="true" />
+        <div style="display:flex;justify-content:center;padding:0 0 2px">
+          <button type="button" class="btn btn-primary" id="helpAnimusBtn" style="min-height:40px;padding:8px 22px">HELP</button>
+        </div>
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
         <div class="section-label" style="padding:0 0 8px 0">Server controls</div>
         <div style="font-size:13px;color:var(--muted);margin:0 0 12px 0;line-height:1.45">
@@ -1265,7 +1401,7 @@
         <small>When a cron job delivers to this project, each run is appended to the <b>Cron updates</b> thread under <b>Cron notifications</b> in the sidebar (persistent history for this space). Copy the ID above if you configure delivery elsewhere.</small>
       </div>
       <div class="field">
-        <label for="projNameInput">Project name</label>
+        <label for="projNameInput">Project name <span style="font-weight:400;color:var(--muted)">*</span></label>
         <input id="projNameInput" type="text" placeholder="e.g. My Web App" autocomplete="off">
       </div>
       <div class="field">
@@ -1273,54 +1409,48 @@
         <div class="color-picker" id="colorPicker"></div>
       </div>
       <div class="field">
-        <label for="projPathInput">Project folder path</label>
-        <div class="path-row">
-          <input id="projPathInput" type="text" placeholder="/home/you/myproject" spellcheck="false" autocomplete="off">
-          <button class="browse-btn" id="browseBtn">Browse</button>
-        </div>
+        <label for="projPathInput">Project folder <span style="font-weight:400;color:var(--muted)">*</span></label>
+        <input id="projPathInput" type="text" placeholder="/home/you/myproject" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
         <div class="path-status" id="pathStatus"></div>
-        <div class="file-browser" id="fileBrowser">
-          <div class="fb-path">
-            <button class="fb-up" id="fbUp">↑</button>
-            <span id="fbCwd" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1"></span>
-          </div>
-          <div class="fb-list" id="fbList"></div>
-          <div class="fb-select"><button id="fbSelectBtn">Use this folder</button></div>
-        </div>
+        <small>Type the full path to the folder on the server.<br>Example: <code>/home/sketch/projects/my-project</code></small>
       </div>
       <div class="field">
-        <label for="projWorkspaceFilesInput">Workspace files folder <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-        <input id="projWorkspaceFilesInput" type="text" placeholder="e.g. sshfs mount where the repo actually lives on this machine" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+        <label for="projWorkspaceFilesInput">Separate files folder <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <input id="projWorkspaceFilesInput" type="text" placeholder="Leave blank to use the project folder" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
         <div class="path-status" id="workspacePathStatus"></div>
-        <small><code>project_history.md</code>, <code>repo_map.md</code>, <code>notes.md</code>, and <code>project_goal.md</code> are read/written here. Use the <b>real directory on this server</b> (often an sshfs mount like <code>…/kuki-companion</code>) when it differs from the project folder above. Leave blank to use the project folder for both.</small>
+        <small>If project code and workspace docs (<code>project_history.md</code>, <code>notes.md</code>, <code>project_goal.md</code>, etc.) live in different folders, set the workspace root here. Otherwise leave blank.<br>Example: <code>/home/sketch/projects/my-project-docs</code></small>
       </div>
       <div class="field">
-        <label for="projOverview">Project overview <span style="font-weight:400;color:var(--muted)">(optional — Hermes reads this)</span></label>
-        <textarea id="projOverview" placeholder="Describe this project: its purpose, tech stack, key files, conventions, or anything Hermes should know when working here…" style="min-height:100px"></textarea>
-        <small>This overview is injected into every conversation in this project so Hermes understands context without you having to explain it each time.</small>
+        <label for="projOverview">Project goal</label>
+        <textarea id="projOverview" placeholder="Write a brief goal for this project…" rows="4" style="min-height:96px"></textarea>
+        <small>This is read by ANIMUS at the start of every conversation in this project. It is stored as <code>project_goal.md</code> in the workspace (same file as the Goal button). You can edit it here or from the workspace at any time.</small>
       </div>
       <div class="field" style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
           <input type="checkbox" id="projSshRemote" style="width:18px;height:18px;flex-shrink:0">
-          <span>Remote workspace via SSH</span>
+          <span>Is this project's files on another machine?</span>
         </label>
-        <small>When checked, Hermes is reminded that this tree may live on another machine (e.g. <strong>rpi5</strong>) — use <strong>sshfs</strong>, <strong>SSH</strong>, or your gateway so file paths under the folder above stay valid. Optional fields below are for your notes and the connection test only.</small>
+        <small>For example: a Raspberry Pi, a NAS, or a remote server. ANIMUS will note that paths may refer to that machine. Optional fields below are for your notes and connection checks.</small>
         <div id="projSshFields" style="display:none;margin-top:12px">
           <div class="field" style="margin-bottom:10px">
-            <label for="projSshUser">SSH user</label>
-            <input id="projSshUser" type="text" placeholder="e.g. sketch" autocomplete="off" spellcheck="false" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+            <label for="projSshHostSelect">SSH host</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select id="projSshHostSelect" style="flex:1;min-width:200px;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+                <option value="">Select a configured host…</option>
+              </select>
+              <button type="button" class="btn btn-ghost" id="projSshAddHostBtn" style="min-height:40px">+ Add host</button>
+            </div>
+            <small>Configure hosts under <b>Settings → Connections → SSH Hosts</b>. Mount paths follow <code>docs/ssh.md</code>.</small>
           </div>
           <div class="field" style="margin-bottom:10px">
-            <label for="projSshHost">SSH host</label>
-            <input id="projSshHost" type="text" placeholder="rpi5 or hostname / IP" autocomplete="off" spellcheck="false" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+            <label for="projRemoteProjectPath">Remote project path <span style="font-weight:400;color:var(--muted)">*</span></label>
+            <input id="projRemoteProjectPath" type="text" placeholder="/home/sketch/projects/my-project" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+            <small>Path on the <i>remote</i> machine (not the local mount). Example: <code>/home/sketch/projects/my-project</code></small>
           </div>
           <div class="field" style="margin-bottom:10px">
-            <label for="projSshPort">Port (optional, default 22)</label>
-            <input id="projSshPort" type="number" min="1" max="65535" placeholder="22" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
-          </div>
-          <div class="field" style="margin-bottom:10px">
-            <label for="projSshIdentityFile">Identity file (optional)</label>
-            <input id="projSshIdentityFile" type="text" placeholder="~/.ssh/id_ed25519" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+            <label for="projDerivedLocalPath">Local path (auto)</label>
+            <input id="projDerivedLocalPath" type="text" readonly tabindex="0" spellcheck="false" style="width:100%;padding:10px 12px;border-radius:9px;border:1px dashed var(--border);background:var(--surface);color:var(--muted);font-size:14px;font-family:monospace" onclick="this.select()">
+            <small>Filled when you pick a host and remote path — this is what ANIMUS stores as the project folder.</small>
           </div>
           <button type="button" class="btn btn-ghost" id="projSshTestBtn" style="min-height:40px">Test SSH connection</button>
           <div id="projSshTestStatus" style="margin-top:10px;font-size:13px;color:var(--muted2);white-space:pre-wrap"></div>
@@ -1343,6 +1473,7 @@
       <button class="modal-close" data-close="cronModalBackdrop">×</button>
     </div>
     <div class="modal-body">
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--muted);text-transform:uppercase;margin:0 0 8px">Schedule</div>
       <div class="field">
         <label for="cronName">Name <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
         <input id="cronName" type="text" placeholder="e.g. Daily digest" autocomplete="off">
@@ -1360,12 +1491,16 @@
           <option value="monthly">Every month on day … at</option>
           <option value="advanced">Advanced (raw cron text)</option>
         </select>
+        <div id="cronSchedulePreview" class="cron-sch-hint" style="margin-top:8px;font-style:italic;color:var(--text)"></div>
       </div>
       <div class="field" id="cronSchTzRow">
         <label for="cronTzInput">Timezone <span style="font-weight:400;color:var(--muted)">(date, one-shots, daily/weekly/monthly)</span></label>
-        <input id="cronTzInput" type="text" list="cronTzList" placeholder="e.g. America/New_York" spellcheck="false" autocomplete="off">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input id="cronTzInput" type="text" list="cronTzList" placeholder="e.g. America/New_York" spellcheck="false" autocomplete="off" style="flex:1;min-width:200px">
+          <button type="button" class="btn btn-ghost" id="cronTzChangeBtn" style="min-height:36px;padding:6px 10px">Change</button>
+        </div>
         <datalist id="cronTzList"></datalist>
-        <div class="cron-sch-hint">Defaults to your browser zone. Used so “9:00” means 9:00 <i>there</i>. Rolling intervals (every N minutes) follow the server clock.</div>
+        <div class="cron-sch-hint">Defaults to your browser zone unless you saved a preference. Used so “9:00” means 9:00 <i>there</i>. Rolling intervals follow the server clock.</div>
       </div>
       <div id="cronSchOnce" class="cron-sch-panel">
         <div class="cron-sch-row">
@@ -1440,28 +1575,33 @@
           <div class="cron-sch-hint">Minute hour day-of-month month weekday. Optional 6th field (year) is supported if your Hermes install has croniter for it.</div>
         </div>
       </div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--muted);text-transform:uppercase;margin:16px 0 8px">What to do</div>
       <div class="field">
-        <label for="cronPrompt">Prompt — what Hermes should do</label>
+        <label for="cronPrompt">Prompt — what ANIMUS should do</label>
         <textarea id="cronPrompt" placeholder="e.g. Check the news and summarise the top 5 stories in my journal"></textarea>
       </div>
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--muted);text-transform:uppercase;margin:16px 0 8px">Where to send results</div>
       <div class="field">
         <label for="cronDeliverMethod">Deliver results to</label>
         <select id="cronDeliverMethod" class="cron-select">
           <option value="local">Nowhere (save output on server only)</option>
-          <option value="hermes-chat">ANIMUS (this app)</option>
+          <option value="hermes-chat">ANIMUS chat</option>
           <option value="slack">Slack</option>
           <option value="email">Email</option>
           <option value="advanced">Custom / advanced…</option>
         </select>
         <div id="cronDeliverHermesWrap" class="subfield-hint" style="display:none;margin-top:10px">
-          <label for="cronDeliverHermesId" style="display:block;margin-bottom:6px;font-size:13px;color:var(--text)">Project or conversation UUID</label>
-          <input id="cronDeliverHermesId" type="text" placeholder="e.g. paste from Edit Project" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'SF Mono',monospace">
-          <div class="subfield-hint">Uses the project’s <b>Cron updates</b> thread. When you’re inside a project, this defaults to that project’s ID.</div>
+          <label for="cronDeliverProjectSelect" style="display:block;margin-bottom:6px;font-size:13px;color:var(--text)">Deliver to project</label>
+          <select id="cronDeliverProjectSelect" class="cron-select" style="width:100%;font-family:inherit">
+            <option value="">(none — server only)</option>
+          </select>
+          <div class="subfield-hint">Uses the project’s <b>Cron updates</b> thread. When you’re inside a project, this defaults to that project.</div>
         </div>
         <div id="cronDeliverSlackWrap" class="subfield-hint" style="display:none;margin-top:10px">
           <label for="cronDeliverSlackId" style="display:block;margin-bottom:6px;font-size:13px;color:var(--text)">Slack channel ID</label>
           <input id="cronDeliverSlackId" type="text" placeholder="C0123456789 or channel name if directory is configured" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px">
           <div class="subfield-hint">Requires the Hermes gateway with Slack enabled. Stored as <code>slack:…</code> on the job.</div>
+          <div id="cronSlackConfigHint" style="font-size:12px;color:var(--muted);margin-top:8px;display:none"></div>
         </div>
         <div id="cronDeliverEmailWrap" class="subfield-hint" style="display:none;margin-top:10px">
           <label for="cronDeliverEmailAddr" style="display:block;margin-bottom:6px;font-size:13px;color:var(--text)">Email address</label>
@@ -1560,19 +1700,94 @@
       </div>
       <div id="tokenUsageChart" class="token-usage-chart"></div>
       <div id="tokenUsageList" class="token-usage-list"></div>
-      <div class="token-usage-breakdowns">
-        <div>
+      <div class="token-usage-view-tabs" style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap">
+        <button type="button" class="btn btn-ghost token-usage-tab-btn active" data-toktab="provider">By provider</button>
+        <button type="button" class="btn btn-ghost token-usage-tab-btn" data-toktab="model">By model</button>
+        <button type="button" class="btn btn-ghost token-usage-tab-btn" data-toktab="source">By source</button>
+      </div>
+      <div class="token-usage-breakdowns" style="margin-top:10px">
+        <div id="tokenUsagePanelProvider" class="tok-tab-panel">
           <div class="token-usage-section-title">By provider</div>
           <div id="tokenUsageProviderList" class="token-usage-table"></div>
         </div>
-        <div>
+        <div id="tokenUsagePanelModel" class="tok-tab-panel" style="display:none">
           <div class="token-usage-section-title">By model</div>
           <div id="tokenUsageModelList" class="token-usage-table"></div>
+        </div>
+        <div id="tokenUsagePanelSource" class="tok-tab-panel" style="display:none">
+          <div class="token-usage-section-title">By source</div>
+          <div id="tokenUsageSourceList" class="token-usage-table"></div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" data-close="tokenUsageBackdrop">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- HELP: structured help center + /api/help/* -->
+<div class="modal-backdrop" id="helpGuideBackdrop">
+  <div class="modal help-guide-modal" style="display:flex;flex-direction:column;overflow:hidden">
+    <div class="modal-header">
+      <h2>ANIMUS Help center</h2>
+      <button type="button" class="modal-close" data-close="helpGuideBackdrop">×</button>
+    </div>
+    <div class="modal-body help-center-shell">
+      <div class="help-center-tabs" role="tablist" aria-label="Help sections">
+        <button type="button" class="help-center-tab active" data-help-tab="home" role="tab" aria-selected="true">Home</button>
+        <button type="button" class="help-center-tab" data-help-tab="topics" role="tab" aria-selected="false">Topics</button>
+        <button type="button" class="help-center-tab" data-help-tab="faq" role="tab" aria-selected="false">FAQ</button>
+        <button type="button" class="help-center-tab" data-help-tab="ask" role="tab" aria-selected="false">Ask ANIMUS</button>
+      </div>
+      <div class="help-center-panels">
+        <div id="helpPanelHome" class="help-center-panel active" data-help-panel="home" role="tabpanel">
+          <p class="help-home-lead">
+            Browse <b>Topics</b> for the full guide by section, <b>FAQ</b> for short answers, or <b>Ask ANIMUS</b> to query the guide with your active chat model (read-only; no changes on your system).
+          </p>
+          <p class="help-home-load-err" style="margin:0 0 8px;font-size:13px;color:var(--danger);min-height:0"></p>
+          <div class="help-topic-cards">
+            <button type="button" class="help-topic-card" data-help-tab="topics">
+              <div class="htc-title">Topics</div>
+              <div class="htc-desc">Full user guide with sidebar jump links to every section.</div>
+            </button>
+            <button type="button" class="help-topic-card" data-help-tab="faq">
+              <div class="htc-title">FAQ</div>
+              <div class="htc-desc">Common questions in a compact format.</div>
+            </button>
+            <button type="button" class="help-topic-card" data-help-tab="ask">
+              <div class="htc-title">Ask ANIMUS</div>
+              <div class="htc-desc">Natural-language answers grounded in the guide only.</div>
+            </button>
+          </div>
+          <div class="help-home-sub">Jump to a section</div>
+          <div id="helpHomeShortcuts" class="help-home-shortcuts"></div>
+        </div>
+        <div id="helpPanelTopics" class="help-center-panel" data-help-panel="topics" role="tabpanel">
+          <div class="help-topics-split">
+            <nav id="helpTopicNav" class="help-topic-nav" aria-label="Guide sections"></nav>
+            <div id="helpGuideContent" class="help-guide-main-scroll">Loading…</div>
+          </div>
+        </div>
+        <div id="helpPanelFaq" class="help-center-panel" data-help-panel="faq" role="tabpanel">
+          <div id="helpFaqBody" class="help-faq-scroll help-guide-main-scroll">Loading…</div>
+        </div>
+        <div id="helpPanelAsk" class="help-center-panel" data-help-panel="ask" role="tabpanel">
+          <div class="help-ask-wrap">
+            <p class="help-ask-intro">
+              The Help assistant uses the same <b>model</b> as chat but only answers from the published guide. If something is not documented, it will say so.
+            </p>
+            <div id="helpChatLog" class="help-chat-log" aria-live="polite"></div>
+            <div class="help-ask-row">
+              <input type="text" id="helpAskInput" class="skills-search" placeholder="Ask a question about ANIMUS…" autocomplete="off" style="flex:1;min-width:200px" />
+              <button type="button" class="btn btn-primary" id="helpAskBtn" style="min-height:44px;padding:8px 18px">Ask</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" data-close="helpGuideBackdrop">Close</button>
     </div>
   </div>
 </div>
@@ -1649,6 +1864,144 @@
   </div>
 </div>
 
+<!-- Create skill -->
+<div class="modal-backdrop" id="skillCreateBackdrop">
+  <div class="modal" style="max-width:min(560px,96vw);max-height:92dvh;display:flex;flex-direction:column">
+    <div class="modal-header">
+      <h2>Create new skill</h2>
+      <button type="button" class="modal-close" data-close="skillCreateBackdrop">×</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-top:8px">
+      <div class="field">
+        <label for="skillCreateName">Skill name *</label>
+        <input type="text" id="skillCreateName" class="skills-search" placeholder="my-skill-name" autocomplete="off" style="width:100%;margin:0" spellcheck="false" />
+        <small style="color:var(--muted)">Lowercase letters, digits, and hyphens only — becomes the skill id.</small>
+      </div>
+      <div class="field">
+        <label for="skillCreateDisplay">Display name</label>
+        <input type="text" id="skillCreateDisplay" class="skills-search" placeholder="My skill name" autocomplete="off" style="width:100%;margin:0" />
+      </div>
+      <div class="field">
+        <label for="skillCreateDesc">Description</label>
+        <textarea id="skillCreateDesc" rows="2" placeholder="What this skill does…" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="field">
+        <label for="skillCreateVersion">Version</label>
+        <input type="text" id="skillCreateVersion" class="skills-search" value="1.0.0" autocomplete="off" style="width:100%;max-width:140px;margin:0" />
+      </div>
+      <div class="field">
+        <label for="skillCreateContent">Skill file (optional — paste Markdown)</label>
+        <textarea id="skillCreateContent" rows="10" placeholder="# Your skill instructions…" spellcheck="false" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-family:ui-monospace,monospace;resize:vertical"></textarea>
+      </div>
+      <div class="field">
+        <label for="skillCreateFile">Or upload a file</label>
+        <input type="file" id="skillCreateFile" accept=".md,.txt,text/plain,text/markdown" style="font-size:14px" />
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;gap:10px">
+      <button type="button" class="btn btn-ghost" data-close="skillCreateBackdrop">Cancel</button>
+      <button type="button" class="btn btn-primary" id="skillCreateSubmitBtn">Create skill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Slack integration (Settings) -->
+<div class="modal-backdrop" id="slackConfigBackdrop">
+  <div class="modal" style="max-width:min(520px,96vw)">
+    <div class="modal-header">
+      <h2>Slack configuration</h2>
+      <button type="button" class="modal-close" data-close="slackConfigBackdrop">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+      <div class="field">
+        <label for="slackWebhookInput">Webhook URL</label>
+        <input type="password" id="slackWebhookInput" class="skills-search" placeholder="https://hooks.slack.com/services/…" autocomplete="off" style="width:100%" />
+        <small style="color:var(--muted)">Incoming Webhook from Slack. Leave blank to keep the current value on save.</small>
+      </div>
+      <div class="field">
+        <label for="slackChannelInput">Default channel</label>
+        <input type="text" id="slackChannelInput" class="skills-search" placeholder="#animus-notifications" autocomplete="off" style="width:100%" />
+      </div>
+      <div class="field">
+        <label for="slackBotTokenInput">Bot token (optional)</label>
+        <input type="password" id="slackBotTokenInput" class="skills-search" placeholder="xoxb-…" autocomplete="off" style="width:100%" />
+      </div>
+      <div id="slackConfigTestResult" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div class="modal-footer" style="gap:10px;flex-wrap:wrap">
+      <button type="button" class="btn btn-ghost" id="slackTestBtn">Test</button>
+      <button type="button" class="btn btn-primary" id="slackSaveBtn">Save</button>
+      <button type="button" class="btn btn-ghost" data-close="slackConfigBackdrop">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SSH host editor (Settings) -->
+<div class="modal-backdrop" id="sshHostModalBackdrop">
+  <div class="modal" style="max-width:min(560px,96vw);max-height:92dvh;overflow:auto">
+    <div class="modal-header">
+      <h2 id="sshHostModalTitle">Add SSH host</h2>
+      <button type="button" class="modal-close" data-close="sshHostModalBackdrop">×</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <div class="field">
+        <label for="sshFormAlias">Host alias *</label>
+        <input type="text" id="sshFormAlias" class="skills-search" placeholder="rpi5" autocomplete="off" style="width:100%" />
+      </div>
+      <div class="field">
+        <label for="sshFormHostname">Hostname *</label>
+        <input type="text" id="sshFormHostname" class="skills-search" placeholder="rpi5.local" autocomplete="off" style="width:100%" />
+      </div>
+      <div class="field">
+        <label for="sshFormUser">User *</label>
+        <input type="text" id="sshFormUser" class="skills-search" placeholder="sketch" autocomplete="off" style="width:100%" />
+      </div>
+      <div class="field">
+        <div style="font-size:13px;margin-bottom:6px">Authentication</div>
+        <div id="sshFormAuthRadios" style="display:flex;flex-direction:column;gap:8px">
+          <label><input type="radio" name="sshFormAuth" value="key" id="sshFormAuthKey" checked /><span>SSH key (recommended)</span></label>
+          <label><input type="radio" name="sshFormAuth" value="password" id="sshFormAuthPw" /><span>Password</span></label>
+        </div>
+        <div id="sshKeyPathWrap" style="margin-top:8px">
+          <label for="sshFormKeyPath">Key path</label>
+          <input type="text" id="sshFormKeyPath" class="skills-search" value="~/.ssh/id_rsa" autocomplete="off" style="width:100%" />
+        </div>
+        <div id="sshPwWrap" style="display:none;margin-top:8px">
+          <div style="font-size:12px;color:var(--danger);margin-bottom:6px">Password is stored in animus.env in plain text. Use only if key auth is impossible.</div>
+          <input type="password" id="sshFormPassword" class="skills-search" placeholder="Password" autocomplete="new-password" style="width:100%" />
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+        <label class="ssh-toggle-row" title="Use only the configured key for this host">
+          <span class="ssh-toggle-label">IdentitiesOnly</span>
+          <span class="ssh-toggle-ui">
+            <input type="checkbox" id="sshFormIdentitiesOnly" />
+            <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+          </span>
+        </label>
+        <label class="ssh-toggle-row" title="Sets StrictHostKeyChecking=no (less secure)">
+          <span class="ssh-toggle-label">Relax strict host key checking</span>
+          <span class="ssh-toggle-ui">
+            <input type="checkbox" id="sshFormStrictOff" />
+            <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+          </span>
+        </label>
+        <p class="ssh-toggle-hint">When the second option is on, new hosts are accepted without known_hosts verification.</p>
+      </div>
+      <div class="field">
+        <label for="sshFormPort">Port</label>
+        <input type="number" id="sshFormPort" min="1" max="65535" value="22" style="width:120px;padding:8px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text)" />
+      </div>
+      <div id="sshFormTestResult" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div class="modal-footer" style="gap:10px;flex-wrap:wrap">
+      <button type="button" class="btn btn-ghost" id="sshFormTestBtn">Test connection</button>
+      <button type="button" class="btn btn-primary" id="sshFormSaveBtn">Save</button>
+      <button type="button" class="btn btn-ghost" data-close="sshHostModalBackdrop">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- First-run wizard (Phase 2) -->
 <div id="animus-wizard" style="display:none;position:fixed;inset:0;z-index:10001;background:var(--bg,#0d0d1a);align-items:center;justify-content:center;padding:16px;box-sizing:border-box">
   <div id="wizard-panel" style="max-width:560px;width:100%;padding:2rem;background:var(--surface,#1a1a2e);border-radius:16px;border:1px solid var(--border,#333);box-shadow:0 8px 40px rgba(0,0,0,.4)">
@@ -1671,6 +2024,8 @@ const PROJS_KEY = 'hermes_projects_v1';
 /** Paths removed in-app: never re-imported from PROJECTS_ROOT scan until user adds the same path again. */
 const PROJ_SYNC_EXCL_KEY = 'hermes_project_sync_exclusions_v1';
 const SETTINGS_KEY = 'hermes_settings_v1';
+/** Default Read-aloud Piper voice (matches first model in ``tts_routes._DEFAULT_VOICE_PAIRS``). */
+const DEFAULT_PIPER_VOICE_ID = 'en_GB-alan-medium';
 /** Maps Settings UI → <code>POST /v1/chat/completions</code> body (<code>model</code>, <code>hermes_provider</code>, …). */
 const CHAT_BACKEND_PRESETS = {
   'openai-codex': {
@@ -1680,9 +2035,15 @@ const CHAT_BACKEND_PRESETS = {
     hermes_base_url: '',
   },
   'copilot-acp': {
-    label: 'Claude Code (Copilot ACP)',
+    label: 'GitHub Copilot (ACP)',
     model: 'copilot-acp',
     hermes_provider: 'copilot-acp',
+    hermes_base_url: '',
+  },
+  'claude-code': {
+    label: 'Claude Code',
+    model: 'auto',
+    hermes_provider: 'claude-code',
     hermes_base_url: '',
   },
   'cursor-agent': {
@@ -1711,6 +2072,15 @@ const CHAT_MODEL_SUGGESTIONS = {
     'copilot-acp',
     'claude-sonnet-4.6', 'claude-sonnet-4', 'claude-sonnet-4.5', 'claude-haiku-4.5',
     'gpt-5.4', 'gpt-5.4-mini', 'gpt-5.2-codex', 'gpt-4.1', 'gpt-4o',
+  ],
+  'claude-code': [
+    'auto',
+    'claude-opus-4-7',
+    'claude-opus-4-6',
+    'claude-sonnet-4-6',
+    'claude-opus-4-5-20251101',
+    'claude-sonnet-4-5-20250929',
+    'claude-haiku-4-5-20251001',
   ],
   'cursor-agent': [
     'auto', 'composer-1', 'gpt-5.2', 'sonnet-4', 'opus-4.1',
@@ -2238,6 +2608,17 @@ if (
 ) {
   settings.sidebar_rail_state = 'expanded';
 }
+if (settings.cron_timezone === undefined) settings.cron_timezone = '';
+if (!settings.tts_backend || (settings.tts_backend !== 'browser' && settings.tts_backend !== 'piper')) {
+  settings.tts_backend = 'piper';
+}
+if (
+  settings.tts_piper_voice === undefined ||
+  settings.tts_piper_voice === null ||
+  String(settings.tts_piper_voice).trim() === ''
+) {
+  settings.tts_piper_voice = DEFAULT_PIPER_VOICE_ID;
+}
 
 function migrateLegacyChatProviderToBackend() {
   if (settings.chat_backend && CHAT_BACKEND_PRESETS[settings.chat_backend]) return;
@@ -2246,6 +2627,8 @@ function migrateLegacyChatProviderToBackend() {
     settings.chat_backend = 'cursor-agent';
   } else if (p === 'copilot-acp' || p.includes('copilot-acp')) {
     settings.chat_backend = 'copilot-acp';
+  } else if (p === 'claude-code' || p === 'claude_code') {
+    settings.chat_backend = 'claude-code';
   } else if (p === 'openai-codex' || p.includes('codex')) {
     settings.chat_backend = 'openai-codex';
   } else if (p === 'anthropic' || p.includes('claude')) {
@@ -2348,7 +2731,10 @@ function chatModelListForProvider(provider) {
   const base = (cached && Array.isArray(cached.models) && cached.models.length)
     ? cached.models.slice()
     : (CHAT_MODEL_SUGGESTIONS[key] || []).slice();
-  if (key === 'openai-codex' && !base.some((m) => String(m || '').trim().toLowerCase() === 'auto')) {
+  if (
+    (key === 'openai-codex' || key === 'cursor-agent') &&
+    !base.some((m) => String(m || '').trim().toLowerCase() === 'auto')
+  ) {
     base.unshift('auto');
   }
   return base;
@@ -2356,8 +2742,12 @@ function chatModelListForProvider(provider) {
 
 function chatModelOptionLabel(provider, model) {
   const v = String(model || '').trim();
-  if (String(provider || '').trim() === 'openai-codex' && v.toLowerCase() === 'auto') {
+  const p = String(provider || '').trim();
+  if (p === 'openai-codex' && v.toLowerCase() === 'auto') {
     return 'Auto — choose per prompt';
+  }
+  if (p === 'cursor-agent' && v.toLowerCase() === 'auto') {
+    return 'Auto — let Cursor pick the model';
   }
   return v;
 }
@@ -2537,7 +2927,8 @@ const INFERENCE_MATRIX_ORDER = [
   ['xai', 'xAI'],
   ['deepseek', 'DeepSeek'],
   ['openai-codex', 'OpenAI Codex'],
-  ['copilot-acp', 'Claude Code (Copilot ACP)'],
+  ['claude-code', 'Claude Code'],
+  ['copilot-acp', 'GitHub Copilot (ACP)'],
   ['cursor-agent', 'Cursor CLI'],
 ];
 
@@ -2613,6 +3004,9 @@ async function renderInferenceBackendMatrix() {
       actions =
         '<button type="button" class="btn btn-ghost inf-cursor" style="min-height:36px;padding:6px 10px;font-size:13px">Sign in</button>' +
         '<button type="button" class="btn btn-ghost inf-cursor-recheck" style="min-height:36px;display:none;margin-left:6px">Re-check</button>';
+    } else if (pid === 'claude-code') {
+      actions =
+        '<span style="font-size:12px;color:var(--muted)">Claude Code CLI on gateway — run <code>claude</code> / install @anthropic-ai/claude-code and sign in.</span>';
     } else if (pid === 'copilot-acp') {
       actions =
         '<span style="font-size:12px;color:var(--muted)">Copilot CLI on gateway — run <code>copilot-acp</code> login on the host.</span>';
@@ -2858,8 +3252,307 @@ function renderWakeLockSettings() {
   if (cb) cb.checked = settings.wake_lock_enabled !== false;
 }
 
-function renderTtsSettings() {
-  populateTtsVoiceSelect();
+let _ttsHasPiper = false;
+let _piperAudioEl = null;
+
+function _stopPiperAudio() {
+  if (!_piperAudioEl) return;
+  try {
+    _piperAudioEl.pause();
+  } catch (_) {}
+  try {
+    const u = _piperAudioEl.src;
+    if (u && u.startsWith('blob:')) URL.revokeObjectURL(u);
+  } catch (_) {}
+  _piperAudioEl.removeAttribute('src');
+  _piperAudioEl = null;
+}
+
+async function fetchTtsBackendsOnce() {
+  try {
+    const r = await fetch('/api/tts/backends', { cache: 'no-store' });
+    if (!r.ok) return false;
+    const j = await r.json();
+    const b = Array.isArray(j.backends) ? j.backends : [];
+    _ttsHasPiper = b.includes('piper');
+    return _ttsHasPiper;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function populatePiperVoiceSelect() {
+  const sel = $('ttsVoiceSelect');
+  if (!sel) return;
+  const lab = $('ttsVoiceSelectLabel');
+  if (lab) lab.textContent = 'Voice model';
+  sel.innerHTML = '<option value="">(loading…)</option>';
+  let rows = [];
+  let lastErr = '';
+  let fetching = false;
+  try {
+    for (let attempt = 0; attempt < 180; attempt++) {
+      const r = await fetch('/api/tts/piper/voices', { cache: 'no-store' });
+      const j = await r.json().catch(() => ({}));
+      rows = Array.isArray(j.voices) ? j.voices : [];
+      fetching = !!j.fetching;
+      lastErr = j.fetch_error ? String(j.fetch_error) : '';
+      if (rows.length || (!fetching && attempt > 0)) break;
+      if (fetching) {
+        sel.innerHTML =
+          '<option value="">(Downloading default Piper voices… six models ~380 MB; first run may take several minutes)</option>';
+        await new Promise((res) => setTimeout(res, 2000));
+      } else {
+        break;
+      }
+    }
+  } catch (_) {}
+  sel.innerHTML = '';
+  if (!rows.length) {
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = lastErr
+      ? '(Voice download failed — ' + lastErr.slice(0, 160) + (lastErr.length > 160 ? '…' : '') + ')'
+      : '(No Piper voice models — install the piper binary on the server; see docs/tts.md)';
+    sel.appendChild(o);
+  } else {
+    for (const row of rows) {
+      const id = String(row.id || '').trim();
+      if (!id) continue;
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = String(row.label || id);
+      sel.appendChild(opt);
+    }
+  }
+  const want = (settings.tts_piper_voice || '').trim() || DEFAULT_PIPER_VOICE_ID;
+  if (want && [...sel.options].some((o) => o.value === want)) {
+    sel.value = want;
+  } else if ([...sel.options].some((o) => o.value === DEFAULT_PIPER_VOICE_ID)) {
+    sel.value = DEFAULT_PIPER_VOICE_ID;
+    settings.tts_piper_voice = DEFAULT_PIPER_VOICE_ID;
+    save();
+  } else if (sel.options.length && sel.options[0].value) {
+    sel.value = sel.options[0].value;
+    settings.tts_piper_voice = sel.value;
+    save();
+  } else {
+    settings.tts_piper_voice = '';
+    save();
+  }
+  const hint = $('ttsVoiceHint');
+  if (hint) {
+    hint.textContent = rows.length
+      ? 'Piper runs on the ANIMUS host. The server downloads default English models automatically when needed.'
+      : lastErr
+        ? 'Check that this host can reach huggingface.co, disk space (~400 MB free), and server logs. See docs/tts.md.'
+        : 'Install the `piper` binary on the ANIMUS host (PATH or PIPER_BIN). Voices download automatically once Piper is available.';
+  }
+}
+
+async function renderTtsSettings() {
+  const hasPiper = await fetchTtsBackendsOnce();
+  const br = $('ttsBackendBrowser');
+  const pr = $('ttsBackendPiper');
+  const piperLabel = $('ttsBackendPiperLabel');
+  const bh = $('ttsBackendHint');
+  const dl = $('ttsPiperVoicesLink');
+  if (piperLabel) piperLabel.style.opacity = hasPiper ? '1' : '0.55';
+  if (pr) pr.disabled = !hasPiper;
+  if (bh) {
+    bh.textContent = hasPiper
+      ? 'Piper uses the `piper` binary and voice models on this server. See docs/tts.md for install paths.'
+      : 'Install Piper on the server for higher-quality voices — see docs/tts.md';
+  }
+  let want = settings.tts_backend === 'piper' && hasPiper ? 'piper' : 'browser';
+  if (settings.tts_backend === 'piper' && !hasPiper) {
+    want = 'browser';
+    settings.tts_backend = 'browser';
+    save();
+  }
+  if (br) br.checked = want === 'browser';
+  if (pr) pr.checked = want === 'piper';
+  if (dl) dl.style.display = want === 'piper' && hasPiper ? 'inline-flex' : 'none';
+  if (want === 'piper') await populatePiperVoiceSelect();
+  else {
+    const lab = $('ttsVoiceSelectLabel');
+    if (lab) lab.textContent = 'Browser voice';
+    populateTtsVoiceSelect();
+  }
+}
+
+async function renderSlackIntegrationPanel() {
+  const st = $('slackIntegrationStatus');
+  const btn = $('slackConfigureBtn');
+  if (!st || !btn) return;
+  try {
+    const r = await fetch('/api/integrations/slack/status', { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    st.textContent = j.configured ? 'Status: configured (webhook set on server)' : 'Status: not configured';
+  } catch (_) {
+    st.textContent = 'Status: unknown';
+  }
+  btn.onclick = () => {
+    $('slackConfigTestResult') && ($('slackConfigTestResult').textContent = '');
+    $('slackConfigBackdrop')?.classList.add('open');
+  };
+}
+
+async function renderSshHostsPanel() {
+  const el = $('sshHostsListEl');
+  if (!el) return;
+  const hosts = await fetchSshHostsList();
+  if (!hosts.length) {
+    el.textContent = 'No SSH hosts yet.';
+    return;
+  }
+  el.innerHTML = hosts
+    .map(
+      (h) =>
+        `<div style="margin:4px 0">${esc(String(h.alias || ''))} — ${esc(String(h.hostname || ''))} (${esc(
+          String(h.user || ''),
+        )})</div>`,
+    )
+    .join('');
+}
+
+function wireSlackSshSettingsOnce() {
+  if (wireSlackSshSettingsOnce._done) return;
+  wireSlackSshSettingsOnce._done = true;
+  $('slackTestBtn')?.addEventListener('click', async () => {
+    const out = $('slackConfigTestResult');
+    if (out) out.textContent = 'Sending…';
+    try {
+      const r = await fetch('/api/integrations/slack/test', { method: 'POST' });
+      const j = await r.json().catch(() => ({}));
+      if (out) out.textContent = j.ok ? '✓ Slack accepted the test message.' : '✗ ' + String(j.error || 'failed');
+    } catch (e) {
+      if (out) out.textContent = '✗ ' + (e && e.message ? e.message : String(e));
+    }
+  });
+  $('slackSaveBtn')?.addEventListener('click', async () => {
+    const out = $('slackConfigTestResult');
+    const body = {};
+    const wh = ($('slackWebhookInput') && $('slackWebhookInput').value.trim()) || '';
+    const bt = ($('slackBotTokenInput') && $('slackBotTokenInput').value.trim()) || '';
+    const ch = ($('slackChannelInput') && $('slackChannelInput').value.trim()) || '';
+    if (wh) body.webhook_url = wh;
+    if (bt) body.bot_token = bt;
+    if (ch) body.default_channel = ch;
+    if (!Object.keys(body).length) {
+      if (out) out.textContent = 'Enter at least one field to save.';
+      return;
+    }
+    try {
+      const r = await fetch('/api/integrations/slack/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (out) out.textContent = j.ok ? '✓ Saved. Restart ANIMUS if the server should reload env.' : '✗ ' + String(j.error || 'save failed');
+      if (j.ok) {
+        $('slackWebhookInput').value = '';
+        $('slackBotTokenInput').value = '';
+        void renderSlackIntegrationPanel();
+      }
+    } catch (e) {
+      if (out) out.textContent = '✗ ' + (e && e.message ? e.message : String(e));
+    }
+  });
+  $('sshHostAddBtn')?.addEventListener('click', () => {
+    $('sshFormTestResult') && ($('sshFormTestResult').textContent = '');
+    ['sshFormAlias', 'sshFormHostname', 'sshFormUser', 'sshFormPassword'].forEach((id) => {
+      const x = $(id);
+      if (x) x.value = '';
+    });
+    const kp = $('sshFormKeyPath');
+    if (kp) kp.value = '~/.ssh/id_rsa';
+    const pt = $('sshFormPort');
+    if (pt) pt.value = '22';
+    const k = $('sshFormAuthKey');
+    const p = $('sshFormAuthPw');
+    if (k) k.checked = true;
+    if (p) p.checked = false;
+    const idOnly = $('sshFormIdentitiesOnly');
+    const strictOff = $('sshFormStrictOff');
+    if (idOnly) idOnly.checked = false;
+    if (strictOff) strictOff.checked = false;
+    $('sshKeyPathWrap') && ($('sshKeyPathWrap').style.display = 'block');
+    $('sshPwWrap') && ($('sshPwWrap').style.display = 'none');
+    $('sshHostModalBackdrop')?.classList.add('open');
+  });
+  document.querySelectorAll('input[name="sshFormAuth"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      const pw = $('sshFormAuthPw') && $('sshFormAuthPw').checked;
+      if ($('sshKeyPathWrap')) $('sshKeyPathWrap').style.display = pw ? 'none' : 'block';
+      if ($('sshPwWrap')) $('sshPwWrap').style.display = pw ? 'block' : 'none';
+    });
+  });
+  $('sshFormTestBtn')?.addEventListener('click', async () => {
+    const out = $('sshFormTestResult');
+    if (out) out.textContent = 'Testing…';
+    const body = {
+      user: ($('sshFormUser') && $('sshFormUser').value.trim()) || '',
+      hostname: ($('sshFormHostname') && $('sshFormHostname').value.trim()) || '',
+      port: Number(($('sshFormPort') && $('sshFormPort').value) || 22) || 22,
+      auth_method: $('sshFormAuthPw') && $('sshFormAuthPw').checked ? 'password' : 'key',
+      key_path: ($('sshFormKeyPath') && $('sshFormKeyPath').value.trim()) || '',
+      identities_only: !!($('sshFormIdentitiesOnly') && $('sshFormIdentitiesOnly').checked),
+      strict_host_key_checking: !($('sshFormStrictOff') && $('sshFormStrictOff').checked),
+      password: ($('sshFormPassword') && $('sshFormPassword').value) || '',
+    };
+    try {
+      const r = await fetch('/api/ssh/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (out) out.textContent = j.ok ? '✓ Connection OK' : '✗ ' + String(j.error || 'failed');
+    } catch (e) {
+      if (out) out.textContent = '✗ ' + (e && e.message ? e.message : String(e));
+    }
+  });
+  $('sshFormSaveBtn')?.addEventListener('click', async () => {
+    const out = $('sshFormTestResult');
+    const alias = ($('sshFormAlias') && $('sshFormAlias').value.trim()) || '';
+    if (!alias) {
+      if (out) out.textContent = 'Alias required.';
+      return;
+    }
+    const body = {
+      alias,
+      hostname: ($('sshFormHostname') && $('sshFormHostname').value.trim()) || '',
+      user: ($('sshFormUser') && $('sshFormUser').value.trim()) || '',
+      auth_method: $('sshFormAuthPw') && $('sshFormAuthPw').checked ? 'password' : 'key',
+      key_path: ($('sshFormKeyPath') && $('sshFormKeyPath').value.trim()) || '~/.ssh/id_rsa',
+      identities_only: !!($('sshFormIdentitiesOnly') && $('sshFormIdentitiesOnly').checked),
+      strict_host_key_checking: !($('sshFormStrictOff') && $('sshFormStrictOff').checked),
+      port: Number(($('sshFormPort') && $('sshFormPort').value) || 22) || 22,
+    };
+    if (body.auth_method === 'password') {
+      body.password = ($('sshFormPassword') && $('sshFormPassword').value) || '';
+    }
+    try {
+      const r = await fetch('/api/ssh/hosts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        if (out) out.textContent = '✗ ' + String(j.error || r.status);
+        return;
+      }
+      if (out) out.textContent = '✓ Saved';
+      $('sshHostModalBackdrop')?.classList.remove('open');
+      void renderSshHostsPanel();
+      void populateProjSshHostSelect(alias);
+    } catch (e) {
+      if (out) out.textContent = '✗ ' + (e && e.message ? e.message : String(e));
+    }
+  });
 }
 
 function isDesktopSidebarRail() {
@@ -2948,9 +3641,20 @@ function getEnglishSpeechVoices() {
   });
 }
 
+/** @returns {SpeechSynthesisVoice[]} */
+function getNonEnglishSpeechVoices() {
+  if (!window.speechSynthesis) return [];
+  return speechSynthesis.getVoices().filter((v) => {
+    const lang = (v.lang || '').toLowerCase().replace('_', '-');
+    return lang && !lang.startsWith('en');
+  });
+}
+
 function populateTtsVoiceSelect() {
   const sel = $('ttsVoiceSelect');
   if (!sel) return;
+  const vlab = $('ttsVoiceSelectLabel');
+  if (vlab) vlab.textContent = 'Voice (browser)';
   const saved = settings.tts_readaloud_voice || 'auto:british_male';
   const voices = getEnglishSpeechVoices().slice().sort((a, b) => {
     if (a.localService !== b.localService) return a.localService ? -1 : 1;
@@ -2961,6 +3665,11 @@ function populateTtsVoiceSelect() {
   sel.innerHTML = '';
   const autoOpts = [
     { value: 'auto:british_male', text: 'Automatic — British English male (when available)' },
+    { value: 'auto:british_female', text: 'Automatic — British English female (when available)' },
+    { value: 'auto:us_male', text: 'Automatic — US English male (when available)' },
+    { value: 'auto:us_female', text: 'Automatic — US English female (when available)' },
+    { value: 'auto:au_male', text: 'Automatic — Australian English male (when available)' },
+    { value: 'auto:au_female', text: 'Automatic — Australian English female (when available)' },
     { value: 'auto:quality_en', text: 'Automatic — best English quality on this device' },
   ];
   for (const o of autoOpts) {
@@ -2983,6 +3692,24 @@ function populateTtsVoiceSelect() {
     }
     sel.appendChild(og);
   }
+  const other = getNonEnglishSpeechVoices().slice().sort((a, b) => {
+    const an = (a.lang || '').toLowerCase() + '\t' + (a.name || '').toLowerCase();
+    const bn = (b.lang || '').toLowerCase() + '\t' + (b.name || '').toLowerCase();
+    return an.localeCompare(bn);
+  });
+  if (other.length) {
+    const og2 = document.createElement('optgroup');
+    og2.label = 'Other languages (installed on this device)';
+    for (const v of other) {
+      const opt = document.createElement('option');
+      const persistName = (v.name && String(v.name).trim()) || (v.voiceURI ? String(v.voiceURI).split(/[/\\]/).pop() || '' : '');
+      opt.value = 'voice:' + encodeURIComponent(JSON.stringify({ u: v.voiceURI, n: persistName, l: v.lang || '' }));
+      const loc = (v.lang || '').replace(/_/g, '-');
+      opt.textContent = `${v.name} (${loc})`;
+      og2.appendChild(opt);
+    }
+    sel.appendChild(og2);
+  }
   const allowed = new Set([...sel.options].map((o) => o.value));
   let effectiveSaved = saved;
   if (effectiveSaved.startsWith('voice:') && !allowed.has(effectiveSaved)) {
@@ -3000,7 +3727,7 @@ function populateTtsVoiceSelect() {
   const hint = $('ttsVoiceHint');
   if (hint) {
     hint.textContent = voices.length
-      ? 'Uses the browser Web Speech API (no cloud). “British English male” prefers voices whose names include UK + Male when available. Picking a specific row from the list always uses that voice (not the automatic picker). Use Preview to verify.'
+      ? 'Uses the browser Web Speech API (no cloud). Automatic rows pick the best match for that accent/gender on this device; a specific row always uses that exact voice. Use Preview to verify.'
       : 'No English voices reported yet — tap “Refresh voice list” or open this tab again after a moment (some browsers load voices asynchronously).';
   }
 }
@@ -3075,9 +3802,12 @@ document.querySelectorAll('.stab').forEach(btn => {
     if (btn.dataset.tab === 'settings') {
       renderNotificationSettings();
       renderWakeLockSettings();
-      renderTtsSettings();
+      void renderTtsSettings();
       renderSidebarRailSettings();
       renderChatModelSettings();
+      wireSlackSshSettingsOnce();
+      void renderSlackIntegrationPanel();
+      void renderSshHostsPanel();
     }
     setTimeout(() => showAnimusTabTooltipIfNeeded(btn.dataset.tab), 120);
   });
@@ -3489,7 +4219,8 @@ async function planHermesChat(messages) {
     throw new Error(typeof e === 'object' ? (e.message || JSON.stringify(e)) : String(e));
   }
   const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  return String(text || '');
+  const usage = data.usage && typeof data.usage === 'object' ? data.usage : null;
+  return { text: String(text || ''), usage };
 }
 
 function planStageSystem(stage) {
@@ -3593,10 +4324,11 @@ async function planRunStage(stage, state, clarifyText) {
   planThrowIfStopped();
   const sys = planStageSystem(stage);
   const user = planUserPayload(stage, state, clarifyText || '');
-  const text = await planHermesChat([
+  const { text, usage } = await planHermesChat([
     { role: 'system', content: sys },
     { role: 'user', content: user },
   ]);
+  recordTokenUsageManualIfPresent(usage, { source: 'plan', source_id: stage });
   const parsed = parsePlanJsonFromAssistant(text);
   const patch = parsed.patch && typeof parsed.patch === 'object' ? parsed.patch : {};
   const control = parsed.control && typeof parsed.control === 'object' ? parsed.control : {};
@@ -4469,7 +5201,7 @@ function selectConv(id) {
   activeId = id; save();
   const sel = convs.find((x) => x.id === id);
   if (viewProjectId && sel && _isNotificationConv(sel)) {
-    markProjectNotifsRead(viewProjectId);
+    markNotifConvRead(sel.id);
   }
   if (lastInterruptedConvId && lastInterruptedConvId !== id) hideReconnectBanner();
   renderSidebar(); renderMessages(); updateHeader();
@@ -4578,7 +5310,7 @@ function enterProjectView(id) {
       newConv(id);
     }
   }
-  ensureNotifReadBaseline(id);
+  ensureNotifConvBaselinesForProject(id);
   renderSidebar(); renderMessages(); updateHeader();
   closeSidebar();
 }
@@ -4638,6 +5370,44 @@ function normalizeUsageTokens(usage) {
   return { prompt, completion, total };
 }
 
+/** POST /api/tokens/record when gateway returns usage on a non–chat-proxy path (Plan, future skill APIs). Skips if counts absent. */
+function recordTokenUsageManualIfPresent(usage, meta) {
+  if (!usage || typeof usage !== 'object') return;
+  const pi = usage.prompt_tokens;
+  const po = usage.completion_tokens;
+  const hasIn = pi != null && String(pi).trim() !== '';
+  const hasOut = po != null && String(po).trim() !== '';
+  if (!hasIn && !hasOut) return;
+  let inp = null;
+  let out = null;
+  if (hasIn) {
+    const n = Number(pi);
+    if (!Number.isFinite(n)) return;
+    inp = n;
+  }
+  if (hasOut) {
+    const n = Number(po);
+    if (!Number.isFinite(n)) return;
+    out = n;
+  }
+  const be = chatBackendPayload();
+  const model = effectiveChatModelId();
+  const src = (meta && meta.source) || 'other';
+  const sid = (meta && meta.source_id != null) ? String(meta.source_id) : '';
+  void fetch('/api/tokens/record', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: String(be.hermes_provider || 'unknown').trim() || 'unknown',
+      model: String(model || 'unknown').trim() || 'unknown',
+      input_tokens: hasIn ? inp : null,
+      output_tokens: hasOut ? out : null,
+      source: src,
+      source_id: sid,
+    }),
+  }).catch(() => {});
+}
+
 function collectTokenUsageEntries(days = 30) {
   const today = startOfLocalDay(Date.now());
   const start = today - (days - 1) * 86400000;
@@ -4659,6 +5429,8 @@ function collectTokenUsageEntries(days = 30) {
         total: tokens.total,
         provider: (msg.inference_provider || '').trim(),
         model: (msg.inference_model || '').trim(),
+        source: 'chat',
+        source_id: String(conv.id || '').trim(),
       });
     }
   }
@@ -4733,16 +5505,69 @@ function collectTokenUsageData(days = 30) {
   };
 }
 
-function renderTokenUsageModal() {
+async function mergeServerTokenEntries(days, baseEntries, start, today) {
+  const extra = [];
+  try {
+    const r = await fetch(`/api/tokens/usage?days=${days}&source=all`, { cache: 'no-store' });
+    if (!r.ok) return baseEntries;
+    const j = await r.json().catch(() => ({}));
+    const recs = Array.isArray(j.records) ? j.records : [];
+    for (const rec of recs) {
+      let ts = Date.parse(String(rec.ts || ''));
+      if (String(rec.ts || '').endsWith('Z')) ts = Date.parse(String(rec.ts));
+      if (!Number.isFinite(ts)) continue;
+      const day = startOfLocalDay(ts);
+      if (day < start || day > today) continue;
+      const pi = Number(rec.input_tokens ?? 0) || 0;
+      const po = Number(rec.output_tokens ?? 0) || 0;
+      extra.push({
+        day,
+        prompt: pi,
+        completion: po,
+        total: pi + po,
+        provider: String(rec.provider || '').trim(),
+        model: String(rec.model || '').trim(),
+        source: String(rec.source || 'other').trim() || 'other',
+        source_id: String(rec.source_id || '').trim(),
+      });
+    }
+  } catch (_) {}
+  return baseEntries.concat(extra);
+}
+
+function sourceLabelForTokenEntry(e) {
+  const s = String(e.source || 'chat').trim() || 'chat';
+  if (s === 'chat') return 'Chat';
+  if (s === 'cron') return 'Cron jobs';
+  if (s === 'plan') return 'Plan';
+  if (s === 'skill') return 'Skills';
+  if (s === 'wizard') return 'Wizard';
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function setTokenUsageTab(which) {
+  const w = which === 'model' || which === 'source' ? which : 'provider';
+  document.querySelectorAll('.token-usage-tab-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.toktab === w);
+  });
+  const ids = { provider: 'tokenUsagePanelProvider', model: 'tokenUsagePanelModel', source: 'tokenUsagePanelSource' };
+  Object.keys(ids).forEach((k) => {
+    const el = $(ids[k]);
+    if (el) el.style.display = k === w ? 'block' : 'none';
+  });
+}
+
+async function renderTokenUsageModal() {
   const summary = $('tokenUsageSummary');
   const chart = $('tokenUsageChart');
   const list = $('tokenUsageList');
   const providerList = $('tokenUsageProviderList');
   const modelList = $('tokenUsageModelList');
+  const sourceList = $('tokenUsageSourceList');
   if (!summary || !chart || !list || !providerList || !modelList) return;
-  const data = collectTokenUsageData(30);
-  const days = data.days;
-  const entries = data.entries;
+  const meta = collectTokenUsageEntries(30);
+  const entries = await mergeServerTokenEntries(30, meta.entries, meta.start, meta.today);
+  const days = collectTokenUsageByDay(30, entries, meta.start);
   const totalPrompt = days.reduce((sum, d) => sum + d.prompt, 0);
   const totalCompletion = days.reduce((sum, d) => sum + d.completion, 0);
   const totalAll = days.reduce((sum, d) => sum + d.total, 0);
@@ -4760,6 +5585,7 @@ function renderTokenUsageModal() {
     list.innerHTML = '';
     renderTokenUsageBreakdown(providerList, [], 'No provider usage recorded yet.');
     renderTokenUsageBreakdown(modelList, [], 'No model usage recorded yet.');
+    if (sourceList) renderTokenUsageBreakdown(sourceList, [], 'No usage by source yet.');
     return;
   }
   const maxTotal = Math.max(1, ...days.map(d => d.total || 0));
@@ -4799,8 +5625,10 @@ function renderTokenUsageModal() {
     const model = entry.model ? entry.model : 'Unknown model';
     return `${provider} · ${model}`;
   });
+  const sourceRows = collectTokenUsageBreakdown(entries, (entry) => sourceLabelForTokenEntry(entry));
   renderTokenUsageBreakdown(providerList, providerRows, 'No provider usage recorded yet.');
   renderTokenUsageBreakdown(modelList, modelRows, 'No model usage recorded yet.');
+  if (sourceList) renderTokenUsageBreakdown(sourceList, sourceRows, 'No usage by source yet.');
 }
 
 function csvEscape(value) {
@@ -4811,10 +5639,10 @@ function csvEscape(value) {
   return raw;
 }
 
-function buildTokenUsageCsv(days = 30) {
-  const data = collectTokenUsageData(days);
+function buildTokenUsageCsv(days = 30, dataOverride = null) {
+  const data = dataOverride || collectTokenUsageData(days);
   const lines = [];
-  lines.push('date,provider,model,input_tokens,output_tokens');
+  lines.push('date,provider,model,input_tokens,output_tokens,source,source_id');
   for (const entry of data.entries) {
     const date = new Date(entry.day).toISOString().slice(0, 10);
     lines.push(
@@ -4824,6 +5652,8 @@ function buildTokenUsageCsv(days = 30) {
         entry.model || 'Unknown model',
         Math.round(entry.prompt || 0),
         Math.round(entry.completion || 0),
+        entry.source || 'chat',
+        entry.source_id || '',
       ].map(csvEscape).join(','),
     );
   }
@@ -4920,8 +5750,16 @@ function buildTokenUsageCsv(days = 30) {
   return lines.join('\n') + '\n';
 }
 
-function downloadTokenUsageCsv() {
-  const csv = buildTokenUsageCsv(30);
+async function downloadTokenUsageCsv() {
+  const meta = collectTokenUsageEntries(30);
+  const entries = await mergeServerTokenEntries(30, meta.entries, meta.start, meta.today);
+  const data = {
+    days: collectTokenUsageByDay(30, entries, meta.start),
+    entries,
+    start: meta.start,
+    today: meta.today,
+  };
+  const csv = buildTokenUsageCsv(30, data);
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -4966,21 +5804,22 @@ function _isNotificationConv(c) {
   return (c && (c.title === 'Cron updates' || c.notification_channel === 'cron'));
 }
 
-const NOTIF_READ_COUNTS_KEY = 'hermes_notif_read_msg_counts_v1';
+/** Per notification-thread read watermark: conv id → last-read message count. */
+const NOTIF_CONV_READ_COUNTS_KEY = 'hermes_notif_conv_read_counts_v1';
 const NOTIF_SECTION_COLLAPSED_KEY = 'hermes_notif_section_collapsed_v1';
 
-function getNotifReadCounts() {
+function getNotifConvReadCounts() {
   try {
-    const o = JSON.parse(localStorage.getItem(NOTIF_READ_COUNTS_KEY) || '{}');
+    const o = JSON.parse(localStorage.getItem(NOTIF_CONV_READ_COUNTS_KEY) || '{}');
     return o && typeof o === 'object' ? o : {};
   } catch (_) {
     return {};
   }
 }
 
-function saveNotifReadCounts(m) {
+function saveNotifConvReadCounts(m) {
   try {
-    localStorage.setItem(NOTIF_READ_COUNTS_KEY, JSON.stringify(m));
+    localStorage.setItem(NOTIF_CONV_READ_COUNTS_KEY, JSON.stringify(m));
   } catch (_) {}
 }
 
@@ -4996,19 +5835,46 @@ function getProjectNotifMessageCount(projectId) {
   return n;
 }
 
-function ensureNotifReadBaseline(projectId) {
+function ensureNotifConvBaselinesForProject(projectId) {
   if (!projectId) return;
-  const m = getNotifReadCounts();
-  if (m[projectId] !== undefined) return;
-  m[projectId] = getProjectNotifMessageCount(projectId);
-  saveNotifReadCounts(m);
+  const m = getNotifConvReadCounts();
+  let changed = false;
+  for (const c of convs) {
+    if (!projectIdsEqual(c.project_id, projectId) || !_isNotificationConv(c)) continue;
+    if (m[c.id] !== undefined) continue;
+    m[c.id] = Array.isArray(c.messages) ? c.messages.length : 0;
+    changed = true;
+  }
+  if (changed) saveNotifConvReadCounts(m);
 }
 
-function markProjectNotifsRead(projectId) {
+function getNotifConvUnreadCount(c) {
+  if (!c || !_isNotificationConv(c)) return 0;
+  const n = Array.isArray(c.messages) ? c.messages.length : 0;
+  const r = getNotifConvReadCounts()[c.id];
+  if (typeof r !== 'number') return 0;
+  return Math.max(0, n - r);
+}
+
+function markNotifConvRead(convId) {
+  const c = convs.find((x) => x.id === convId);
+  if (!c || !_isNotificationConv(c)) return;
+  const m = getNotifConvReadCounts();
+  m[c.id] = Array.isArray(c.messages) ? c.messages.length : 0;
+  saveNotifConvReadCounts(m);
+  syncNotifSectionUi();
+}
+
+function markAllProjectNotifConvsRead(projectId) {
   if (!projectId) return;
-  const m = getNotifReadCounts();
-  m[projectId] = getProjectNotifMessageCount(projectId);
-  saveNotifReadCounts(m);
+  const m = getNotifConvReadCounts();
+  let changed = false;
+  for (const c of convs) {
+    if (!projectIdsEqual(c.project_id, projectId) || !_isNotificationConv(c)) continue;
+    m[c.id] = Array.isArray(c.messages) ? c.messages.length : 0;
+    changed = true;
+  }
+  if (changed) saveNotifConvReadCounts(m);
   syncNotifSectionUi();
 }
 
@@ -5056,11 +5922,12 @@ function syncNotifSectionUi() {
     badge.setAttribute('hidden', '');
     return;
   }
-  ensureNotifReadBaseline(pid);
-  const total = getProjectNotifMessageCount(pid);
-  const read = getNotifReadCounts()[pid];
-  const last = typeof read === 'number' ? read : 0;
-  const delta = total - last;
+  ensureNotifConvBaselinesForProject(pid);
+  let delta = 0;
+  for (const c of convs) {
+    if (!projectIdsEqual(c.project_id, pid) || !_isNotificationConv(c)) continue;
+    delta += getNotifConvUnreadCount(c);
+  }
   if (delta > 0) {
     badge.textContent = delta > 99 ? '99+' : String(delta);
     badge.removeAttribute('hidden');
@@ -5155,8 +6022,13 @@ function renderSidebar() {
 
   const appendConvRow = (c, mount, opts) => {
     const isNotif = opts && opts.notif;
+    const unreadNotif = isNotif && viewProjectId && getNotifConvUnreadCount(c) > 0;
     const el = document.createElement('div');
-    el.className = 'conv-item' + (isNotif ? ' notif-item' : '') + (c.id === activeId ? ' active' : '');
+    el.className =
+      'conv-item' +
+      (isNotif ? ' notif-item' : '') +
+      (unreadNotif ? ' notif-item-unread' : '') +
+      (c.id === activeId ? ' active' : '');
     el.innerHTML = `<span class="conv-name">${esc(c.title)}</span>`
                  + `<button class="conv-del" data-id="${c.id}">×</button>`;
     el.addEventListener('click', e => {
@@ -5170,6 +6042,7 @@ function renderSidebar() {
   };
 
   if (viewProjectId) {
+    ensureNotifConvBaselinesForProject(viewProjectId);
     $notifList.innerHTML = '';
     const notifConvs = filtered.filter(_isNotificationConv);
     if (notifConvs.length) {
@@ -5637,7 +6510,7 @@ function buildMessages(conv) {
     parts.push(`(ANIMUS project card path, if different: ${entry})`);
   }
   if (p.overview && p.overview.trim()) {
-    parts.push('', '## Project overview', p.overview.trim());
+    parts.push('', '## Project goal', p.overview.trim());
   }
   if (p.ssh_remote) {
     const u = (p.ssh_user || '').trim();
@@ -5647,7 +6520,7 @@ function buildMessages(conv) {
     const bits = [
       '',
       '## Remote SSH workspace',
-      'This project is marked as using a remote machine. The folder above may be an sshfs mount or synced copy; agent file tools run against that local path.',
+      'ANIMUS notes that file paths may be on a remote machine. The folder above may be an sshfs mount or synced copy; agent file tools run against that local path on this server.',
     ];
     if (u) bits.push(`Recorded SSH user: ${u}`);
     if (h) bits.push(`Recorded SSH host: ${h}`);
@@ -5721,7 +6594,7 @@ async function send(retryConvId, opts = {}) {
     conv.messages.push({ role: 'user', content: userContent, created_at: new Date().toISOString() });
     clearPendingAttachments();
     const _notifProj = convProj(conv);
-    if (_notifProj && _isNotificationConv(conv)) markProjectNotifsRead(_notifProj.id);
+    if (_notifProj && _isNotificationConv(conv)) markNotifConvRead(conv.id);
     if (conv.title === 'New chat') {
       const titleSeed = text || userContentPreview(userContent) || 'Attachment';
       conv.title = trunc(titleSeed);
@@ -5940,6 +6813,84 @@ function updateProjSshFieldsVisibility() {
   const cb = $('projSshRemote');
   if (!wrap || !cb) return;
   wrap.style.display = cb.checked ? 'block' : 'none';
+  if (cb.checked) void populateProjSshHostSelect(String($('projSshHostSelect')?.value || '').trim());
+}
+
+async function fetchSshHostsList() {
+  try {
+    const r = await fetch('/api/ssh/hosts', { cache: 'no-store' });
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => []);
+    return Array.isArray(j) ? j : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function deriveSshLocalProjectPath(alias, remoteProjectPath) {
+  const root = (PROJECTS_ROOT && String(PROJECTS_ROOT).trim().replace(/\/+$/, '')) || '';
+  const rp = String(remoteProjectPath || '').trim() || '/remote/project';
+  const tail = rp.startsWith('/') ? rp : `/${rp}`;
+  if (!root) return `_ssh_mounts/${alias}${tail}`.replace(/\/+/g, '/');
+  return `${root}/_ssh_mounts/${alias}${tail}`.replace(/\/+/g, '/');
+}
+
+function syncProjSshDerivedPath() {
+  const alias = ($('projSshHostSelect') && $('projSshHostSelect').value.trim()) || '';
+  const rp = ($('projRemoteProjectPath') && $('projRemoteProjectPath').value.trim()) || '';
+  const box = $('projDerivedLocalPath');
+  const inp = $('projPathInput');
+  const remoteOn = $('projSshRemote') && $('projSshRemote').checked;
+  if (!remoteOn || !alias || !rp) {
+    if (box) box.value = '';
+    return;
+  }
+  const derived = deriveSshLocalProjectPath(alias, rp);
+  if (box) box.value = derived;
+  if (inp) {
+    inp.value = derived;
+    validatePath(derived);
+  }
+}
+
+async function populateProjSshHostSelect(selectedAlias) {
+  const sel = $('projSshHostSelect');
+  if (!sel) return;
+  const hosts = await fetchSshHostsList();
+  const cur = selectedAlias || String(sel.value || '').trim();
+  sel.innerHTML = '<option value="">Select a configured host…</option>';
+  for (const h of hosts) {
+    const a = String(h.alias || '').trim();
+    if (!a) continue;
+    const opt = document.createElement('option');
+    opt.value = a;
+    opt.textContent = `${a} (${String(h.hostname || '')})`;
+    sel.appendChild(opt);
+  }
+  if (cur && [...sel.options].some((o) => o.value === cur)) sel.value = cur;
+}
+
+async function syncProjectGoalFile(projectId, text) {
+  const p = getProj(projectId);
+  if (!p || !text) return;
+  const wf = projectWorkspaceFilesPath(p) || (p.path || '').trim();
+  if (!wf) return;
+  const r = await fetch('/api/project-workspace/file', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: wf, file: 'project_goal', content: text }),
+  });
+  if (!r.ok) throw new Error(await _projectWorkspaceErrorBody(r));
+}
+
+async function loadProjectGoalIntoOverview(p) {
+  const wf = projectWorkspaceFilesPath(p) || (p.path || '').trim();
+  if (!wf) return;
+  try {
+    const r = await fetch('/api/project-workspace/file?' + new URLSearchParams({ path: wf, file: 'project_goal' }), { cache: 'no-store' });
+    const j = await r.json();
+    if (j && typeof j.content === 'string' && j.content.trim()) $('projOverview').value = j.content;
+  } catch (_) {}
 }
 
 function openProjAddModal() {
@@ -5963,18 +6914,16 @@ function openProjAddModal() {
   }
   clearTimeout(workspacePathValidTimer);
   $('saveProjectBtn').disabled = true;
-  $('fileBrowser').classList.remove('open');
   selectedColor = PROJECT_COLORS[projects.length % PROJECT_COLORS.length];
   renderColorPicker();
+  if ($('projRemoteProjectPath')) $('projRemoteProjectPath').value = '';
+  if ($('projDerivedLocalPath')) $('projDerivedLocalPath').value = '';
   if ($('projSshRemote')) {
     $('projSshRemote').checked = false;
-    ['projSshUser', 'projSshHost', 'projSshPort', 'projSshIdentityFile'].forEach(id => {
-      const el = $(id);
-      if (el) el.value = '';
-    });
     if ($('projSshTestStatus')) $('projSshTestStatus').textContent = '';
     updateProjSshFieldsVisibility();
   }
+  void populateProjSshHostSelect('');
   $('projModalBackdrop').classList.add('open');
   setTimeout(() => $('projNameInput').focus(), 60);
 }
@@ -5995,7 +6944,6 @@ function openProjEditModal(id) {
   $('projPathInput').value  = p.path;
   $('projOverview').value   = p.overview || '';
   selectedColor             = p.color;
-  $('fileBrowser').classList.remove('open');
   $('saveProjectBtn').disabled = false;
   renderColorPicker(); validatePath(p.path);
   if ($('projWorkspaceFilesInput')) {
@@ -6004,15 +6952,14 @@ function openProjEditModal(id) {
   }
   if ($('projSshRemote')) {
     $('projSshRemote').checked = !!p.ssh_remote;
-    if ($('projSshUser')) $('projSshUser').value = p.ssh_user || '';
-    if ($('projSshHost')) $('projSshHost').value = p.ssh_host || '';
-    if ($('projSshPort')) $('projSshPort').value = (p.ssh_port != null && String(p.ssh_port).trim() !== '')
-      ? String(p.ssh_port) : '';
-    if ($('projSshIdentityFile')) $('projSshIdentityFile').value = p.ssh_identity_file || '';
+    void populateProjSshHostSelect(String(p.ssh_host_alias || '').trim());
+    if ($('projRemoteProjectPath')) $('projRemoteProjectPath').value = String(p.ssh_remote_project_path || '').trim();
+    syncProjSshDerivedPath();
     if ($('projSshTestStatus')) $('projSshTestStatus').textContent = '';
     updateProjSshFieldsVisibility();
   }
   $('projModalBackdrop').classList.add('open');
+  void loadProjectGoalIntoOverview(p);
   setTimeout(() => $('projNameInput').focus(), 60);
 }
 
@@ -6103,31 +7050,6 @@ function updateSaveBtn() {
   const wsTrim = ($('projWorkspaceFilesInput') && $('projWorkspaceFilesInput').value.trim()) || '';
   const wsOk = !wsTrim || ($('workspacePathStatus') && $('workspacePathStatus').classList.contains('ok'));
   $('saveProjectBtn').disabled = !(nameOk && mainOk && wsOk);
-}
-
-async function loadDir(path) {
-  try {
-    const r = await fetch(`/api/fs/ls?path=${encodeURIComponent(path)}`);
-    if (!r.ok) return;
-    const data = await r.json();
-    fbCwd = data.path;
-    $('fbCwd').textContent = fbCwd;
-    $('fbUp').disabled = !data.parent;
-    $('fbUp').dataset.path = data.parent || '';
-    const $list = $('fbList'); $list.innerHTML = '';
-    if (!data.items.filter(i=>i.is_dir).length) {
-      $list.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--muted)">No subdirectories</div>';
-      return;
-    }
-    data.items.forEach(item => {
-      if (!item.is_dir) return;
-      const el = document.createElement('div');
-      el.className = 'fb-item is-dir';
-      el.innerHTML = `<span>📁</span><span class="fb-item-name">${esc(item.name)}</span>`;
-      el.addEventListener('click', () => { loadDir(item.path); $('projPathInput').value = item.path; validatePath(item.path); });
-      $list.appendChild(el);
-    });
-  } catch {}
 }
 
 // ─── Skills panel ─────────────────────────────────────────────────────────────
@@ -6376,6 +7298,7 @@ $('skillsInstallBtn')?.addEventListener('click', async () => {
       alert((j && j.error) ? j.error : await r.text());
       return;
     }
+    recordTokenUsageManualIfPresent(j.usage, { source: 'skill', source_id: src });
     if (inp) inp.value = '';
     await loadSkills();
   } catch (e) {
@@ -6384,6 +7307,80 @@ $('skillsInstallBtn')?.addEventListener('click', async () => {
     if (btn) {
       btn.disabled = false;
       btn.textContent = 'Install';
+    }
+  }
+});
+
+$('skillsCreateBtn')?.addEventListener('click', () => {
+  const n = $('skillCreateName');
+  const d = $('skillCreateDisplay');
+  const de = $('skillCreateDesc');
+  const v = $('skillCreateVersion');
+  const c = $('skillCreateContent');
+  const f = $('skillCreateFile');
+  if (n) n.value = '';
+  if (d) d.value = '';
+  if (de) de.value = '';
+  if (v) v.value = '1.0.0';
+  if (c) c.value = '';
+  if (f) f.value = '';
+  $('skillCreateBackdrop')?.classList.add('open');
+  setTimeout(() => {
+    if (n) n.focus();
+  }, 50);
+});
+
+$('skillCreateFile')?.addEventListener('change', async (ev) => {
+  const inp = ev.target;
+  const files = inp && inp.files;
+  const ta = $('skillCreateContent');
+  if (!files || !files[0] || !ta) return;
+  try {
+    ta.value = await files[0].text();
+  } catch (_) {}
+});
+
+$('skillCreateSubmitBtn')?.addEventListener('click', async () => {
+  const nameEl = $('skillCreateName');
+  const nm = String((nameEl && nameEl.value) || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-');
+  if (!nm) {
+    alert('Skill name is required.');
+    return;
+  }
+  const btn = $('skillCreateSubmitBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+  }
+  try {
+    const r = await fetch('/api/skills/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: nm,
+        display_name: String(($('skillCreateDisplay') && $('skillCreateDisplay').value) || '').trim(),
+        description: String(($('skillCreateDesc') && $('skillCreateDesc').value) || '').trim(),
+        version: String(($('skillCreateVersion') && $('skillCreateVersion').value) || '1.0.0').trim(),
+        content: String(($('skillCreateContent') && $('skillCreateContent').value) || '').trim(),
+      }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.ok === false) {
+      alert((j && j.error) ? j.error : await r.text());
+      return;
+    }
+    recordTokenUsageManualIfPresent(j.usage, { source: 'skill', source_id: nm });
+    closeModal('skillCreateBackdrop');
+    await loadSkills();
+  } catch (e) {
+    alert(e && e.message ? e.message : 'Create failed');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Create skill';
     }
   }
 });
@@ -6404,6 +7401,10 @@ $('skillDetailUpdateBtn')?.addEventListener('click', async () => {
       alert((j && j.error) ? j.error : await r.text());
       return;
     }
+    recordTokenUsageManualIfPresent(j.usage, {
+      source: 'skill',
+      source_id: String(skillDetailLast.name || skillDetailLast.id || '').trim(),
+    });
     closeModal('skillDetailBackdrop');
     await loadSkills();
   } catch (e) {
@@ -6439,6 +7440,7 @@ async function _postSkillToggle(pathSeg) {
     alert(j.error || 'Not supported');
     return;
   }
+  recordTokenUsageManualIfPresent(j.usage, { source: 'skill', source_id: skillDetailLast.name || skillDetailLast.id || '' });
   closeModal('skillDetailBackdrop');
   await loadSkills();
 }
@@ -6618,25 +7620,78 @@ if (wakeLockToggle) {
 const ttsVoiceSelectEl = $('ttsVoiceSelect');
 if (ttsVoiceSelectEl) {
   ttsVoiceSelectEl.addEventListener('change', (e) => {
-    settings.tts_readaloud_voice = e.target.value;
+    const v = String(e.target.value || '');
+    if (settings.tts_backend === 'piper') {
+      settings.tts_piper_voice = v;
+    } else {
+      settings.tts_readaloud_voice = v;
+    }
     save();
   });
 }
+document.querySelectorAll('input[name="ttsBackend"]').forEach((rb) => {
+  rb.addEventListener('change', async () => {
+    const v = String(rb.value || '').trim();
+    if (v !== 'browser' && v !== 'piper') return;
+    settings.tts_backend = v;
+    save();
+    try {
+      await fetch('/api/animus/client-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tts_backend: settings.tts_backend }),
+      });
+    } catch (_) {}
+    void renderTtsSettings();
+  });
+});
 $('ttsPreviewBtn')?.addEventListener('click', async () => {
+  cancelTtsPlayback();
+  _stopPiperAudio();
+  if (settings.tts_backend === 'piper' && _ttsHasPiper) {
+    const voice = (settings.tts_piper_voice || '').trim();
+    if (!voice) {
+      alert('Pick a Piper voice model first (or install voices — see docs/tts.md).');
+      return;
+    }
+    try {
+      const r = await fetch('/api/tts/piper/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: 'Hello, I am ANIMUS.',
+          voice,
+        }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(url);
+      a.onended = () => URL.revokeObjectURL(url);
+      a.onerror = () => URL.revokeObjectURL(url);
+      await a.play();
+    } catch (e) {
+      alert(e && e.message ? e.message : 'Piper preview failed');
+    }
+    return;
+  }
   if (!window.speechSynthesis) {
     alert('Text-to-speech is not available in this browser.');
     return;
   }
   await waitForSpeechVoices(900);
-  cancelTtsPlayback();
   const voice = resolveReadAloudVoice();
-  const u = new SpeechSynthesisUtterance('ANIMUS read-aloud preview. This is how the last reply will sound when you tap the speaker button.');
+  const u = new SpeechSynthesisUtterance('Hello, I am ANIMUS.');
   applyTtsVoiceToUtterance(u, voice);
   u.rate = 0.98;
   u.pitch = 1;
   speechSynthesis.speak(u);
 });
 $('ttsRefreshVoicesBtn')?.addEventListener('click', () => {
+  if (settings.tts_backend === 'piper') {
+    void populatePiperVoiceSelect();
+    return;
+  }
   try {
     if (window.speechSynthesis) speechSynthesis.getVoices();
   } catch (_) {}
@@ -6644,8 +7699,18 @@ $('ttsRefreshVoicesBtn')?.addEventListener('click', () => {
 });
 
 $('tokenUsageBtn')?.addEventListener('click', openTokenUsageModal);
-$('tokenUsageRefreshBtn')?.addEventListener('click', renderTokenUsageModal);
-$('tokenUsageExportBtn')?.addEventListener('click', downloadTokenUsageCsv);
+$('helpAnimusBtn')?.addEventListener('click', () => void openHelpGuideModal());
+$('helpAskBtn')?.addEventListener('click', () => void submitHelpAsk());
+$('helpAskInput')?.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  e.preventDefault();
+  void submitHelpAsk();
+});
+$('tokenUsageRefreshBtn')?.addEventListener('click', () => void renderTokenUsageModal());
+$('tokenUsageExportBtn')?.addEventListener('click', () => void downloadTokenUsageCsv());
+document.querySelectorAll('.token-usage-tab-btn').forEach((b) => {
+  b.addEventListener('click', () => setTokenUsageTab(b.dataset.toktab || 'provider'));
+});
 
 $('notifyPermissionBtn').addEventListener('click', async () => {
   const result = await ensureNotificationPermission();
@@ -6878,11 +7943,44 @@ function onCronDeliverMethodChange() {
   show('cronDeliverSlackWrap', m === 'slack');
   show('cronDeliverEmailWrap', m === 'email');
   show('cronDeliverAdvancedWrap', m === 'advanced');
+  void refreshCronSlackHint();
+}
+
+async function refreshCronSlackHint() {
+  const hint = $('cronSlackConfigHint');
+  if (!hint) return;
+  const m = ($('cronDeliverMethod') && $('cronDeliverMethod').value) || 'local';
+  if (m !== 'slack') {
+    hint.style.display = 'none';
+    hint.innerHTML = '';
+    return;
+  }
+  try {
+    const r = await fetch('/api/integrations/slack/status', { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (j.configured) {
+      hint.style.display = 'none';
+      hint.innerHTML = '';
+      return;
+    }
+    hint.style.display = 'block';
+    hint.innerHTML =
+      'Slack isn’t configured yet. <button type="button" class="btn btn-ghost" id="cronSlackCfgLink" style="min-height:32px;padding:4px 10px">Configure…</button>';
+    $('cronSlackCfgLink')?.addEventListener(
+      'click',
+      () => {
+        $('slackConfigBackdrop')?.classList.add('open');
+      },
+      { once: true },
+    );
+  } catch (_) {
+    hint.style.display = 'none';
+  }
 }
 
 function parseDeliverToForm(raw) {
   const v = String(raw ?? '').trim();
-  $('cronDeliverHermesId').value = '';
+  $('cronDeliverProjectSelect').value = '';
   $('cronDeliverSlackId').value = '';
   $('cronDeliverEmailAddr').value = '';
   $('cronDeliverAdvanced').value = '';
@@ -6893,7 +7991,8 @@ function parseDeliverToForm(raw) {
   }
   if (_CRON_UUID_RE.test(v)) {
     $('cronDeliverMethod').value = 'hermes-chat';
-    $('cronDeliverHermesId').value = v;
+    ensureCronProjectOption(v);
+    $('cronDeliverProjectSelect').value = v;
     onCronDeliverMethodChange();
     return;
   }
@@ -6910,7 +8009,8 @@ function parseDeliverToForm(raw) {
     if (/^project:/i.test(rest)) id = rest.slice(8).trim();
     else if (/^proj:/i.test(rest)) id = rest.slice(5).trim();
     $('cronDeliverMethod').value = 'hermes-chat';
-    $('cronDeliverHermesId').value = id;
+    ensureCronProjectOption(id);
+    $('cronDeliverProjectSelect').value = id;
     onCronDeliverMethodChange();
     return;
   }
@@ -6935,7 +8035,7 @@ function buildDeliverFromForm() {
   const m = ($('cronDeliverMethod') && $('cronDeliverMethod').value) || 'local';
   if (m === 'local') return 'local';
   if (m === 'hermes-chat') {
-    let id = ($('cronDeliverHermesId').value || '').trim();
+    let id = ($('cronDeliverProjectSelect').value || '').trim();
     if (!id && viewProjectId) id = viewProjectId;
     if (!id) return 'local';
     // Persist ``hermes-chat:`` + UUID so gateway/cron resolves on older
@@ -7063,7 +8163,7 @@ function renderProjectCronsPanel(loadErr) {
       startCronListPolling();
       void loadCron().then(() => {
         const job = cronJobs.find(j => j.id === id);
-        if (job) openCronModalForEdit(job);
+        if (job) void openCronModalForEdit(job);
       });
       closeSidebar();
     });
@@ -7089,25 +8189,172 @@ function scheduleStringForForm(job) {
   return s.display || '';
 }
 
-function fillCronTimezoneDatalist() {
+async function fillCronTimezoneDatalist(force = false) {
   const dl = $('cronTzList');
-  if (!dl || dl.dataset.filled === '1') return;
+  if (!dl) return;
+  if (force) delete dl.dataset.filled;
+  if (!force && dl.dataset.filled === '1') return;
   let zones = [];
   try {
-    if (typeof Intl !== 'undefined' && Intl.supportedValuesOf) {
-      zones = Intl.supportedValuesOf('timeZone');
+    const r = await fetch('/api/system/timezones', { cache: 'no-store' });
+    if (r.ok) {
+      const j = await r.json();
+      zones = Array.isArray(j.timezones) ? j.timezones : [];
     }
   } catch (_) {}
+  if (!zones.length) {
+    try {
+      if (typeof Intl !== 'undefined' && Intl.supportedValuesOf) {
+        zones = Intl.supportedValuesOf('timeZone');
+      }
+    } catch (_) {}
+  }
   if (!zones.length) {
     zones = ['UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
       'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Kolkata', 'Australia/Sydney'];
   }
-  zones = [...new Set(zones)].sort();
-  dl.innerHTML = zones.map(z => {
+  zones = [...new Set(zones.map(String))].sort((a, b) => a.localeCompare(b));
+  dl.innerHTML = zones.map((z) => {
     const v = String(z).replace(/"/g, '');
     return `<option value="${v.replace(/</g, '')}"></option>`;
   }).join('');
   dl.dataset.filled = '1';
+}
+
+async function populateCronProjectDropdown() {
+  const sel = $('cronDeliverProjectSelect');
+  if (!sel) return;
+  const prev = (sel.value || '').trim();
+  sel.innerHTML = '';
+  const none = document.createElement('option');
+  none.value = '';
+  none.textContent = '(none — save output on server only)';
+  sel.appendChild(none);
+  try {
+    const r = await fetch('/api/projects/list-simple', { cache: 'no-store' });
+    if (!r.ok) return;
+    const arr = await r.json();
+    (Array.isArray(arr) ? arr : []).forEach((row) => {
+      const id = String(row.id || '').trim();
+      const nm = (String(row.name || id || '').trim() || id);
+      if (!id) return;
+      const o = document.createElement('option');
+      o.value = id;
+      o.textContent = nm;
+      sel.appendChild(o);
+    });
+  } catch (_) {}
+  if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  else if (viewProjectId && [...sel.options].some((o) => o.value === viewProjectId)) sel.value = viewProjectId;
+}
+
+function ensureCronProjectOption(id) {
+  const sel = $('cronDeliverProjectSelect');
+  if (!sel || !id) return;
+  const s = String(id).trim();
+  if (!s || [...sel.options].some((o) => o.value === s)) return;
+  const o = document.createElement('option');
+  o.value = s;
+  o.textContent = s.length > 14 ? `${s.slice(0, 8)}…${s.slice(-4)}` : s;
+  sel.appendChild(o);
+}
+
+function _cronPreviewClockLabel(h, min) {
+  try {
+    const d = new Date();
+    d.setHours(h, min, 0, 0);
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  } catch (_) {
+    return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  }
+}
+
+function _cronSelectedWeekdayLabel() {
+  const sel = $('cronWeekDow');
+  if (!sel) return 'weekday';
+  const opt = sel.options[sel.selectedIndex];
+  return (opt && opt.textContent) ? opt.textContent.trim() : String(sel.value);
+}
+
+/** True when ``expr`` is five cron fields (minute hour dom month dow). */
+function _cronFiveFieldExprValid(expr) {
+  const parts = String(expr || '').trim().split(/\s+/).filter(Boolean);
+  return parts.length === 5;
+}
+
+function updateCronSchedulePreview() {
+  const el = $('cronSchedulePreview');
+  if (!el) return;
+  const p = ($('cronSchPattern') && $('cronSchPattern').value) || 'daily';
+  let tz = '';
+  try {
+    tz = ($('cronTzInput') && $('cronTzInput').value.trim()) || Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch (_) {
+    tz = ($('cronTzInput') && $('cronTzInput').value.trim()) || '';
+  }
+  const tzPhrase = tz ? ` (${tz})` : '';
+  let line = '';
+  if (p === 'every_minutes') {
+    const n = parseInt($('cronEveryNMin').value, 10) || 0;
+    if (n === 60) line = 'Same as every hour — runs at minute 0 of each hour.';
+    else if (n === 30) line = 'Runs at :00 and :30 past every hour.';
+    else if (n === 15) line = 'Runs at :00, :15, :30, and :45 past every hour.';
+    else if (n > 0) line = `Runs every ${n} minute${n === 1 ? '' : 's'}.`;
+  } else if (p === 'every_hour') {
+    line = 'Runs once every hour (at minute 0).';
+  } else if (p === 'every_hours') {
+    const n = parseInt($('cronEveryNHours').value, 10) || 0;
+    line = n > 0 ? `Runs every ${n} hour${n === 1 ? '' : 's'} (interval from the scheduler).` : '';
+  } else if (p === 'every_days') {
+    const n = parseInt($('cronEveryNDays').value, 10) || 0;
+    line = n > 0 ? `Runs every ${n} day${n === 1 ? '' : 's'}.` : '';
+  } else if (p === 'daily') {
+    const { h, min } = _cronParseHm($('cronDailyTime').value);
+    line = `Runs daily at ${_cronPreviewClockLabel(h, min)}${tzPhrase}.`;
+  } else if (p === 'weekly') {
+    const { h, min } = _cronParseHm($('cronWeeklyTime').value);
+    line = `Runs every ${_cronSelectedWeekdayLabel()} at ${_cronPreviewClockLabel(h, min)}${tzPhrase}.`;
+  } else if (p === 'monthly') {
+    const dom = parseInt($('cronMonthlyDom').value, 10) || 1;
+    const { h, min } = _cronParseHm($('cronMonthlyTime').value);
+    line = `Runs monthly on day ${dom} at ${_cronPreviewClockLabel(h, min)}${tzPhrase}.`;
+  } else if (p === 'once') {
+    const d = ($('cronOnceDate').value || '').trim();
+    const tm = ($('cronOnceTime').value || '').trim();
+    line = d && tm ? `One run on ${d} at ${tm}${tzPhrase}.` : 'Pick a date and time for the one-time run.';
+  } else if (p === 'advanced') {
+    const raw = ($('cronScheduleAdvanced').value || '').trim();
+    if (raw && _cronFiveFieldExprValid(raw)) {
+      const parts = raw.split(/\s+/).filter(Boolean);
+      const mi = parseInt(parts[0], 10);
+      const hr = parseInt(parts[1], 10);
+      const dom = parts[2];
+      const mon = parts[3];
+      const dow = parts[4];
+      const star = (x) => x === '*';
+      if (star(dom) && star(mon) && !star(dow)) {
+        const dix = parseInt(dow, 10);
+        if (!Number.isNaN(dix) && !Number.isNaN(hr) && !Number.isNaN(mi)) {
+          const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const dn = names[Math.min(6, Math.max(0, dix))] || `weekday ${dow}`;
+          line = `Every ${dn} at ${_cronPreviewClockLabel(hr, mi)}${tzPhrase}.`;
+        } else {
+          line = `Advanced schedule: ${raw}${tzPhrase}.`;
+        }
+      } else if (star(dom) && star(mon) && star(dow)) {
+        if (!Number.isNaN(hr) && !Number.isNaN(mi)) {
+          line = `Runs daily at ${_cronPreviewClockLabel(hr, mi)}${tzPhrase}.`;
+        } else {
+          line = `Advanced schedule: ${raw}${tzPhrase}.`;
+        }
+      } else {
+        line = `Advanced schedule: ${raw}${tzPhrase}.`;
+      }
+    } else {
+      line = raw ? 'Enter five cron fields: minute hour day month weekday.' : '';
+    }
+  }
+  el.textContent = line || '—';
 }
 
 function onCronSchPatternChange() {
@@ -7134,10 +8381,11 @@ function onCronSchPatternChange() {
     const showTz = ['once', 'daily', 'weekly', 'monthly', 'advanced'].includes(p);
     tzRow.style.display = showTz ? 'block' : 'none';
   }
+  updateCronSchedulePreview();
 }
 
-function resetCronScheduleBuilderForCreate() {
-  fillCronTimezoneDatalist();
+async function resetCronScheduleBuilderForCreate() {
+  await fillCronTimezoneDatalist(true);
   const t = new Date();
   const ymd = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
   $('cronOnceDate').value = ymd;
@@ -7152,11 +8400,12 @@ function resetCronScheduleBuilderForCreate() {
   $('cronMonthlyTime').value = '09:00';
   $('cronScheduleAdvanced').value = '0 9 * * *';
   $('cronSchPattern').value = 'daily';
+  let defTz = '';
   try {
-    $('cronTzInput').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch (_) {
-    $('cronTzInput').value = 'UTC';
-  }
+    defTz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch (_) {}
+  const savedTz = (settings.cron_timezone || '').trim();
+  $('cronTzInput').value = savedTz || defTz || 'UTC';
   onCronSchPatternChange();
 }
 
@@ -7167,18 +8416,22 @@ function _cronParseHm(t) {
   return { h: Math.min(23, parseInt(m[1], 10)), min: Math.min(59, parseInt(m[2], 10)) };
 }
 
-function hydrateCronScheduleFromJob(job) {
-  fillCronTimezoneDatalist();
+async function hydrateCronScheduleFromJob(job) {
+  await fillCronTimezoneDatalist(true);
   const sch = job.schedule;
   const disp = (job.schedule_display || '').trim();
   $('cronSchPattern').value = 'advanced';
   $('cronScheduleAdvanced').value = scheduleStringForForm(job);
   if (job.schedule_tz) $('cronTzInput').value = job.schedule_tz;
   else {
+    const saved = (settings.cron_timezone || '').trim();
+    if (saved) $('cronTzInput').value = saved;
+    else {
     try {
       $('cronTzInput').value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     } catch (_) {
       $('cronTzInput').value = 'UTC';
+    }
     }
   }
   if (!sch || typeof sch !== 'object') {
@@ -7266,12 +8519,6 @@ function _cronTzOrThrow() {
   return z;
 }
 
-/** True when ``expr`` is five cron fields (minute hour dom month dow). */
-function _cronFiveFieldExprValid(expr) {
-  const parts = String(expr || '').trim().split(/\s+/).filter(Boolean);
-  return parts.length === 5;
-}
-
 async function buildCronSchedulePayload() {
   const p = ($('cronSchPattern') && $('cronSchPattern').value) || 'daily';
   if (p === 'once') {
@@ -7338,7 +8585,7 @@ async function buildCronSchedulePayload() {
   throw new Error('Unknown schedule pattern.');
 }
 
-function openCronModalForCreate() {
+async function openCronModalForCreate() {
   cronModalEditId = null;
   const title = $('cronModalTitle');
   if (title) title.textContent = 'Add Cron Job';
@@ -7346,13 +8593,14 @@ function openCronModalForCreate() {
   if (saveBtn) saveBtn.textContent = 'Add job';
   $('cronName').value = '';
   $('cronPrompt').value = '';
-  resetCronScheduleBuilderForCreate();
+  await resetCronScheduleBuilderForCreate();
+  await populateCronProjectDropdown();
   parseDeliverToForm(viewProjectId || 'local');
   $('cronModalBackdrop').classList.add('open');
   setTimeout(() => $('cronName').focus(), 60);
 }
 
-function openCronModalForEdit(job) {
+async function openCronModalForEdit(job) {
   cronModalEditId = job.id;
   const title = $('cronModalTitle');
   if (title) title.textContent = 'Edit cron job';
@@ -7360,7 +8608,8 @@ function openCronModalForEdit(job) {
   if (saveBtn) saveBtn.textContent = 'Save changes';
   $('cronName').value = job.name || '';
   $('cronPrompt').value = job.prompt || '';
-  hydrateCronScheduleFromJob(job);
+  await hydrateCronScheduleFromJob(job);
+  await populateCronProjectDropdown();
   parseDeliverToForm((job.deliver != null && job.deliver !== undefined) ? String(job.deliver) : 'local');
   $('cronModalBackdrop').classList.add('open');
   setTimeout(() => $('cronSchPattern').focus(), 60);
@@ -7474,7 +8723,7 @@ function renderCron() {
         const { action, id } = btn.dataset;
         if (action === 'edit') {
           const job = cronJobs.find(j => j.id === id);
-          if (job) openCronModalForEdit(job);
+          if (job) void openCronModalForEdit(job);
           return;
         }
         if (action === 'logs') {
@@ -7532,11 +8781,41 @@ function renderCron() {
   });
 }
 
-$('addCronBtn').addEventListener('click', openCronModalForCreate);
-$('addCronBtnLabel').addEventListener('click', openCronModalForCreate);
+$('addCronBtn').addEventListener('click', () => { void openCronModalForCreate(); });
+$('addCronBtnLabel').addEventListener('click', () => { void openCronModalForCreate(); });
 
 $('cronDeliverMethod').addEventListener('change', onCronDeliverMethodChange);
 $('cronSchPattern').addEventListener('change', onCronSchPatternChange);
+[
+  'cronEveryNMin',
+  'cronEveryNHours',
+  'cronEveryNDays',
+  'cronOnceDate',
+  'cronOnceTime',
+  'cronDailyTime',
+  'cronWeeklyTime',
+  'cronWeekDow',
+  'cronMonthlyDom',
+  'cronMonthlyTime',
+  'cronScheduleAdvanced',
+  'cronTzInput',
+].forEach((id) => {
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener('input', updateCronSchedulePreview);
+  el.addEventListener('change', updateCronSchedulePreview);
+});
+const _cronTzChangeBtn = $('cronTzChangeBtn');
+if (_cronTzChangeBtn) {
+  _cronTzChangeBtn.addEventListener('click', () => {
+    const inp = $('cronTzInput');
+    if (!inp) return;
+    inp.focus();
+    try {
+      inp.select();
+    } catch (_) {}
+  });
+}
 
 $('saveCronBtn').addEventListener('click', async () => {
   const prompt = $('cronPrompt').value.trim();
@@ -7550,10 +8829,10 @@ $('saveCronBtn').addEventListener('click', async () => {
   }
   const dm = $('cronDeliverMethod').value;
   if (dm === 'hermes-chat') {
-    let hid = ($('cronDeliverHermesId').value || '').trim();
+    let hid = ($('cronDeliverProjectSelect').value || '').trim();
     if (!hid && viewProjectId) hid = viewProjectId;
     if (!hid) {
-      alert('Enter the ANIMUS project (or conversation) UUID, open this job from inside a project, or set delivery to “Server only”.');
+      alert('Select a project to deliver to, choose “Server only”, or open Cron from inside a project.');
       return;
     }
   }
@@ -7596,6 +8875,18 @@ $('saveCronBtn').addEventListener('click', async () => {
       alert('Failed to save job: ' + detail);
       return;
     }
+    const tzv = ($('cronTzInput').value || '').trim();
+    if (tzv) {
+      settings.cron_timezone = tzv;
+      save();
+      try {
+        await fetch('/api/animus/client-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cron_timezone: tzv }),
+        });
+      } catch (_) {}
+    }
     closeModal('cronModalBackdrop');
     loadCron();
   } catch (e) {
@@ -7606,6 +8897,13 @@ $('saveCronBtn').addEventListener('click', async () => {
 // ─── Modal helpers ────────────────────────────────────────────────────────────
 function closeModal(id) {
   $(id).classList.remove('open');
+  if (id === 'helpGuideBackdrop') {
+    const hlog = $('helpChatLog');
+    if (hlog) hlog.innerHTML = '';
+    const hinp = $('helpAskInput');
+    if (hinp) hinp.value = '';
+    setHelpCenterTab('home');
+  }
   if (id === 'cronModalBackdrop') {
     cronModalEditId = null;
     const saveBtn = $('saveCronBtn');
@@ -7616,8 +8914,201 @@ function closeModal(id) {
 }
 
 function openTokenUsageModal() {
-  renderTokenUsageModal();
+  setTokenUsageTab('provider');
+  void renderTokenUsageModal();
   $('tokenUsageBackdrop').classList.add('open');
+}
+
+let _helpGuideTopicsData = [];
+
+function wireHelpCenterTabsOnce() {
+  const root = $('helpGuideBackdrop');
+  if (!root || root.dataset.tabsWired) return;
+  root.dataset.tabsWired = '1';
+  root.addEventListener('click', (e) => {
+    const tbtn = e.target.closest('[data-help-tab]');
+    if (!tbtn) return;
+    const tab = tbtn.getAttribute('data-help-tab');
+    if (!tab || !['home', 'topics', 'faq', 'ask'].includes(tab)) return;
+    if (tbtn.classList.contains('help-center-tab') || tbtn.classList.contains('help-topic-card')) {
+      setHelpCenterTab(tab);
+    }
+  });
+}
+
+function setHelpCenterTab(tab) {
+  const root = $('helpGuideBackdrop');
+  if (!root) return;
+  const norm = ['home', 'topics', 'faq', 'ask'].includes(tab) ? tab : 'home';
+  root.querySelectorAll('.help-center-panel').forEach((p) => {
+    p.classList.toggle('active', p.getAttribute('data-help-panel') === norm);
+  });
+  root.querySelectorAll('.help-center-tab').forEach((b) => {
+    const on = b.getAttribute('data-help-tab') === norm;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+}
+
+function scrollHelpTopicIntoView(id) {
+  if (!id) return;
+  const main = $('helpGuideContent');
+  const el = main ? main.querySelector('#' + id.replace(/[^a-z0-9-]/gi, '')) : null;
+  if (el && typeof el.scrollIntoView === 'function') {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      el.style.outline = '2px solid var(--accent)';
+      setTimeout(() => {
+        el.style.outline = '';
+      }, 1400);
+    } catch (_) {}
+  }
+}
+
+function fillHelpTopicNav(topics) {
+  const nav = $('helpTopicNav');
+  if (!nav) return;
+  nav.innerHTML = '';
+  (topics || []).forEach((t) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = t.title;
+    b.addEventListener('click', () => scrollHelpTopicIntoView(t.id));
+    nav.appendChild(b);
+  });
+}
+
+function applyHelpGuideHeadingIds(container, topics) {
+  if (!container || !topics || !topics.length) return;
+  const h2s = container.querySelectorAll('h2');
+  topics.forEach((t, i) => {
+    if (i < h2s.length && t.id) h2s[i].id = t.id;
+  });
+}
+
+function renderHelpHomeShortcuts(topics) {
+  const box = $('helpHomeShortcuts');
+  if (!box) return;
+  box.innerHTML = '';
+  const slice = (topics || []).slice(0, 10);
+  slice.forEach((t) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'help-home-shortcut';
+    b.textContent = t.title;
+    b.addEventListener('click', () => {
+      setHelpCenterTab('topics');
+      requestAnimationFrame(() => scrollHelpTopicIntoView(t.id));
+    });
+    box.appendChild(b);
+  });
+}
+
+async function openHelpGuideModal() {
+  wireHelpCenterTabsOnce();
+  const bd = $('helpGuideBackdrop');
+  const content = $('helpGuideContent');
+  const faqBody = $('helpFaqBody');
+  const hinp = $('helpAskInput');
+  const errEl = document.querySelector('#helpPanelHome .help-home-load-err');
+  if (!bd) return;
+  setHelpCenterTab('home');
+  bd.classList.add('open');
+  if (errEl) errEl.textContent = '';
+  if (content) content.innerHTML = '<p style="color:var(--muted);margin:0">Loading…</p>';
+  if (faqBody) faqBody.innerHTML = '<p style="color:var(--muted);margin:0">Loading…</p>';
+  fillHelpTopicNav([]);
+  renderHelpHomeShortcuts([]);
+  _helpGuideTopicsData = [];
+  try {
+    const r = await fetch('/api/help/guide', { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) {
+      const msg = String((j && j.error) || 'Could not load guide.');
+      if (content) content.innerHTML = '<p style="color:var(--danger);margin:0">' + esc(msg) + '</p>';
+      if (faqBody) faqBody.innerHTML = '';
+      if (errEl) errEl.textContent = msg;
+      return;
+    }
+    const tmd = String(j.topics_markdown || j.full_markdown || j.markdown || '');
+    const faqMd = String(j.faq_markdown || '');
+    _helpGuideTopicsData = Array.isArray(j.topics) ? j.topics : [];
+    if (content) {
+      content.innerHTML = marked.parse(tmd, { breaks: true, gfm: true });
+      applyHelpGuideHeadingIds(content, _helpGuideTopicsData);
+    }
+    if (faqBody) {
+      faqBody.innerHTML = faqMd
+        ? marked.parse(faqMd, { breaks: true, gfm: true })
+        : '<p style="color:var(--muted);margin:0">No FAQ section in the guide yet. Use <b>Topics</b> or <b>Ask ANIMUS</b>.</p>';
+    }
+    fillHelpTopicNav(_helpGuideTopicsData);
+    renderHelpHomeShortcuts(_helpGuideTopicsData);
+  } catch (e) {
+    const msg = e && e.message ? e.message : 'Load failed';
+    if (content) content.innerHTML = '<p style="color:var(--danger);margin:0">' + esc(msg) + '</p>';
+    if (errEl) errEl.textContent = msg;
+  }
+  if (hinp) hinp.focus();
+}
+
+function appendHelpChatMessage(kind, text) {
+  const hlog = $('helpChatLog');
+  if (!hlog || text == null) return;
+  const d = document.createElement('div');
+  d.className = 'help-chat-msg ' + (kind === 'user' ? 'user' : 'bot');
+  if (kind === 'user') d.textContent = String(text);
+  else d.innerHTML = marked.parse(String(text), { breaks: true, gfm: true });
+  hlog.appendChild(d);
+  hlog.scrollTop = hlog.scrollHeight;
+}
+
+async function submitHelpAsk() {
+  const inp = $('helpAskInput');
+  const q = (inp && inp.value.trim()) || '';
+  if (!q) return;
+  if (inp) inp.value = '';
+  appendHelpChatMessage('user', q);
+  const be = chatBackendPayload();
+  const payload = {
+    question: q,
+    model: effectiveChatModelId(),
+    hermes_provider: be.hermes_provider,
+    hermes_base_url: be.hermes_base_url || '',
+  };
+  const btn = $('helpAskBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/help/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) {
+      const d = document.createElement('div');
+      d.className = 'help-chat-msg bot help-chat-err';
+      d.textContent = String((j && j.error) || r.statusText || 'Request failed');
+      const hlog = $('helpChatLog');
+      if (hlog) {
+        hlog.appendChild(d);
+        hlog.scrollTop = hlog.scrollHeight;
+      }
+      return;
+    }
+    appendHelpChatMessage('bot', String(j.answer || ''));
+  } catch (e) {
+    const d = document.createElement('div');
+    d.className = 'help-chat-msg bot help-chat-err';
+    d.textContent = e && e.message ? e.message : String(e);
+    const hlog = $('helpChatLog');
+    if (hlog) {
+      hlog.appendChild(d);
+      hlog.scrollTop = hlog.scrollHeight;
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 document.querySelectorAll('[data-close]').forEach(btn => {
@@ -7855,6 +9346,46 @@ async function runWizardIfNeeded() {
     let step = 0;
     const nSteps = 8;
 
+    const wizPhoneLike = () => {
+      try {
+        const ua = navigator.userAgent || '';
+        if (/Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
+        if (
+          typeof navigator.maxTouchPoints === 'number' &&
+          navigator.maxTouchPoints > 0 &&
+          window.matchMedia &&
+          window.matchMedia('(max-width: 768px)').matches
+        ) {
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    };
+    const wizOfferDesktopLauncher = () => {
+      if (wizPhoneLike()) return;
+      try {
+        if (localStorage.getItem('animus_desktop_launcher_offered_v1') === '1') return;
+        localStorage.setItem('animus_desktop_launcher_offered_v1', '1');
+      } catch (_) {}
+      try {
+        const isMac = /Macintosh|Mac OS X|MacIntel/.test(navigator.userAgent || '');
+        const href = isMac
+          ? '/api/animus/desktop-launcher?fmt=webloc'
+          : '/api/animus/desktop-launcher';
+        const a = document.createElement('a');
+        a.href = href;
+        a.download = isMac ? 'ANIMUS.webloc' : 'animus.desktop';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          try {
+            a.remove();
+          } catch (_) {}
+        }, 0);
+      } catch (_) {}
+    };
+
     const done = () => {
       shell.style.display = 'none';
       resolve();
@@ -7872,7 +9403,9 @@ async function runWizardIfNeeded() {
       if (step === 0) {
         content.innerHTML =
           '<div style="text-align:center">' +
-          '<img src="/icon.svg" width="56" height="56" alt="" style="margin-bottom:12px" />' +
+          '<div style="position:relative;height:126px;margin:0 auto 12px auto;width:100%;max-width:min(92vw,320px);overflow:visible">' +
+          '<img src="/ANIMUSLOGOICON.png?v=animus-icon-4" width="1254" height="1254" alt="" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:189px;height:189px;object-fit:contain;pointer-events:none" />' +
+          '</div>' +
           '<h2 style="margin:0 0 10px;font-size:1.35rem">Welcome to ANIMUS</h2>' +
           '<p style="color:var(--muted);margin:0;text-align:left">ANIMUS is a self-hosted workspace: chat, ' +
           'projects on disk, scheduled cron jobs, and skills — powered by Hermes Agent behind this UI.</p></div>';
@@ -7886,7 +9419,7 @@ async function runWizardIfNeeded() {
       }
 
       if (step === 1) {
-        content.innerHTML = '<p class="cron-empty">Checking Hermes Agent…</p>';
+        content.innerHTML = '<p class="cron-empty">Checking agent…</p>';
         const runH = async () => {
           const r = await fetch('/api/setup/hermes-check', { cache: 'no-store' });
           const j = await r.json().catch(() => ({}));
@@ -7894,14 +9427,11 @@ async function runWizardIfNeeded() {
           st.hermesVer = String(j.version || '').trim();
           st.hermesErr = String(j.error || '').trim();
           const okBlock = st.hermesOk
-            ? '<p style="color:var(--success);margin:0 0 8px">✓ Hermes Agent is reachable.</p><pre style="font-size:12px;white-space:pre-wrap;margin:0">' +
-              esc(st.hermesVer || 'unknown') +
-              '</pre>'
-            : '<p style="color:var(--danger);margin:0 0 8px">✗ Hermes check failed</p><p style="margin:0 0 8px">' +
+            ? '<p style="color:var(--success);margin:0">✓ Agent is reachable.</p>'
+            : '<p style="color:var(--danger);margin:0 0 8px">✗ Agent check failed</p><p style="margin:0 0 8px">' +
               esc(st.hermesErr || 'Unknown error') +
-              '</p><p style="color:var(--muted);margin:0;font-size:13px">Install Hermes Agent on this host and run ' +
-              '<code>hermes --version</code> in a terminal to verify.</p>';
-          content.innerHTML = '<h3 style="margin-top:0">Hermes Agent</h3>' + okBlock;
+              '</p><p style="color:var(--muted);margin:0;font-size:13px">Install the Hermes Agent CLI on this host, ensure it is on <code>PATH</code>, then use Re-check.</p>';
+          content.innerHTML = '<h3 style="margin-top:0">Agent check</h3>' + okBlock;
           nav.innerHTML =
             '<button type="button" class="btn btn-ghost" id="wizBack">← Back</button>' +
             '<button type="button" class="btn btn-ghost" id="wizRecheck">Re-check</button>' +
@@ -8399,6 +9929,7 @@ async function runWizardIfNeeded() {
             if (note) {
               note.textContent = j && j.ok === false ? String(j.error || 'Update failed').slice(0, 400) : (raw || 'Done.').slice(0, 400);
             }
+            if (j && j.ok !== false) recordTokenUsageManualIfPresent(j.usage, { source: 'skill', source_id: 'wizard-update-all' });
             if (!String(note && note.textContent).includes('0 ') && !raw.toLowerCase().includes('no ')) {
               /* keep list */
             }
@@ -8447,25 +9978,17 @@ async function runWizardIfNeeded() {
           '<h3 style="margin-top:0">Projects folder</h3>' +
           '<p style="color:var(--muted);font-size:14px">ANIMUS organises your work into projects. Point it at a folder on your machine.</p>' +
           '<label style="display:block;font-size:13px;margin-bottom:6px">Projects folder path</label>' +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-          '<input type="text" id="wizProjectsPath" class="skills-search" style="flex:1;min-width:220px" value="' +
+          '<input type="text" id="wizProjectsPath" class="skills-search" style="width:100%;max-width:100%;box-sizing:border-box" value="' +
           esc(defProj || '') +
           '" autocomplete="off" />' +
-          '<button type="button" class="btn btn-ghost" id="wizProjBrowse">Browse</button></div>' +
-          '<p id="wizProjPathStatus" style="font-size:12px;color:var(--muted);margin-top:8px;min-height:1.2em"></p>';
+          '<p id="wizProjPathStatus" style="font-size:12px;color:var(--muted);margin-top:8px;min-height:1.2em"></p>' +
+          '<small style="display:block;color:var(--muted2);margin-top:6px">Type the full path on the server, e.g. <code>/home/sketch/projects</code></small>';
         const inp = $('wizProjectsPath');
         if (inp && !inp.value) inp.value = '~/projects';
         nav.innerHTML =
           '<button type="button" class="btn btn-ghost" id="wizBack">← Back</button>' +
           '<button type="button" class="btn btn-ghost" id="wizProjSkip">Skip — I\'ll set this up later</button>' +
           '<button type="button" class="btn btn-primary" id="wizNext">Continue →</button>';
-        $('wizProjBrowse').addEventListener('click', () => {
-          const stEl = $('wizProjPathStatus');
-          if (stEl) {
-            stEl.textContent =
-              'Type the full path to your projects folder on the server, e.g. /home/yourname/projects (Browse is not available in the PWA).';
-          }
-        });
         $('wizBack').addEventListener('click', () => {
           step--;
           void paint();
@@ -8672,6 +10195,7 @@ async function runWizardIfNeeded() {
         try {
           await fetch('/api/setup/complete', { method: 'POST' });
         } catch (_) {}
+        wizOfferDesktopLauncher();
         done();
       });
     };
@@ -8696,38 +10220,41 @@ const _pwsIn = $('projWorkspaceFilesInput');
 if (_pwsIn) _pwsIn.addEventListener('input', e => validateWorkspaceFilesPath(e.target.value.trim()));
 $('projNameInput').addEventListener('input', updateSaveBtn);
 
-$('browseBtn').addEventListener('click', async () => {
-  const browser = $('fileBrowser');
-  if (browser.classList.contains('open')) { browser.classList.remove('open'); return; }
-  browser.classList.add('open');
-  await loadDir($('projPathInput').value.trim() || '~');
-});
-$('fbUp').addEventListener('click', e => { if (e.currentTarget.dataset.path) loadDir(e.currentTarget.dataset.path); });
-$('fbSelectBtn').addEventListener('click', () => {
-  $('projPathInput').value = fbCwd; validatePath(fbCwd); $('fileBrowser').classList.remove('open');
-});
-
 $('saveProjectBtn').addEventListener('click', async () => {
   const name = $('projNameInput').value.trim();
-  const path = $('projPathInput').value.trim();
+  let path = $('projPathInput').value.trim();
   const workspace_files_path = ($('projWorkspaceFilesInput') && $('projWorkspaceFilesInput').value.trim()) || '';
-  if (!name || !path) return;
   const ssh_remote = !!($('projSshRemote') && $('projSshRemote').checked);
+  const alias = ($('projSshHostSelect') && $('projSshHostSelect').value.trim()) || '';
+  const rpath = ($('projRemoteProjectPath') && $('projRemoteProjectPath').value.trim()) || '';
   const sshPayload = ssh_remote
     ? {
         ssh_remote: true,
-        ssh_user: ($('projSshUser') && $('projSshUser').value.trim()) || '',
-        ssh_host: ($('projSshHost') && $('projSshHost').value.trim()) || '',
-        ssh_port: ($('projSshPort') && $('projSshPort').value.trim()) || '',
-        ssh_identity_file: ($('projSshIdentityFile') && $('projSshIdentityFile').value.trim()) || '',
+        ssh_host_alias: alias,
+        ssh_remote_project_path: rpath,
+        ssh_user: '',
+        ssh_host: '',
+        ssh_port: '',
+        ssh_identity_file: '',
       }
     : {
         ssh_remote: false,
+        ssh_host_alias: '',
+        ssh_remote_project_path: '',
         ssh_user: '',
         ssh_host: '',
         ssh_port: '',
         ssh_identity_file: '',
       };
+  if (ssh_remote) {
+    if (!alias || !rpath) {
+      alert('Select an SSH host and enter the remote project path.');
+      return;
+    }
+    path = deriveSshLocalProjectPath(alias, rpath);
+    if ($('projPathInput')) $('projPathInput').value = path;
+  }
+  if (!name || !path) return;
   await saveProject({
     name,
     path,
@@ -8736,40 +10263,45 @@ $('saveProjectBtn').addEventListener('click', async () => {
     color: selectedColor,
     ...sshPayload,
   });
+  const lastPid = modalEditProjId || projects[projects.length - 1]?.id;
+  const goalTxt = ($('projOverview') && $('projOverview').value.trim()) || '';
+  if (lastPid && goalTxt) {
+    try { await syncProjectGoalFile(lastPid, goalTxt); } catch (_) {}
+  }
   closeModal('projModalBackdrop');
   if (viewProjectId) void loadCron();
 });
 
 $('projSshRemote').addEventListener('change', updateProjSshFieldsVisibility);
+$('projSshHostSelect')?.addEventListener('change', () => syncProjSshDerivedPath());
+$('projRemoteProjectPath')?.addEventListener('input', () => syncProjSshDerivedPath());
+$('projSshAddHostBtn')?.addEventListener('click', () => {
+  closeModal('projModalBackdrop');
+  document.querySelector('.stab[data-tab="settings"]')?.click();
+  setTimeout(() => {
+    $('sshHostModalBackdrop')?.classList.add('open');
+  }, 200);
+});
 
 $('projSshTestBtn').addEventListener('click', async () => {
   const st = $('projSshTestStatus');
   if (st) st.textContent = 'Testing…';
-  const user = ($('projSshUser') && $('projSshUser').value.trim()) || '';
-  const host = ($('projSshHost') && $('projSshHost').value.trim()) || '';
-  const portRaw = ($('projSshPort') && $('projSshPort').value.trim()) || '';
-  const identity_file = ($('projSshIdentityFile') && $('projSshIdentityFile').value.trim()) || '';
-  if (!user || !host) {
-    if (st) st.textContent = 'Enter SSH user and host first.';
+  const alias = ($('projSshHostSelect') && $('projSshHostSelect').value.trim()) || '';
+  if (!alias) {
+    if (st) st.textContent = 'Select a configured SSH host first (Settings → Connections).';
     return;
   }
   try {
-    const r = await fetch('/api/project-ssh-test', {
+    const r = await fetch('/api/ssh/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user,
-        host,
-        port: portRaw || null,
-        identity_file: identity_file || undefined,
-      }),
+      body: JSON.stringify({ alias }),
     });
     const j = await r.json().catch(() => ({}));
     if (j && j.ok) {
-      if (st) st.textContent = (j.message || 'OK') + (j.stderr ? '\n' + j.stderr : '');
+      if (st) st.textContent = '✓ SSH OK';
     } else {
-      const det = (j && j.detail) ? '\n' + j.detail : '';
-      if (st) st.textContent = (j && j.error ? j.error : 'Request failed') + det;
+      if (st) st.textContent = '✗ ' + String((j && j.error) || 'failed');
     }
   } catch (e) {
     if (st) st.textContent = e && e.message ? e.message : String(e);
@@ -8866,7 +10398,7 @@ $('projOpenGoal').addEventListener('click', () => { openProjWorkspaceModal('proj
     const wasCollapsed = isNotifSectionCollapsed(viewProjectId);
     setNotifSectionCollapsed(viewProjectId, !wasCollapsed);
     if (wasCollapsed && !isNotifSectionCollapsed(viewProjectId)) {
-      markProjectNotifsRead(viewProjectId);
+      markAllProjectNotifConvsRead(viewProjectId);
     }
     syncNotifSectionUi();
   });
@@ -9223,6 +10755,78 @@ function pickBritishMaleSpeechVoice() {
   if (fallback) return fallback;
   return pickSpeechVoice();
 }
+
+function pickBritishFemaleSpeechVoice() {
+  if (!window.speechSynthesis) return null;
+  const voices = speechSynthesis.getVoices();
+  if (!voices || !voices.length) return null;
+  let best = null;
+  let bestSc = -1e9;
+  for (const v of voices) {
+    const lang = (v.lang || '').toLowerCase().replace('_', '-');
+    if (!lang.startsWith('en')) continue;
+    const n = (v.name || '').toLowerCase();
+    let s = scoreTtsVoice(v);
+    if (lang === 'en-gb' || lang.startsWith('en-gb-')) s += 210;
+    else if (n.includes('united kingdom') || /\buk\b/.test(n) || n.includes('british')) s += 95;
+    if (/\bfemale\b/.test(n)) s += 170;
+    if (ttsVoiceSoundsFemaleByName(v.name)) s += 120;
+    if (ttsVoiceSoundsMaleByName(v.name) && !ttsVoiceSoundsFemaleByName(v.name)) s -= 130;
+    if (/\bmale\b/.test(n) && !ttsVoiceSoundsFemaleByName(v.name)) s -= 160;
+    if (s > bestSc) {
+      bestSc = s;
+      best = v;
+    }
+  }
+  if (best && bestSc > -5e8) return best;
+  return pickSpeechVoice();
+}
+
+/**
+ * @param {'us'|'au'} region
+ * @param {boolean} genderFemale
+ */
+function pickEnglishRegionalGenderVoice(region, genderFemale) {
+  if (!window.speechSynthesis) return null;
+  const voices = speechSynthesis.getVoices();
+  if (!voices || !voices.length) return null;
+  let best = null;
+  let bestSc = -1e9;
+  for (const v of voices) {
+    const lang = (v.lang || '').toLowerCase().replace('_', '-');
+    if (!lang.startsWith('en')) continue;
+    const n = (v.name || '').toLowerCase();
+    let regionHit = false;
+    if (region === 'au') {
+      regionHit = lang === 'en-au' || lang.startsWith('en-au-') || n.includes('australia') || n.includes('australian');
+    } else {
+      regionHit =
+        lang === 'en-us' ||
+        lang.startsWith('en-us-') ||
+        n.includes('united states') ||
+        n.includes('american') ||
+        /\bus english\b/.test(n);
+    }
+    if (!regionHit) continue;
+    let s = scoreTtsVoice(v);
+    const f = ttsVoiceSoundsFemaleByName(v.name);
+    const m = ttsVoiceSoundsMaleByName(v.name);
+    if (genderFemale) {
+      if (f) s += 150;
+      if (m && !f) s -= 90;
+    } else {
+      if (m) s += 150;
+      if (f && !m) s -= 90;
+    }
+    if (s > bestSc) {
+      bestSc = s;
+      best = v;
+    }
+  }
+  if (best) return best;
+  return pickSpeechVoice();
+}
+
 function normSpeechLang(l) {
   return String(l || '').toLowerCase().replace(/_/g, '-').split('-').slice(0, 2).join('-');
 }
@@ -9354,6 +10958,11 @@ function resolveReadAloudVoice() {
     if (fb) return fb;
   }
   if (pref === 'auto:quality_en') return pickSpeechVoice();
+  if (pref === 'auto:british_female') return pickBritishFemaleSpeechVoice();
+  if (pref === 'auto:us_male') return pickEnglishRegionalGenderVoice('us', false);
+  if (pref === 'auto:us_female') return pickEnglishRegionalGenderVoice('us', true);
+  if (pref === 'auto:au_male') return pickEnglishRegionalGenderVoice('au', false);
+  if (pref === 'auto:au_female') return pickEnglishRegionalGenderVoice('au', true);
   return pickBritishMaleSpeechVoice();
 }
 function ttsVoiceWaitBudgetMs(overrideMs) {
@@ -9425,6 +11034,7 @@ function updateTtsButtonState(speaking) {
   }
 }
 function cancelTtsPlayback() {
+  _stopPiperAudio();
   if (!window.speechSynthesis) return;
   try { speechSynthesis.cancel(); } catch (_) {}
   updateTtsButtonState(false);
@@ -9432,7 +11042,8 @@ function cancelTtsPlayback() {
 function syncTtsReadBtn() {
   const b = $('ttsReadBtn');
   if (!b) return;
-  const speaking = window.speechSynthesis && speechSynthesis.speaking;
+  const piperPlaying = _piperAudioEl && !_piperAudioEl.paused && !_piperAudioEl.ended;
+  const speaking = (window.speechSynthesis && speechSynthesis.speaking) || piperPlaying;
   const has = !!getLastAssistantSpeechSource().trim();
   b.disabled = !has && !speaking;
   if (!has && !speaking) {
@@ -9444,12 +11055,55 @@ function syncTtsReadBtn() {
     updateTtsButtonState(false);
   }
 }
+async function tryReadAloudPiper(plain) {
+  await fetchTtsBackendsOnce();
+  if (!_ttsHasPiper || settings.tts_backend !== 'piper') return false;
+  const voice = (settings.tts_piper_voice || '').trim();
+  if (!voice) return false;
+  try {
+    const r = await fetch('/api/tts/piper/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: plain.slice(0, 120000), voice }),
+    });
+    if (!r.ok) return false;
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    _stopPiperAudio();
+    const a = new Audio(url);
+    _piperAudioEl = a;
+    updateTtsButtonState(true);
+    a.addEventListener('ended', () => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+      _piperAudioEl = null;
+      updateTtsButtonState(false);
+      syncTtsReadBtn();
+    });
+    a.addEventListener('error', () => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+      _piperAudioEl = null;
+      updateTtsButtonState(false);
+      syncTtsReadBtn();
+    });
+    await a.play();
+    return true;
+  } catch (_) {
+    _stopPiperAudio();
+    return false;
+  }
+}
+
 async function onTtsReadClick() {
-  if (!window.speechSynthesis) {
-    alert('Read-aloud needs a browser with text-to-speech (Web Speech API), for example Chrome or Edge.');
+  if (_piperAudioEl && !_piperAudioEl.paused) {
+    cancelTtsPlayback();
+    syncTtsReadBtn();
     return;
   }
-  if (speechSynthesis.speaking) {
+  if (window.speechSynthesis && speechSynthesis.speaking) {
     cancelTtsPlayback();
     syncTtsReadBtn();
     return;
@@ -9462,6 +11116,14 @@ async function onTtsReadClick() {
   const plain = markdownToPlainSpeechText(raw);
   if (!plain.trim()) {
     alert('Nothing to read in the last reply.');
+    return;
+  }
+  if (settings.tts_backend === 'piper') {
+    const ok = await tryReadAloudPiper(plain);
+    if (ok) return;
+  }
+  if (!window.speechSynthesis) {
+    alert('Read-aloud needs a browser with text-to-speech (Web Speech API), for example Chrome or Edge — or enable Piper on the server.');
     return;
   }
   await waitForSpeechVoices(900);
@@ -9679,7 +11341,7 @@ if (window.speechSynthesis) {
     try {
       const active = document.querySelector('.stab.active');
       if (active && active.dataset.tab === 'settings') {
-        renderTtsSettings();
+        void renderTtsSettings();
         renderSidebarRailSettings();
       }
     } catch (_) {}
@@ -9714,10 +11376,18 @@ if (window.speechSynthesis) {
         settings.inference_models = { ...settings.inference_models, ...cj.inference_models };
         save();
       }
+      if (cj.cron_timezone != null && String(cj.cron_timezone).trim()) {
+        settings.cron_timezone = String(cj.cron_timezone).trim();
+        save();
+      }
+      if (cj.tts_backend === 'browser' || cj.tts_backend === 'piper') {
+        settings.tts_backend = cj.tts_backend;
+        save();
+      }
     }
   } catch (_) {}
 
-  fillCronTimezoneDatalist();
+  void fillCronTimezoneDatalist(false);
   // Load convs and projects from server (source of truth); fall back to localStorage
   try {
     const exRes = await fetch('/api/project-sync-exclusions');
@@ -9781,6 +11451,7 @@ if (window.speechSynthesis) {
   save();
   renderNotificationSettings();
   renderChatModelSettings();
+  wireSlackSshSettingsOnce();
   renderProjectList(); renderSidebar(); renderMessages(); updateHeader();
 })();
 

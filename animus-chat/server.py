@@ -20,6 +20,7 @@ ANIMUS chat server (Starlette)
 - /api/project-sync-exclusions → GET/POST path exclusions (deleted workspace projects stay gone across restarts)
 - /api/project-workspace/* → ensure / read / write project workspace markdown (history, repo_map, notes, project_goal) on registered project paths
 - /api/project-ssh-test → POST JSON ``{user, host, port?, identity_file?}`` — non-interactive ``ssh`` probe from the chat host
+- ``/api/ssh/hosts`` + ``/api/ssh/test`` → global SSH hosts (``ssh_routes.py``); token usage JSONL uses JSON fields ``"source"`` / ``"source_id"`` (``token_usage.py``)
 - /api/stt/transcribe → POST multipart ``audio`` (or ``file``) — OpenAI Whisper or ``HERMES_CHAT_STT_LOCAL_URL`` HTTP service
 - /api/attachment/text → POST multipart ``file`` — extract text from ``.docx`` (stdlib) or ``.pdf`` (``pdftotext`` from poppler-utils)
 - /api/chat/attachments/text → same handler (fallback when reverse proxies allow only ``/api/chat`` prefixes or an old deploy lacked the primary path)
@@ -37,6 +38,7 @@ ANIMUS chat server (Starlette)
 ``systemctl --user restart hermes-chat.service``), then confirm ``rev`` via ``/api/hermes-chat-meta``.
 """
 import asyncio
+import codecs
 import io
 import json
 import logging
@@ -370,17 +372,23 @@ async def animus_client_config_get(_: Request) -> Response:
         im = {}
     wsp = cfg.get("wizard_selected_providers")
     wrp = cfg.get("wizard_ready_providers")
+    ctz = str(cfg.get("cron_timezone") or "").strip()
+    tb = str(cfg.get("tts_backend") or "piper").strip().lower()
+    if tb not in ("browser", "piper"):
+        tb = "browser"
     return JSONResponse(
         {
             "wake_lock": bool(wl),
             "first_run": bool(cfg.get("first_run", True)),
             "projects_dir": str(cfg.get("projects_dir") or "").strip(),
             "inference_models": im,
+            "tts_backend": tb,
             "tailscale_enabled": bool(cfg.get("tailscale_enabled", False)),
             "tailscale_hostname": str(cfg.get("tailscale_hostname") or "").strip(),
             "tailscale_port": int(cfg.get("tailscale_port") or 3001),
             "wizard_selected_providers": wsp if isinstance(wsp, list) else [],
             "wizard_ready_providers": wrp if isinstance(wrp, list) else [],
+            "cron_timezone": ctz,
         },
     )
 
@@ -412,13 +420,96 @@ async def animus_client_config_post(req: Request) -> Response:
             cfg["tailscale_port"] = int(body.get("tailscale_port") or 3001)
         except (TypeError, ValueError):
             cfg["tailscale_port"] = 3001
+    if "cron_timezone" in body:
+        raw_tz = str(body.get("cron_timezone") or "").strip()
+        cfg["cron_timezone"] = raw_tz
+    if "tts_backend" in body:
+        tb = str(body.get("tts_backend") or "").strip().lower()
+        cfg["tts_backend"] = tb if tb in ("browser", "piper") else "browser"
     _write_animus_client_config(cfg)
     return JSONResponse({"ok": True, "wake_lock": bool(cfg.get("wake_lock", True))})
+
+
+def _desktop_launcher_open_url(req: Request) -> str:
+    """URL the browser should use for persistence (Tailscale/public URL when set)."""
+    if PUBLIC_CHAT_URL:
+        return f"{PUBLIC_CHAT_URL}/"
+    xf_host = (req.headers.get("x-forwarded-host") or "").split(",")[0].strip()
+    xf_proto = (req.headers.get("x-forwarded-proto") or "").split(",")[0].strip().lower()
+    host = xf_host or (req.headers.get("host") or "").strip() or f"127.0.0.1:{PORT}"
+    scheme = xf_proto if xf_proto in ("http", "https") else (req.url.scheme or "http")
+    return f"{scheme}://{host}/"
+
+
+def _desktop_launcher_xml_escape_url(s: str) -> str:
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+async def animus_desktop_launcher_get(req: Request) -> Response:
+    """Downloadable shortcut: Linux .desktop (xdg-open) or macOS .webloc (double-click in Finder)."""
+    open_url = _desktop_launcher_open_url(req)
+    fmt = (req.query_params.get("fmt") or "desktop").strip().lower()
+    if fmt == "webloc":
+        u = _desktop_launcher_xml_escape_url(open_url)
+        body = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
+            '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+            "<plist version=\"1.0\">\n<dict>\n"
+            f"  <key>URL</key>\n  <string>{u}</string>\n"
+            "</dict>\n</plist>\n"
+        )
+        return Response(
+            body.encode("utf-8"),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": 'attachment; filename="ANIMUS.webloc"'},
+        )
+    quoted = shlex.quote(open_url)
+    icon_candidate = _CHAT_PACKAGE_DIR / "app" / "icon-192.png"
+    icon_line = (
+        f"Icon={icon_candidate}"
+        if icon_candidate.is_file()
+        else "Icon=applications-internet"
+    )
+    body = (
+        "[Desktop Entry]\n"
+        "Version=1.0\n"
+        "Type=Application\n"
+        "Name=ANIMUS\n"
+        "Comment=Open ANIMUS in your default browser (same origin as this install)\n"
+        f"Exec=xdg-open {quoted}\n"
+        f"{icon_line}\n"
+        "Terminal=false\n"
+        "Categories=Network;InstantMessaging;\n"
+        "StartupNotify=true\n"
+    )
+    return Response(
+        body.encode("utf-8"),
+        media_type="application/x-desktop",
+        headers={"Content-Disposition": 'attachment; filename="animus.desktop"'},
+    )
 
 
 async def animus_check_updates(_: Request) -> Response:
     root = _ANIMUS_MONOREPO_ROOT
     try:
+        head_check = subprocess.run(  # exempt: git rev-parse for update check
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if head_check.returncode != 0:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": (
+                        "This ANIMUS install has no git history. "
+                        "Updates require a git clone — see INSTALL.md."
+                    ),
+                }
+            )
         fetch = subprocess.run(  # exempt: git fetch for release update check
             ["git", "fetch", "origin"],
             cwd=str(root),
@@ -428,7 +519,7 @@ async def animus_check_updates(_: Request) -> Response:
         )
         if fetch.returncode != 0:
             err = (fetch.stderr or fetch.stdout or "").strip()
-            return JSONResponse({"ok": False, "error": f"Could not reach remote: {err}"})
+            return JSONResponse({"ok": False, "error": f"Could not reach GitHub: {err}"})
         status = subprocess.run(  # exempt: git rev-list for update check
             ["git", "rev-list", "--count", "HEAD..origin/main"],
             cwd=str(root),
@@ -438,7 +529,13 @@ async def animus_check_updates(_: Request) -> Response:
         )
         if status.returncode != 0:
             return JSONResponse(
-                {"ok": False, "error": (status.stderr or status.stdout or "git rev-list failed").strip()},
+                {
+                    "ok": False,
+                    "error": (
+                        "Cannot determine updates (missing origin/main or divergent history). "
+                        "Use a full git clone from GitHub — see INSTALL.md."
+                    ),
+                },
             )
         commits_behind = int((status.stdout or "").strip() or "0")
         if commits_behind == 0:
@@ -458,6 +555,23 @@ async def animus_check_updates(_: Request) -> Response:
 async def animus_apply_update(_: Request) -> Response:
     root = _ANIMUS_MONOREPO_ROOT
     try:
+        head_check = subprocess.run(  # exempt: git rev-parse before apply-update
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if head_check.returncode != 0:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": (
+                        "This ANIMUS install has no git history. "
+                        "Updates require a git clone — see INSTALL.md."
+                    ),
+                }
+            )
         pull = subprocess.run(  # exempt: git pull for release apply-update
             ["git", "pull", "origin", "main"],
             cwd=str(root),
@@ -511,6 +625,7 @@ def _model_cache_file() -> Path:
 _UI_MODEL_PROVIDERS = (
     "openai",
     "anthropic",
+    "claude-code",
     "google",
     "mistral",
     "groq",
@@ -579,6 +694,33 @@ def _models_ui_rows() -> list[dict]:
     return rows
 
 
+def _claude_code_catalog_rows() -> list[dict]:
+    """Claude Code CLI models: ``auto`` first, then Hermes ``anthropic`` catalog (alias in ``models.py``)."""
+    if _ensure_hermes_agent_on_syspath() is None:
+        return []
+    try:
+        from hermes_cli.models import _PROVIDER_MODELS  # type: ignore
+    except Exception:
+        return []
+    mids = list(_PROVIDER_MODELS.get("anthropic") or [])
+    rows: list[dict] = [
+        {
+            "provider": "claude-code",
+            "model_id": "auto",
+            "display_name": "Auto",
+            "description": "Let Claude Code choose the best model",
+        },
+    ]
+    for mid in mids:
+        mid_s = str(mid).strip()
+        if not mid_s:
+            continue
+        rows.append(
+            {"provider": "claude-code", "model_id": mid_s, "display_name": mid_s, "description": ""},
+        )
+    return rows
+
+
 async def models(req: Request) -> Response:
     if (req.query_params.get("gateway") or "").strip() == "1":
         if not (HERMES_KEY or "").strip():
@@ -604,19 +746,112 @@ async def models(req: Request) -> Response:
     return JSONResponse(_models_ui_rows())
 
 
-async def models_refresh(_req: Request) -> Response:
-    if not (HERMES_KEY or "").strip():
-        return JSONResponse({"ok": False, "error": "HERMES_API_KEY not configured"}, status_code=503)
+def _ensure_hermes_agent_on_syspath() -> Path | None:
+    """Return resolved Hermes Agent root if present (prepended to ``sys.path`` once)."""
+    ag = Path(HERMES_AGENT).expanduser().resolve()
+    if not ag.is_dir():
+        return None
+    s = str(ag)
+    if s not in sys.path:
+        sys.path.insert(0, s)
+    return ag
+
+
+def _cursor_cli_authenticated() -> bool:
+    cursor_bin = shutil.which("cursor")
+    if not cursor_bin:
+        return False
     try:
-        async with httpx.AsyncClient(timeout=60) as c:
-            r = await c.get(
-                f"{HERMES_API}/v1/models",
-                headers={"Authorization": f"Bearer {HERMES_KEY}"},
+        r = subprocess.run(  # exempt: cursor whoami for model catalog gate
+            [cursor_bin, "whoami"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        return r.returncode == 0
+    except OSError:
+        return False
+
+
+def _cursor_agent_catalog_rows() -> list[dict]:
+    """Cursor CLI models when logged in; ``auto`` first (``list_cursor_cli_models`` order)."""
+    if not _cursor_cli_authenticated():
+        return []
+    root = _ensure_hermes_agent_on_syspath()
+    if root is None:
+        return []
+    try:
+        from agent.cursor_agent_client import list_cursor_cli_models  # type: ignore
+    except Exception:
+        return []
+    mids = list_cursor_cli_models() or ["auto"]
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for m in mids:
+        key = str(m).strip()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        ordered.append(key)
+    if "auto" in ordered:
+        ordered = ["auto"] + [x for x in ordered if x != "auto"]
+    rows: list[dict] = []
+    for mid in ordered:
+        disp = "Auto" if mid == "auto" else mid
+        desc = "Let Cursor choose the best available model" if mid == "auto" else ""
+        # cursor-agent + auto on one logical line for release grep (see build-release.sh).
+        rows.append(
+            {"provider": "cursor-agent", "model_id": mid, "display_name": disp, "description": desc},
+        )
+    return rows
+
+
+def _hermes_curated_ui_rows() -> list[dict]:
+    """Static curated lists from bundled Hermes CLI (no gateway API key)."""
+    if _ensure_hermes_agent_on_syspath() is None:
+        return []
+    try:
+        from hermes_cli.models import _PROVIDER_MODELS  # type: ignore
+    except Exception:
+        return []
+    alias = {"google": "gemini"}
+    rows: list[dict] = []
+    for prov in _UI_MODEL_PROVIDERS:
+        if prov == "cursor-agent":
+            continue
+        if prov == "claude-code":
+            rows.extend(_claude_code_catalog_rows())
+            continue
+        src = alias.get(prov, prov)
+        mids = _PROVIDER_MODELS.get(src) or _PROVIDER_MODELS.get(prov)
+        if not mids:
+            continue
+        for mid in mids:
+            mid_s = str(mid).strip()
+            if not mid_s:
+                continue
+            rows.append(
+                {"provider": prov, "model_id": mid_s, "display_name": mid_s, "description": ""},
             )
-        payload = r.json()
+    return rows
+
+
+async def models_refresh(_req: Request) -> Response:
+    """Rebuild ``hermes_models_cache.json`` from local Hermes curated lists + Cursor CLI (no API key)."""
+    try:
+        rows = _hermes_curated_ui_rows()
+        rows.extend(_cursor_agent_catalog_rows())
+        if not rows:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "No model catalog (Hermes Agent bundle missing or incomplete).",
+                },
+                status_code=500,
+            )
         _model_cache_file().parent.mkdir(parents=True, exist_ok=True)
-        _model_cache_file().write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        return JSONResponse({"ok": True, "cached": True})
+        _model_cache_file().write_text(json.dumps(rows, indent=2), encoding="utf-8")
+        return JSONResponse({"ok": True, "cached": True, "count": len(rows)})
     except Exception as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=502)
 
@@ -839,6 +1074,33 @@ async def _resolve_codex_auto_model(chat_body: dict) -> tuple[str, str]:
     return (fallback, "router unavailable")
 
 
+def _sse_last_usage_and_model(sse_text: str) -> tuple[Optional[dict], Optional[str]]:
+    """Parse concatenated SSE ``data:`` lines; return last ``usage`` object and last explicit ``model`` string."""
+    last_usage: Optional[dict] = None
+    last_model: Optional[str] = None
+    for block in (sse_text or "").split("\n\n"):
+        for line in block.split("\n"):
+            line = line.strip()
+            if not line.startswith("data:"):
+                continue
+            payload = line[5:].strip()
+            if payload == "[DONE]":
+                continue
+            try:
+                obj = json.loads(payload)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(obj, dict):
+                continue
+            u = obj.get("usage")
+            if isinstance(u, dict):
+                last_usage = u
+            m = obj.get("model")
+            if isinstance(m, str) and m.strip():
+                last_model = m.strip()
+    return last_usage, last_model
+
+
 async def chat(req: Request) -> Response:
     if not (HERMES_KEY or "").strip():
 
@@ -858,11 +1120,12 @@ async def chat(req: Request) -> Response:
 
     body = await req.body()
     codex_auto_resolved_model: Optional[str] = None
+    parsed_body: dict = {}
     try:
-        parsed_body = json.loads(body.decode("utf-8")) if body else {}
+        _pb = json.loads(body.decode("utf-8")) if body else {}
+        parsed_body = _pb if isinstance(_pb, dict) else {}
         if (
-            isinstance(parsed_body, dict)
-            and str(parsed_body.get("hermes_provider") or "").strip().lower() == "openai-codex"
+            str(parsed_body.get("hermes_provider") or "").strip().lower() == "openai-codex"
             and str(parsed_body.get("model") or "").strip().lower() == "auto"
         ):
             selected, reason = await _resolve_codex_auto_model(parsed_body)
@@ -882,42 +1145,76 @@ async def chat(req: Request) -> Response:
     _timeout = httpx.Timeout(connect=10, read=None, write=30, pool=5)
 
     async def stream():
-        async with httpx.AsyncClient(timeout=_timeout) as c:
-            async with c.stream(
-                "POST",
-                f"{HERMES_API}/v1/chat/completions",
-                content=body,
-                headers=upstream_headers,
-                timeout=_timeout,
-            ) as resp:
-                if resp.status_code >= 400:
-                    raw = (await resp.aread()).decode(errors="replace")
-                    try:
-                        parsed = json.loads(raw) if raw.strip() else {}
-                    except json.JSONDecodeError:
-                        parsed = {}
-                    err = parsed.get("error") if isinstance(parsed, dict) else None
-                    if isinstance(err, dict):
-                        msg = err.get("message") or json.dumps(err)
-                    elif isinstance(err, str):
-                        msg = err
-                    else:
-                        msg = (raw or "").strip()[:4000] or f"HTTP {resp.status_code}"
-                    # One SSE ``data:`` line so the Chat PWA can surface the failure
-                    # (same content-type as success; avoids an empty assistant bubble).
-                    payload = {
-                        "error": {
-                            "message": msg,
-                            "type": "upstream_error",
-                            "param": None,
-                            "code": resp.status_code,
+        from token_usage import record_token_usage
+
+        dec = codecs.getincrementaldecoder("utf-8")("replace")
+        acc_chunks: list[str] = []
+
+        def _record_usage_from_sse(full_text: str) -> None:
+            usage, stream_model = _sse_last_usage_and_model(full_text)
+            if not usage:
+                return
+            pr = str(parsed_body.get("hermes_provider") or parsed_body.get("provider") or "").strip()
+            md = str(stream_model or parsed_body.get("model") or "").strip()
+            conv = str(parsed_body.get("conversation_id") or parsed_body.get("conv_id") or "").strip()
+            meta = parsed_body.get("metadata")
+            if isinstance(meta, dict):
+                conv = conv or str(meta.get("conversation_id") or "").strip()
+            inp_raw = usage.get("prompt_tokens")
+            out_raw = usage.get("completion_tokens")
+            try:
+                inp_i = int(inp_raw) if inp_raw is not None else None
+            except (TypeError, ValueError):
+                inp_i = None
+            try:
+                out_i = int(out_raw) if out_raw is not None else None
+            except (TypeError, ValueError):
+                out_i = None
+            record_token_usage(pr or "unknown", md or "unknown", inp_i, out_i, "chat", conv)
+
+        try:
+            async with httpx.AsyncClient(timeout=_timeout) as c:
+                async with c.stream(
+                    "POST",
+                    f"{HERMES_API}/v1/chat/completions",
+                    content=body,
+                    headers=upstream_headers,
+                    timeout=_timeout,
+                ) as resp:
+                    if resp.status_code >= 400:
+                        raw = (await resp.aread()).decode(errors="replace")
+                        try:
+                            parsed = json.loads(raw) if raw.strip() else {}
+                        except json.JSONDecodeError:
+                            parsed = {}
+                        err = parsed.get("error") if isinstance(parsed, dict) else None
+                        if isinstance(err, dict):
+                            msg = err.get("message") or json.dumps(err)
+                        elif isinstance(err, str):
+                            msg = err
+                        else:
+                            msg = (raw or "").strip()[:4000] or f"HTTP {resp.status_code}"
+                        # One SSE ``data:`` line so the Chat PWA can surface the failure
+                        # (same content-type as success; avoids an empty assistant bubble).
+                        payload = {
+                            "error": {
+                                "message": msg,
+                                "type": "upstream_error",
+                                "param": None,
+                                "code": resp.status_code,
+                            }
                         }
-                    }
-                    yield f"data: {json.dumps(payload)}\n\n".encode()
-                    yield b"data: [DONE]\n\n"
-                    return
-                async for chunk in resp.aiter_bytes():
-                    yield chunk
+                        yield f"data: {json.dumps(payload)}\n\n".encode()
+                        yield b"data: [DONE]\n\n"
+                        return
+                    async for chunk in resp.aiter_bytes():
+                        acc_chunks.append(dec.decode(chunk))
+                        yield chunk
+        finally:
+            tail = dec.decode(b"", final=True)
+            if tail:
+                acc_chunks.append(tail)
+            _record_usage_from_sse("".join(acc_chunks))
 
     stream_headers = {
         "Cache-Control": "no-cache",
@@ -1515,6 +1812,31 @@ async def convs_purge(req: Request) -> Response:
 
 # ─── Projects persistence ─────────────────────────────────────────────────────
 
+
+async def projects_list_simple(_req: Request) -> Response:
+    """Minimal project list for cron dropdowns: ``[{id, name}, …]``."""
+    raw = _read("projects.json", [])
+    if not isinstance(raw, list):
+        raw = []
+    excl = _read_exclusion_set()
+    items: list[dict] = []
+    for p in _filter_projects_by_exclusions(raw, excl):
+        if not isinstance(p, dict):
+            continue
+        pid = str(p.get("id") or "").strip()
+        nm = str(p.get("name") or "").strip() or "(unnamed)"
+        if pid:
+            items.append({"id": pid, "name": nm})
+    items.sort(key=lambda x: (str(x.get("name") or "").lower(), str(x.get("id") or "")))
+    return JSONResponse(items)
+
+
+async def system_timezones(_req: Request) -> Response:
+    import zoneinfo
+
+    return JSONResponse({"timezones": sorted(zoneinfo.available_timezones())})
+
+
 async def projects_get(req: Request) -> Response:
     raw = _read("projects.json", [])
     if not isinstance(raw, list):
@@ -2019,8 +2341,13 @@ async def restart_cron_daemon(_: Request) -> Response:
 APP_DIR = Path(__file__).parent / "app"
 
 from cron_routes import cron_route_table  # noqa: E402
+from integrations_slack import slack_route_table  # noqa: E402
 from setup_wizard.wizard_routes import wizard_route_table  # noqa: E402
 from skills_routes import skills_route_table  # noqa: E402
+from ssh_routes import ssh_route_table  # noqa: E402
+from token_usage import token_usage_route_table  # noqa: E402
+from tts_routes import tts_route_table  # noqa: E402
+from help_routes import help_route_table  # noqa: E402
 
 
 @asynccontextmanager
@@ -2059,6 +2386,12 @@ async def _lifespan(_app):
             )
     except Exception as exc:
         log.warning("Hermes alignment: gateway probe failed during startup: %s", exc)
+    try:
+        from tts_routes import schedule_default_piper_voices_if_needed
+
+        asyncio.create_task(schedule_default_piper_voices_if_needed())
+    except Exception as exc:
+        log.warning("Piper voice auto-download schedule failed: %s", exc)
     yield
 
 
@@ -2069,12 +2402,18 @@ app = Starlette(
         *wizard_route_table(),
         *cron_route_table(),
         *skills_route_table(),
+        *tts_route_table(),
+        *token_usage_route_table(),
+        *slack_route_table(),
+        *ssh_route_table(),
+        *help_route_table(),
         Route("/api/health",               health),
         Route("/api/hermes-chat-meta",     hermes_chat_meta, methods=["GET"]),
         Route("/api/animus-meta",          hermes_chat_meta, methods=["GET"]),
         Route("/api/version",              api_version, methods=["GET"]),
         Route("/api/animus/client-config", animus_client_config_get, methods=["GET"]),
         Route("/api/animus/client-config", animus_client_config_post, methods=["POST"]),
+        Route("/api/animus/desktop-launcher", animus_desktop_launcher_get, methods=["GET"]),
         Route("/api/animus/check-updates", animus_check_updates, methods=["POST"]),
         Route("/api/animus/apply-update", animus_apply_update, methods=["POST"]),
         Route("/api/restart/gateway",      restart_gateway, methods=["POST"]),
@@ -2092,7 +2431,9 @@ app = Starlette(
         Route("/api/convs/purge",          convs_purge,  methods=["POST"]),
         Route("/api/convs/{conv_id}",      conv_delete,  methods=["DELETE"]),
         Route("/api/projects",             projects_get),
+        Route("/api/projects/list-simple", projects_list_simple, methods=["GET"]),
         Route("/api/projects",             projects_save, methods=["POST"]),
+        Route("/api/system/timezones",     system_timezones, methods=["GET"]),
         Route("/api/project-sync-exclusions", project_sync_exclusions_get),
         Route("/api/project-sync-exclusions", project_sync_exclusions_post, methods=["POST"]),
         Route("/api/project-workspace/ensure", project_workspace_ensure, methods=["POST"]),

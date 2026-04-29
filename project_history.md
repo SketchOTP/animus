@@ -149,3 +149,212 @@ Files touched:
 - project_knowledge.md
 - project_history.md
 
+1545 290426 - Git: initial commit on main, origin→git@github.com:SketchOTP/animus.git; removed nested hermes-agent/.git for flat tree; .gitignore **/*.flock; push blocked here (SSH publickey).
+
+Files touched:
+- .gitignore
+- project_history.md
+
+1132 290426 - check-updates: friendly errors when no git HEAD or missing origin/main; apply-update HEAD guard; install.sh fetch+checkout main; INSTALL troubleshooting; zip cap 55MB in build-release + docs; project_knowledge venv/update notes.
+Files touched:
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- installer/install.sh
+- INSTALL.md
+- build-release.sh
+- project_goal.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- scripts/phase3-smoke-checklist.md
+- project_history.md
+
+1209 290426 - Phase 6: cron async TZ/projects UI, Piper TTS+docs, skills create modal, chatModel Auto for cursor-agent, build-release greps.
+Files touched:
+- animus-chat/app/index.html
+- build-release.sh
+- docs/tts.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+
+1200 290426 - Phase 7: PWA path hints (no Browse), TTS server sync + test phrase, Claude Code models + matrix, token_usage API + chat/cron recording + UI by-source + CSV, Slack + SSH hosts settings/modals, docs/ssh.md, animus.env Slack vars, build-release checks.
+Files touched:
+- animus-chat/server.py
+- animus-chat/token_usage.py
+- animus-chat/integrations_slack.py
+- animus-chat/ssh_routes.py
+- animus-chat/cron_routes.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+- animus.env.example
+- build-release.sh
+- docs/ssh.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1305 290426 - Plan Hermes completions record tokens via POST /api/tokens/record; skill responses hook usage when present; TTS Settings vertical flow (engine, voice, test); v1.1 backlog sshfs auto-mount; project docs.
+Files touched:
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1311 290426 - Startup splash image: serve ANIMUSLOGO.png from app static (synced from repo root asset).
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/ANIMUSLOGO.png
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1313 290426 - Setup wizard welcome screen uses ANIMUSLOGOICON.png (bundled under animus-chat/app).
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/ANIMUSLOGOICON.png
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1314 290426 - Wizard Hermes step: explain why ANIMUS does not auto-run hermes update (patch policy); project_status + project_knowledge.
+Files touched:
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1315 290426 - repo_map: wizard Hermes drift / no auto hermes-update note in app row.
+Files touched:
+- repo_map.md
+- project_history.md
+
+1320 290426 - Setup wizard step 1: title Agent check; success Agent is reachable only; no hermes --version pre dump; failure copy tightened.
+Files touched:
+- animus-chat/app/index.html
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+- project_history.md
+
+1325 290426 - Wizard welcome icon 56px → 84px (+50%); cache bump animus-icon-2.
+Files touched:
+- animus-chat/app/index.html
+- project_history.md
+
+1330 290426 - Wizard welcome icon 84px → 126px (+50%); cache bump animus-icon-3.
+Files touched:
+- animus-chat/app/index.html
+- project_history.md
+
+1335 290426 - Wizard welcome icon: 189px centered in fixed 126px slot so Welcome heading does not shift down.
+Files touched:
+- animus-chat/app/index.html
+- project_history.md
+
+1345 290426 - TTS Read aloud: fix radio layout crushed by global .field input{width:100%}; scoped #ttsBackendRadios overrides.
+Files touched:
+- animus-chat/app/index.html
+- project_history.md
+- project_knowledge.md
+
+1355 290426 - Piper: installer fetch-piper-voices.sh (2 HF voices) wired into install.sh; docs/tts + INSTALL + animus.env.example + UI empty hint; repo_map.
+Files touched:
+- installer/fetch-piper-voices.sh
+- installer/install.sh
+- docs/tts.md
+- INSTALL.md
+- animus.env.example
+- animus-chat/app/index.html
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1410 290426 - Piper: server auto-download default HF voices in background (tts_routes + lifespan); voices API fetching/error; UI poll; docs/INSTALL/repo_map/knowledge.
+Files touched:
+- animus-chat/tts_routes.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- docs/tts.md
+- INSTALL.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1411 290426 - animus.env.example: document SKIP_ANIMUS_PIPER_VOICES for Piper auto-download.
+Files touched:
+- animus.env.example
+- project_history.md
+
+1430 290426 - Piper: six default HF voices; browser TTS: auto presets (UK/US/AU M+F) + other-languages optgroup; docs/install/repo_map/knowledge.
+Files touched:
+- animus-chat/tts_routes.py
+- installer/fetch-piper-voices.sh
+- installer/install.sh
+- animus-chat/app/index.html
+- docs/tts.md
+- INSTALL.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1505 290426 - Settings SSH host modal: scoped radio CSS (#sshFormAuthRadios); IdentitiesOnly + strict host toggles; reset checkboxes on add.
+Files touched:
+- animus-chat/app/index.html
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+
+1525 290426 - Default TTS: Piper + voice en_GB-alan-medium (client + server config default); download/install order; docs/tts.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/server.py
+- animus-chat/tts_routes.py
+- installer/fetch-piper-voices.sh
+- docs/tts.md
+- project_knowledge.md
+- project_history.md
+- project_status.md
+- repo_map.md
+
+1645 290426 - Settings: unread badge + wake lock toggles; per-thread notif unread (accent); HELP modal + docs/animus-user-guide.md + help_routes (/api/help/guide, /api/help/ask).
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/server.py
+- animus-chat/help_routes.py
+- docs/animus-user-guide.md
+- project_knowledge.md
+- project_history.md
+- project_status.md
+- repo_map.md
+
+1712 290426 - Help center: tabbed UI (Home, Topics, FAQ, Ask); GET /api/help/guide returns topics_markdown + faq_markdown + topics[]; guide FAQ section expanded.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/help_routes.py
+- docs/animus-user-guide.md
+- project_knowledge.md
+- project_history.md
+
+1735 290426 - Settings: hr above HELP, remove caption, center HELP button under Token usage.
+Files touched:
+- animus-chat/app/index.html
+- project_history.md
+1812 290426 - Desktop launcher: create-desktop-launcher.sh from install.sh; GET /api/animus/desktop-launcher; wizard one-time download on non-phone; INSTALL + env example.
+
+Files touched:
+- installer/create-desktop-launcher.sh
+- installer/install.sh
+- animus.env.example
+- animus-chat/server.py
+- animus-chat/app/index.html
+- INSTALL.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+

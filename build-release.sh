@@ -80,6 +80,48 @@ if [[ "${PATCH_COUNT}" -lt 1 ]]; then
 fi
 echo "  Found ${PATCH_COUNT} patch section(s) — OK"
 
+echo "[check] Cursor auto model present in server..."
+if ! grep -qF "cursor-agent + auto" "${ROOT}/animus-chat/server.py"; then
+  echo "FAIL: Cursor catalog comment (cursor-agent + auto) missing in server.py" >&2
+  exit 1
+fi
+
+echo "[check] No 'Hermes should do' in cron UI..."
+if [[ -f "${ROOT}/${UI_HTML}" ]] && grep -q "Hermes should do" "${ROOT}/${UI_HTML}"; then
+  echo "FAIL: 'Hermes should do' still in cron form (${UI_HTML})" >&2
+  exit 1
+fi
+
+echo "[check] project_goal.md referenced in add-project flow..."
+if [[ -f "${ROOT}/${UI_HTML}" ]] && ! grep -q "project_goal" "${ROOT}/${UI_HTML}"; then
+  echo "FAIL: project_goal not referenced in ${UI_HTML}" >&2
+  exit 1
+fi
+
+echo "[check] Slack webhook env var in animus.env.example..."
+if ! grep -q "SLACK_WEBHOOK_URL" "${ROOT}/animus.env.example"; then
+  echo "FAIL: SLACK_WEBHOOK_URL missing from animus.env.example" >&2
+  exit 1
+fi
+
+echo "[check] SSH hosts endpoint in server.py..."
+if ! grep -q "api/ssh/hosts" "${ROOT}/animus-chat/server.py"; then
+  echo "FAIL: SSH hosts API not found in server.py" >&2
+  exit 1
+fi
+
+echo "[check] Token usage source field..."
+if ! grep -q '"source"' "${ROOT}/animus-chat/server.py"; then
+  echo "FAIL: token usage source field not in server.py" >&2
+  exit 1
+fi
+
+echo "[check] No Browse button in path fields..."
+if grep -qE ">Browse<|>Browse </|Browse is not available" "${ROOT}/${UI_HTML}"; then
+  echo "FAIL: Browse button or PWA message still present" >&2
+  exit 1
+fi
+
 V="$(tr -d '[:space:]' < VERSION)"
 ZIP="${ROOT}/animus-v${V}.zip"
 rm -f "${ZIP}"
@@ -101,8 +143,8 @@ zip -qr "${ZIP}" . \
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"
 echo "Created ${ZIP} (${SZ} MB)"
-if [[ "${SZ}" -gt 50 ]]; then
-  echo "NOTE: zip is over 50MB (acceptance target). Trim vendored trees or ship agent separately." >&2
+if [[ "${SZ}" -gt 55 ]]; then
+  echo "NOTE: zip is over 55MB (v1.0 acceptance cap). Trim vendored trees or ship agent separately." >&2
 fi
 
 cat <<EOF

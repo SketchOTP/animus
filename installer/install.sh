@@ -10,6 +10,10 @@ if command -v git >/dev/null 2>&1; then
   if ! git -C "${ROOT}" remote get-url origin &>/dev/null; then
     git -C "${ROOT}" remote add origin https://github.com/SketchOTP/animus.git || true
   fi
+  # Ensure main branch tracks origin so check-updates works
+  if git -C "${ROOT}" fetch origin 2>/dev/null; then
+    git -C "${ROOT}" checkout -B main origin/main 2>/dev/null || true
+  fi
 fi
 
 mkdir -p "${ROOT}/animus-chat/data"
@@ -17,6 +21,11 @@ if [[ ! -f "${ROOT}/animus.env" ]]; then
   cp "${ROOT}/animus.env.example" "${ROOT}/animus.env"
   echo "Created ${ROOT}/animus.env — edit HERMES_API_KEY and paths, or use the in-app wizard."
 fi
+
+echo "[ANIMUS] Desktop launcher (skipped on phones/Docker/CI/headless; see animus.env.example)…"
+REPO_ROOT="${ROOT}" bash "${ROOT}/installer/create-desktop-launcher.sh" || {
+  echo "[ANIMUS] Note: desktop launcher step exited non-zero (often normal on servers)." >&2
+}
 
 echo "[ANIMUS] Installing Python deps for animus-chat (venv)…"
 python3 -m venv "${ROOT}/animus-chat/.venv"
@@ -28,6 +37,15 @@ if [[ -f "${ROOT}/hermes-agent/pyproject.toml" ]]; then
   "${ROOT}/animus-chat/.venv/bin/pip" install -e "${ROOT}/hermes-agent" || {
     echo "[ANIMUS] Warning: editable install failed; try manual: cd hermes-agent && pip install -e ." >&2
   }
+fi
+
+if [[ "${SKIP_ANIMUS_PIPER_VOICES:-}" != "1" ]] && command -v curl >/dev/null 2>&1; then
+  echo "[ANIMUS] Piper voices: downloading default bundle (~380 MB) into ~/.local/share/piper …"
+  bash "${ROOT}/installer/fetch-piper-voices.sh" || {
+    echo "[ANIMUS] Warning: Piper voice download failed (offline, rate limit, or disk). Re-run: bash ${ROOT}/installer/fetch-piper-voices.sh" >&2
+  }
+elif [[ "${SKIP_ANIMUS_PIPER_VOICES:-}" != "1" ]]; then
+  echo "[ANIMUS] Note: curl not found — install curl, then run: bash ${ROOT}/installer/fetch-piper-voices.sh"
 fi
 
 if command -v hermes >/dev/null 2>&1; then

@@ -4,7 +4,7 @@ Python Starlette server (`server.py`) plus static PWA in `app/`.
 
 | Path | Role |
 |------|------|
-| `server.py` | API routes, gateway proxy, workspace helpers, client-config + git check-updates/apply-update |
+| `server.py` | API routes, gateway proxy, workspace helpers, client-config + git `check-updates` / `apply-update` (HEAD + fetch + `origin/main`; friendly errors → INSTALL.md) |
 | `app/index.html` | Main PWA shell |
 | `app/manifest.json` / `app/sw.js` | PWA manifest and service worker (`animus-v1` cache) |
 | `hermes_runner.py` | Subprocess wrapper for `hermes` CLI |

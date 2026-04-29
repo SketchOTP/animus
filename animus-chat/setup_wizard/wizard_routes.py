@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sys
 import shutil
 import socket
 import subprocess
@@ -96,6 +97,30 @@ async def setup_hermes_check(_req: Request) -> Response:
     res = run_hermes(["--version"], timeout=15)
     ver = (res["stdout"] or res["stderr"] or "").strip() or "unknown"
     return JSONResponse({"ok": res["ok"], "version": ver if res["ok"] else None, "error": None if res["ok"] else res["stderr"]})
+
+
+def _claude_code_authenticated() -> bool:
+    """True when Claude Code CLI OAuth credentials exist and look usable."""
+    ag = Path(__file__).resolve().parents[2] / "hermes-agent"
+    if not ag.is_dir():
+        return False
+    s = str(ag)
+    if s not in sys.path:
+        sys.path.insert(0, s)
+    try:
+        from agent.anthropic_adapter import (  # type: ignore
+            is_claude_code_token_valid,
+            read_claude_code_credentials,
+        )
+    except Exception:
+        return False
+    try:
+        creds = read_claude_code_credentials()
+        if not creds:
+            return False
+        return bool(is_claude_code_token_valid(creds) or creds.get("refreshToken"))
+    except Exception:
+        return False
 
 
 def _cursor_status_dict() -> dict[str, Any]:
@@ -379,12 +404,21 @@ async def setup_provider_status(_req: Request) -> Response:
             "label": "Cursor CLI",
         },
     )
+    cc_ok = _claude_code_authenticated()
+    rows.append(
+        {
+            "id": "claude-code",
+            "kind": "oauth",
+            "status": "ready" if cc_ok else "not_signed_in",
+            "label": "Claude Code",
+        },
+    )
     rows.append(
         {
             "id": "copilot-acp",
             "kind": "hint",
             "status": "ready",
-            "label": "Claude Code (Copilot ACP)",
+            "label": "GitHub Copilot (ACP)",
         },
     )
 

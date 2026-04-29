@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Secrets and local env
+animus.env
+hermes-chat.env
+*.pem
+!**/docs/**/*.pem
+
+# Runtime data
+data/
+animus-chat/data/
+
+# Editor
+.idea/
+.vscode/
+
+# Agent / editor lock files
+**/*.flock
+
+# Hermes Agent (large / machine-specific)
+hermes-agent/.venv/
+hermes-agent/venv/
+hermes-agent/node_modules/
+hermes-agent/**/__pycache__/
+
+# Release artifact
+animus-v*.zip

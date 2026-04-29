@@ -1,0 +1,15 @@
+[Unit]
+Description=Hermes gateway (bundled with ANIMUS)
+After=network.target
+
+[Service]
+Type=simple
+# Adjust WorkingDirectory and ExecStart to match your gateway install (see hermes-agent docs).
+WorkingDirectory=%h/animus/hermes-agent
+ExecStart=%h/animus/hermes-agent/.venv/bin/hermes gateway run
+EnvironmentFile=-%h/animus/animus.env
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

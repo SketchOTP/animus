@@ -1,0 +1,15 @@
+services:
+  animus:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - animus-data:/data
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  animus-data:

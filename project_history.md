@@ -1,0 +1,151 @@
+# Project history (animus)
+
+Chronological work log. Newest entries at the bottom.
+
+0901 290426 - Added AGENTS.md and project continuity files (goal, status, history, knowledge, repo map).
+Files touched:
+- AGENTS.md
+- project_goal.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+- repo_map.md
+
+0908 290426 - Added setup_repo.md bootstrap guide and documented four-way rule mirroring.
+Files touched:
+- setup_repo.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+- repo_map.md
+
+0914 290426 - Added token/repo_map/history-append efficiency rules to AGENTS and mirrors, setup_repo.md, and continuity docs.
+Files touched:
+- AGENTS.md
+- CLAUDE.md
+- .cursorrules
+- .cursor/rules/operating_rules.md
+- setup_repo.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+
+2145 290426 - Bootstrapped ANIMUS monorepo: copied animus-chat and hermes-agent, added control-plane routes, installer/Docker/docs, sanitisation, build-release.
+Files touched:
+- animus-chat/server.py
+- animus-chat/hermes_runner.py
+- animus-chat/cron_routes.py
+- animus-chat/skills_routes.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/setup_wizard/__init__.py
+- animus-chat/requirements.txt
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/app/manifest.json
+- animus-chat/restart.sh
+- animus-chat/TAILSCALE-SERVE.md
+- animus-chat/systemd/hermes-chat.service
+- animus-chat/repo_map.md
+- animus-chat/project_history.md
+- animus-chat/generate-icons.py
+- animus-chat/hermes-chat.env.example
+- animus-chat/animus.env.example
+- hermes-agent/ (full tree copy; personal PEMs removed)
+- installer/install.sh
+- installer/preflight.sh
+- docker/Dockerfile
+- docker/docker-compose.yml
+- docker/.env.example
+- systemd/animus.service
+- systemd/animus-agent.service
+- docs/hermes-agent-patches.md
+- docs/models.md
+- docs/tailscale.md
+- README.md
+- INSTALL.md
+- VERSION
+- LICENSE
+- .gitignore
+- build-release.sh
+- animus.env.example
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+1011 290426 - Phase 2 UI: wizard, cron paths/polling/daemon/logs, model refresh/about, tooltips, build-release checks, wizard save-config keys+tailscale, docs Option C.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/setup_wizard/wizard_routes.py
+- build-release.sh
+- docs/hermes-agent-patches.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+1200 290426 - Phase 3: cron logs (CLI+disk+error), skills capabilities+UI+detail, client-config wake lock, chat_data_dir alignment, token CSV/SSE, docs/build/smoke script.
+Files touched:
+- animus-chat/hermes_runner.py
+- animus-chat/server.py
+- animus-chat/cron_routes.py
+- animus-chat/skills_routes.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+- docs/hermes-agent-patches.md
+- build-release.sh
+- INSTALL.md
+- scripts/phase3-smoke-checklist.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+1245 290426 - Smoke checklist: document chat_data_dir (CHAT_DATA_DIR / ~/.hermes/chat), not ./data; setup/teardown options.
+Files touched:
+- scripts/phase3-smoke-checklist.md
+1315 290426 - project_goal Phase 3/4 smoke + Docker + token check: CHAT_DATA_DIR, python3, wake lock paths; INSTALL Docker curls pipe to python3.
+Files touched:
+- project_goal.md
+- INSTALL.md
+- project_knowledge.md
+- project_status.md
+1345 290426 - Go-live operator tips: keys, SSE usage during smoke, screenshots during CHAT_DATA_DIR session, build-release after unset; checklist + goal cross-link.
+Files touched:
+- project_knowledge.md
+- scripts/phase3-smoke-checklist.md
+- project_goal.md
+- repo_map.md
+1415 290426 - Smoke step 2 PASS logged; hermes-agent-patches top note (v0.11.0, 778 commits drift, no hermes update); v1.1 rebase backlog; knowledge + status + repo_map.
+Files touched:
+- project_status.md
+- docs/hermes-agent-patches.md
+- project_knowledge.md
+- repo_map.md
+2345 290426 - Phase 5 wizard (providers+auth, model scope, skills manager, projects path, Tailscale+wake), Settings inference matrix, About+check updates API, branding Plan tab, build-release/installer checks.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/server.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/skills_routes.py
+- build-release.sh
+- installer/install.sh
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+2355 290426 - Codex OAuth: non-blocking POST start + GET poll by poll_id; session probe moved to codex-auth-session.
+Files touched:
+
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+
+- project_knowledge.md
+- repo_map.md
+
+- project_history.md
+
+1123 290426 - Phase 5 coder smoke: API curls (codex start/status, check-path, tailscale-check, skills list), grep/static acceptance checks, `./build-release.sh` pass; documented results + check-updates git HEAD caveat in `project_status.md`.
+Files touched:
+- project_status.md
+- project_knowledge.md
+- project_history.md
+

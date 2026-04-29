@@ -1,0 +1,15 @@
+# Repo map — `animus-chat/`
+
+Python Starlette server (`server.py`) plus static PWA in `app/`.
+
+| Path | Role |
+|------|------|
+| `server.py` | API routes, gateway proxy, workspace helpers, client-config + git check-updates/apply-update |
+| `app/index.html` | Main PWA shell |
+| `app/manifest.json` / `app/sw.js` | PWA manifest and service worker (`animus-v1` cache) |
+| `hermes_runner.py` | Subprocess wrapper for `hermes` CLI |
+| `cron_routes.py` | `/api/cron/*` control-plane endpoints |
+| `skills_routes.py` | `/api/skills/*` control-plane endpoints |
+| `setup_wizard/wizard_routes.py` | `/api/setup/*` onboarding (providers, tailscale-check, check-path, provider-status; Codex async `codex-auth-start` + `codex-auth-status/{poll_id}` + `codex-auth-session`) |
+| `requirements.txt` | Python dependencies |
+| `restart.sh` | Restart user `animus.service` when present |

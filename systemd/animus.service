@@ -1,0 +1,14 @@
+[Unit]
+Description=ANIMUS chat UI
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/animus/animus-chat
+ExecStart=%h/animus/animus-chat/.venv/bin/python server.py
+EnvironmentFile=-%h/animus/animus.env
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

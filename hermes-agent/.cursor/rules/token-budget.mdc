@@ -1,0 +1,40 @@
+---
+description: Token budget and context discipline
+alwaysApply: true
+---
+
+# Token Budget Rules
+
+You must minimize context usage.
+
+## Before reading files
+- Do not read broad folders.
+- Do not use @codebase unless explicitly requested.
+- Do not open more than 5 files before presenting a plan.
+- Prefer repo_map.md, project_history.md, README.md, and targeted grep/search first.
+- Use file summaries before full file reads.
+- If a file is over 300 lines, inspect only relevant sections first.
+
+## Before coding
+You must output a short Context Budget Plan:
+
+1. Goal:
+2. Files likely needed:
+3. Files intentionally not needed:
+4. Search terms to use:
+5. Maximum files to open before first edit:
+
+## Hard limits
+- Max files opened before first edit: 5
+- Max files edited in one task unless approved: 3
+- Max command output to review: 120 lines
+- Never paste entire generated files into chat unless requested.
+- Never summarize the whole repo.
+- Never re-read files already summarized in project_history.md unless needed.
+
+## Required behavior
+- Ask for narrower scope if task is broad.
+- Make the smallest safe change.
+- Prefer patch/diff over full rewrite.
+- Stop after completing the requested scope.
+- Report files touched and validation only.

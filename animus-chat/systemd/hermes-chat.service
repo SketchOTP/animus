@@ -1,0 +1,16 @@
+# Legacy filename — use ../../systemd/animus.service in the ANIMUS monorepo.
+# Copy to ~/.config/systemd/user/animus.service and edit paths.
+
+[Unit]
+Description=ANIMUS (deprecated unit filename — rename to animus.service)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/YOUR_REPO/animus-chat
+EnvironmentFile=-%h/YOUR_REPO/animus.env
+ExecStart=%h/YOUR_REPO/animus-chat/.venv/bin/python server.py
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

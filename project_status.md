@@ -15,6 +15,7 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 
 ## Recently completed work
 
+- **Ghost branding + PWA:** **`ghostonlyicon.png`** for sidebar + chat header, empty state, favicon, **`manifest.json`** icons, apple-touch, About + notifications; **`animus-v2`** SW cache; desktop launcher prefers this file for `Icon=`.
 - **Desktop launcher:** `installer/create-desktop-launcher.sh` + hook from `install.sh`; `GET /api/animus/desktop-launcher` (+ `?fmt=webloc`); wizard one-time download on desktop after **Open ANIMUS** (phones unchanged for PWA). See `INSTALL.md`.
 - **HELP:** Settings **HELP** opens a **tabbed help center** (Home, Topics with section nav, FAQ, Ask ANIMUS); `GET /api/help/guide` returns structured fields + expanded **FAQ** in `docs/animus-user-guide.md`. Notification sidebar: per-thread unread + accent; Settings toggles for badges + wake lock.
 - **TTS defaults:** Piper + **`en_GB-alan-medium`** when unset (localStorage + `config.json` without `tts_backend`); HF/install bundle downloads GB Alan first.

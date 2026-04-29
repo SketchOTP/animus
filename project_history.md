@@ -358,3 +358,28 @@ Files touched:
 - project_knowledge.md
 - project_history.md
 
+1626 290426 - Chat empty state uses ghostonlyicon.png instead of SVG ghost; asset in app/.
+
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/ghostonlyicon.png
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1635 290426 - Branding + PWA: ghostonlyicon.png for sidebar/header, favicon, manifest icons, apple-touch, About, notifications; SW cache animus-v2; desktop launcher icon prefers ghost file.
+
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/manifest.json
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- installer/create-desktop-launcher.sh
+- repo_map.md
+- animus-chat/repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+

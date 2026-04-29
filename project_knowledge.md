@@ -4,6 +4,10 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 
 ---
 
+## Chat UI assets (290426)
+
+- **`ghostonlyicon.png`:** Served as **`/ghostonlyicon.png`** from `animus-chat/app/`. Used for empty chat, sidebar + main header brand, favicon, `manifest.json` icons, apple-touch-icon, About modal, notification icon/badge, and Linux `.desktop` icon preference (`server.py` desktop launcher + `installer/create-desktop-launcher.sh` try this file before `icon-192.png`). Service worker cache key **`animus-v2`** (was `animus-v1`) so installs pick up icon changes.
+
 ## Conventions
 
 - **Session start:** Read `AGENTS.md` then `project_goal.md`, `project_status.md`, `project_history.md`, this file, and `repo_map.md` before code edits.

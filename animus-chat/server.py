@@ -465,12 +465,12 @@ async def animus_desktop_launcher_get(req: Request) -> Response:
             headers={"Content-Disposition": 'attachment; filename="ANIMUS.webloc"'},
         )
     quoted = shlex.quote(open_url)
-    icon_candidate = _CHAT_PACKAGE_DIR / "app" / "icon-192.png"
-    icon_line = (
-        f"Icon={icon_candidate}"
-        if icon_candidate.is_file()
-        else "Icon=applications-internet"
-    )
+    icon_line = "Icon=applications-internet"
+    for _icon_name in ("ghostonlyicon.png", "icon-192.png"):
+        _p = _CHAT_PACKAGE_DIR / "app" / _icon_name
+        if _p.is_file():
+            icon_line = f"Icon={_p}"
+            break
     body = (
         "[Desktop Entry]\n"
         "Version=1.0\n"

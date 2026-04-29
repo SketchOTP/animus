@@ -18,9 +18,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>ANIMUS</title>
-  <link rel="manifest" href="/manifest.json?v=ghost-v3">
-  <link rel="icon" href="/icon.svg?v=ghost-v3" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icon-192.png?v=ghost-v3">
+  <link rel="manifest" href="/manifest.json?v=ghostonly-2">
+  <link rel="icon" href="/ghostonlyicon.png?v=ghostonly-2" type="image/png">
+  <link rel="apple-touch-icon" href="/ghostonlyicon.png?v=ghostonly-2">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -99,10 +99,10 @@
     .sidebar-close:hover{color:var(--text);background:var(--surface2)}
     @media(max-width:640px){.sidebar-close{display:flex}}
     .logo{font-size:17px;font-weight:700;letter-spacing:.12em;display:flex;align-items:center;gap:8px}
-    .brand-ghost{display:block;flex-shrink:0;color:var(--accent);opacity:.93}
+    .brand-ghost{display:block;flex-shrink:0;width:28px;height:28px;object-fit:contain;opacity:.93}
     .brand-ghost--header{width:24px;height:24px;opacity:.9}
     .empty-brand-ghost{display:block;width:min(100px,36vw);height:min(100px,36vw);max-width:120px;max-height:120px;
-      color:var(--accent);opacity:.94}
+      object-fit:contain;opacity:.94;flex-shrink:0}
 
     /* tab bar at top of sidebar */
     .sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -924,21 +924,11 @@
   }
 </script>
 <div id="app">
-  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
-    <defs>
-      <symbol id="svg-brand-ghost" viewBox="0 0 24 24">
-        <path fill="currentColor" d="M12 3C7.58 3 4 6.58 4 11v8.5c0 .83.67 1.5 1.5 1.5.42 0 .82-.17 1.12-.47L8.5 17.15l2.38 2.38a1.49 1.49 0 002.12 0l2.38-2.38 2.88 2.88c.3.3.7.47 1.12.47.83 0 1.5-.67 1.5-1.5V11c0-4.42-3.58-8-8-8z"/>
-        <circle cx="9" cy="10" r="1.35" fill="var(--bg)"/>
-        <circle cx="15" cy="10" r="1.35" fill="var(--bg)"/>
-      </symbol>
-    </defs>
-  </svg>
-
   <!-- ── Sidebar ── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="logo">
-        <svg class="brand-ghost" width="28" height="28" aria-hidden="true"><use href="#svg-brand-ghost"/></svg>
+        <img class="brand-ghost" src="/ghostonlyicon.png?v=ghostonly-2" alt="" width="28" height="28" decoding="async">
         ANIMUS
       </div>
       <div class="sidebar-head-actions">
@@ -1316,7 +1306,7 @@
         </svg>
       </button>
       <div class="header-title-cluster">
-        <svg class="brand-ghost brand-ghost--header" width="24" height="24" aria-hidden="true"><use href="#svg-brand-ghost"/></svg>
+        <img class="brand-ghost brand-ghost--header" src="/ghostonlyicon.png?v=ghostonly-2" alt="" width="24" height="24" decoding="async">
         <span class="header-title" id="headerTitle">ANIMUS</span>
       </div>
       <button class="icon-btn" id="newBtnHeader" title="New chat">
@@ -1338,7 +1328,7 @@
     <div class="messages" id="messages">
       <div class="empty" id="emptyState">
         <div class="empty-icon">
-          <svg class="empty-brand-ghost" viewBox="0 0 24 24" aria-hidden="true"><use href="#svg-brand-ghost"/></svg>
+          <img class="empty-brand-ghost" src="/ghostonlyicon.png?v=ghostonly-2" alt="" width="120" height="120" decoding="async" fetchpriority="low">
         </div>
         <div class="empty-title">ANIMUS</div>
         <div class="empty-sub">Your private AI assistant.<br>Send a message to begin.</div>
@@ -1817,7 +1807,7 @@
     </div>
     <div class="modal-body" id="aboutAnimusBody" style="display:flex;flex-direction:column;gap:14px;padding-top:8px;font-size:14px;line-height:1.55">
       <div style="display:flex;align-items:center;gap:12px">
-        <img src="/icon.svg" width="48" height="48" alt="" />
+        <img src="/ghostonlyicon.png?v=ghostonly-2" width="48" height="48" alt="" decoding="async" />
         <div id="aboutAnimusVersions" style="color:var(--muted)">Loading…</div>
       </div>
       <div id="aboutAnimusCopy" style="margin:0;color:var(--text)">
@@ -3766,8 +3756,8 @@ async function showRunFinishedNotification(title, body) {
       if (reg?.showNotification) {
         await reg.showNotification(title, {
           body,
-          icon: '/icon.svg',
-          badge: '/icon.svg',
+          icon: '/ghostonlyicon.png?v=ghostonly-2',
+          badge: '/ghostonlyicon.png?v=ghostonly-2',
           tag: 'hermes-run-finished',
           renotify: true,
         });
@@ -3777,7 +3767,7 @@ async function showRunFinishedNotification(title, body) {
   } catch {}
 
   try {
-    new Notification(title, { body, icon: '/icon.svg', tag: 'hermes-run-finished' });
+    new Notification(title, { body, icon: '/ghostonlyicon.png?v=ghostonly-2', tag: 'hermes-run-finished' });
     return true;
   } catch {
     return false;

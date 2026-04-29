@@ -67,7 +67,7 @@ fi
 LAUNCH_URL="${LAUNCH_URL%/}/"
 
 ICON_PATH=""
-for c in "${ROOT}/animus-chat/app/icon-192.png" "${ROOT}/ANIMUSLOGOICON.png"; do
+for c in "${ROOT}/animus-chat/app/ghostonlyicon.png" "${ROOT}/animus-chat/app/icon-192.png" "${ROOT}/ANIMUSLOGOICON.png"; do
   if [[ -f "$c" ]]; then
     ICON_PATH="$c"
     break

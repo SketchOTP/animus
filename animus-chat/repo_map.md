@@ -6,7 +6,8 @@ Python Starlette server (`server.py`) plus static PWA in `app/`.
 |------|------|
 | `server.py` | API routes, gateway proxy, workspace helpers, client-config + git `check-updates` / `apply-update` (HEAD + fetch + `origin/main`; friendly errors → INSTALL.md) |
 | `app/index.html` | Main PWA shell |
-| `app/manifest.json` / `app/sw.js` | PWA manifest and service worker (`animus-v1` cache) |
+| `app/ghostonlyicon.png` | App icon + sidebar/header brand + empty chat + About + notifications (favicon / manifest / apple-touch) |
+| `app/manifest.json` / `app/sw.js` | PWA manifest (icons → `ghostonlyicon.png`) and service worker (`animus-v2` cache) |
 | `hermes_runner.py` | Subprocess wrapper for `hermes` CLI |
 | `cron_routes.py` | `/api/cron/*` control-plane endpoints |
 | `skills_routes.py` | `/api/skills/*` control-plane endpoints |

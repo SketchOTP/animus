@@ -2,7 +2,9 @@
 
 ## Current state
 
-Phase **7** landed: **no Browse** on server path fields (hints + examples), **Slack** Settings + `integrations_slack.py` + `animus.env.example`, **SSH hosts** global (`ssh_routes.py`, `docs/ssh.md`, simplified remote project flow), **token tracker** server log + `by_source` UI + CSV `source`/`source_id`, **chat** + **cron** token recording, **`claude-code`** inference row + catalog (`auto` + Hermes anthropic list), **Copilot ACP** relabelled, **`tts_backend`** in client-config. Phase **6** items (model refresh, cron UI, Piper TTS, skills create, etc.) remain underneath.
+**Marketing site (`animus-site/` sibling):** product-led marketing + update API; **`animusai.vercel.app`** is a Vercel **alias** to **`animus-site`** Production (same deployment as **`animus-site-ruddy.vercel.app`**) so **`/releases/*.zip`**, **`/api/latest.json`**, and **`POST /api/admin/publish`** all work on one hostname.
+
+Phase **8** landed: **manifest + zip** in-app updates (**`ANIMUS_UPDATE_URL`**), no git in **`installer/install.sh`** or update APIs; launch banner + Settings flow; seller may use **`animus-site`** (Vercel + Redis, sibling repo) or self-hosted **`animus-update-server/`**. Phase **7** items remain underneath: **no Browse** on server path fields (hints + examples), **Slack** Settings + `integrations_slack.py` + `animus.env.example`, **SSH hosts** global (`ssh_routes.py`, `docs/ssh.md`, simplified remote project flow), **token tracker** server log + `by_source` UI + CSV `source`/`source_id`, **chat** + **cron** token recording, **`claude-code`** inference row + catalog (`auto` + Hermes anthropic list), **Copilot ACP** relabelled, **`tts_backend`** in client-config. Phase **6** items (model refresh, cron UI, Piper TTS, skills create, etc.) remain underneath.
 
 ## Active goal
 
@@ -15,6 +17,18 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 
 ## Recently completed work
 
+- **Fresh install skills:** `animus-chat/server.py` runs `tools.skills_sync.sync_skills()` once at import so `HERMES_HOME/skills` is seeded from bundled `hermes-agent/skills/` (Hermes CLI did this only when `hermes` ran; ANIMUS-only starts skipped it → empty `/api/skills/list`).
+- **animus-site Gumroad launch link:** all shared buy/Gumroad CTAs now point to **`https://sketcher571.gumroad.com/l/cxueq`**; deployed with `vercel --prod --yes` and re-aliased **`animusai.vercel.app`**.
+- **animus-site product-led redesign:** replaced generic placeholder marketing with an ANIMUS-themed landing page using the PNG brand assets, mock app shell, actual feature copy, and stylized SVG previews for Chat, Wizard, Settings, and Cron; updated shared header/footer on docs + updates; deployed with `vercel --prod --yes` and re-aliased **`animusai.vercel.app`** to the redesigned deployment.
+- **animus-site brand layout:** header brand marks now use **`ghostonlyicon.png`**; the large ANIMUS logo is centered above the homepage hero section below the header; deployed and re-aliased **`animusai.vercel.app`**.
+- **Gumroad zip readiness:** regenerated **`animus-v1.0.0.zip`** after tightening `build-release.sh` to exclude **`hermes-agent/.env`**, **`hermes-agent/.envrc`**, and **`*.flock`**; archive is **28MB**, `unzip -tq` passes, and raw env/runtime/internal docs checks are clean.
+- **animus-site copy cleanup:** adjusted homepage hero/workspace copy, removed internal explanatory paragraphs, removed the v1.0/3001/zip/SaaS stat bar and unused CSS, deployed and re-aliased **`animusai.vercel.app`**.
+- **animus-site release notes fix:** `updates.html` now ships static v1.0.0 fallback content instead of "Loading..." and loads API enhancement from external **`js/updates.js`**; deployed and re-aliased **`animusai.vercel.app`** to the fixed deployment.
+- **Phase 8 auto-updates:** **`ANIMUS_UPDATE_URL`** + httpx manifest **`check-updates`** / zip **`apply-update`** in **`server.py`** (zip-slip guard); no git in **`installer/install.sh`**; launch banner + Settings UX in **`index.html`**; **`docs/BUYER_UPDATES.md`**, **`INSTALL.md`**, **`GUMROAD.md`**, **`animus-user-guide.md`**, **`build-release.sh`** checks; sibling **`animus-update-server/`** (FastAPI, not in buyer zip).
+- **Release zip v1.0 cap:** `build-release.sh` trims bloat + **internal dev docs** (`project_*.md`, `AGENTS.md`, `.cursor/`, `setup_repo.md`, `animus-chat` mirrors, etc.) from the buyer zip; **hard fail** if zip **>55MB**; typical artifact **~28MB**.
+- **Release checklist automation:** **`build-release.sh`** post-zip leak check (no raw `animus.env`, `hermes-chat.env`, `hermes-agent/.env`, `.flock`, no `animus-chat/data/`); zip excludes **`animus-chat/animus.env`** + **`hermes-agent/.env`**; UI path examples use **`/home/you/projects`** (not owner home).
+- **Gumroad packaging:** root **`START_HERE.txt`** for post-unzip buyers; **`docs/GUMROAD.md`** seller checklist + listing/thank-you copy; **`README.md`** download pointer; **`build-release.sh`** checklist lines.
+- **First-run wizard:** `first_run` cleared when the **final “You are all set”** step is painted (not only on “Open ANIMUS”); `cfg_still_first_run()` normalizes string/number `first_run` values; `setup_completed_at` written on complete.
 - **Ghost branding + PWA:** **`ghostonlyicon.png`** for sidebar + chat header, empty state, favicon, **`manifest.json`** icons, apple-touch, About + notifications; **`animus-v2`** SW cache; desktop launcher prefers this file for `Icon=`.
 - **Desktop launcher:** `installer/create-desktop-launcher.sh` + hook from `install.sh`; `GET /api/animus/desktop-launcher` (+ `?fmt=webloc`); wizard one-time download on desktop after **Open ANIMUS** (phones unchanged for PWA). See `INSTALL.md`.
 - **HELP:** Settings **HELP** opens a **tabbed help center** (Home, Topics with section nav, FAQ, Ask ANIMUS); `GET /api/help/guide` returns structured fields + expanded **FAQ** in `docs/animus-user-guide.md`. Notification sidebar: per-thread unread + accent; Settings toggles for badges + wake lock.
@@ -32,8 +46,8 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 
 - **Smoke test & Docker** not executed in the agent sandbox (no Docker; no live gateway/API key). Checklist and INSTALL commands are ready for the operator.
 - **Token tracker:** server also logs usage from the chat proxy when the gateway emits `usage` on SSE; Plan steps and skill APIs can append via `POST /api/tokens/record` when responses include `usage`; cron manual runs log rows with null token counts until gateway exposes usage per job.
-- **Release zip:** v1.0 acceptance cap **≤55MB** (~51MB typical). `build-release.sh` warns only if over **55MB**.
-- **Hermes / agent updates:** Wizard step 1 only reports reachability (no `hermes --version` dump). ANIMUS **does not** schedule background `hermes update`; bundled agent changes ship with **git pull** / **Apply update** on the ANIMUS monorepo — see `docs/hermes-agent-patches.md`.
+- **Release zip:** v1.0 cap **≤55MB** — `build-release.sh` **fails** if over cap; trims omit Ghost3D, `hermes-agent/tests`, `hermes-agent/website`, WhatsApp bridge `node_modules` (see INSTALL).
+- **Hermes / agent updates:** Wizard step 1 only reports reachability (no `hermes --version` dump). ANIMUS **does not** schedule background `hermes update`; monorepo file updates ship via **manifest + zip** in-app update or manual reinstall — see `docs/hermes-agent-patches.md`.
 
 ## Blockers
 
@@ -47,7 +61,19 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 
 ## Last validation run
 
-- `./build-release.sh` — **pass** (2026-04-29: Plan token record + TTS layout + docs); zip ~51MB.
+- `node --check /home/sketch/animus-site/js/main.js` — **pass** (2026-04-29 Gumroad launch link).
+- `vercel --prod --yes` from `/home/sketch/animus-site` after Gumroad launch link — **pass** (2026-04-29); deployment **`animus-site-isulmyvgv-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**.
+- Live link smoke: `curl -L -sS https://animusai.vercel.app/js/main.js` and Chromium DOM check for **`https://sketcher571.gumroad.com/l/cxueq`** — **pass**; header, hero, pricing, and footer CTAs render the real Gumroad URL.
+- `vercel --prod --yes` from `/home/sketch/animus-site` — **pass** (2026-04-29); production alias **`https://animus-site-ruddy.vercel.app`**.
+- `./build-release.sh` — **pass** (2026-04-29 Gumroad readiness check); regenerated **`animus-v1.0.0.zip`** at **28MB**; `unzip -tq` pass; no raw env, runtime data, lock files, `animus-update-server/`, or internal project docs found.
+- `vercel --prod --yes` from `/home/sketch/animus-site` after brand layout change — **pass** (2026-04-29); deployment **`animus-site-dvolgn219-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**; live greps confirm header **`ghostonlyicon.png`** and **`hero__section-logo`**.
+- `vercel --prod --yes` from `/home/sketch/animus-site` after homepage copy cleanup — **pass** (2026-04-29); deployment **`animus-site-d0ylje2ua-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**; live greps confirm new copy and removed phrases absent.
+- `vercel --prod --yes` from `/home/sketch/animus-site` after release-notes fix — **pass** (2026-04-29); deployment **`animus-site-3d04sl1nv-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**.
+- Release notes smoke: `curl -L https://animusai.vercel.app/updates.html` and Chromium DOM check — **pass**; both latest and past releases render **v1.0.0 / Initial release** and no **Loading...** text remains.
+- `vercel alias set animus-site-h1fn3n46l-sketchotp-3398s-projects.vercel.app animusai.vercel.app` — **pass** (2026-04-29); `curl https://animusai.vercel.app/` shows redesigned copy.
+- Remote smoke: `curl -L -sS https://animus-site-ruddy.vercel.app/` greps for redesigned homepage copy; docs + updates greps — **pass**.
+- Local smoke: `python3 -m py_compile /home/sketch/animus-site/api/*.py /home/sketch/animus-site/lib_redis.py`; HTML parser for `index.html`, `updates.html`, `docs.html`; Chromium screenshots at 1440px + 390px — **pass**.
+- `./build-release.sh` — **pass** (2026-04-29 Phase 8); zip **~28MB**; adds **`ANIMUS_UPDATE_URL`** / no-git / **`httpx`** checks.
 - `cd animus-chat && .venv/bin/python -c "import server"` — **pass**.
 - Phase 5 coder smoke (API + grep): see **Phase 5 acceptance smoke** table below.
 
@@ -106,11 +132,11 @@ Server: `CHAT_DATA_DIR=/tmp/animus-smoke-*` + venv **outside** `animus-chat/` (o
 | Settings inference matrix | **MANUAL** | API `provider-status` exists; full matrix UX needs browser. |
 | Add key / Sign in / model guardrails | **MANUAL** | Browser Settings. |
 | About copy + separate Check for updates buttons | **PASS (static)** | `aboutAnimusBtn` + `checkAnimusUpdatesBtn` adjacent (`index.html` ~1138). |
-| `POST /api/animus/check-updates` | **PASS (API)** | No `HEAD`: `ok:false` with INSTALL.md clone message (not raw git stderr); valid clone: fetch + `rev-list` → up-to-date or commits-behind. |
-| Apply update + restart flow | **PARTIAL** | Same `HEAD` guard as check-updates; full pull UX **MANUAL** after updates available. |
-| `git remote get-url origin` | **PASS** | `https://github.com/SketchOTP/animus.git` after prescribed `remote add`. |
+| `POST /api/animus/check-updates` | **MANUAL** | Needs **`ANIMUS_UPDATE_URL`** + live manifest; empty URL → `ok:false` with configure message. |
+| Apply update + restart flow | **MANUAL** | Zip download + extract + **`POST /api/restart/chat`**; exercise on non-production install. |
+| Git-based buyer updates | **Removed** | Phase 8: manifest + zip only; no **`origin`** / installer git. |
 | `./build-release.sh` | **PASS** | Completed after removing `animus-chat/.venv-smoke`. |
-| Zip ≤55MB (v1.0) | **PASS** | `./build-release.sh` — **51 MB** under 55MB cap; NOTE only if over 55MB. |
+| Zip ≤55MB (v1.0) | **PASS** | `./build-release.sh` — **~28MB** typical after ship trims; script **exits 1** if over 55MB. |
 | Codex: `codex-auth-start` instant | **PASS (API)** | `curl` `time_total≈0.003s`, body `{"ok":true,"status":"pending","poll_id":"…"}`. |
 | Codex: status polls every 3s | **PASS (static)** | `runCodexAuthWithPoll`: `setTimeout(res, 3000)` before each `codex-auth-status` fetch (`index.html` ~2496–2497). |
 | Codex: Network tab (browser) | **MANUAL** | Owner: DevTools open on “Sign in with Codex”; confirm start once + status ~3s apart. |
@@ -119,7 +145,7 @@ Server: `CHAT_DATA_DIR=/tmp/animus-smoke-*` + venv **outside** `animus-chat/` (o
 
 ## v1.1 backlog (post–v1.0 Gumroad)
 
-- **Trim release zip** toward 50MB or smaller if desired (v1.0 cap is 55MB).
+- **Further trim** (optional): only if the zip grows again toward 55MB after new bundled assets.
 - **Hermes Agent upstream rebase:** Reconcile bundled `hermes-agent/` with newer upstream (e.g. 778+ commits drift as of smoke Step 2); use `docs/hermes-agent-patches.md` as merge checklist; full acceptance re-test.
 - Windows `install.ps1` on real hardware.
 - Skills enable/disable when Hermes bundles scriptable toggles (capabilities already gate the UI).

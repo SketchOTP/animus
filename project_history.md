@@ -383,3 +383,335 @@ Files touched:
 - project_knowledge.md
 - project_history.md
 
+1646 290426 - First-run wizard: mark complete on final step paint; cfg_still_first_run + setup_completed_at; client-config first_run uses helper.
+
+Files touched:
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1655 290426 - Gumroad packaging: START_HERE.txt, docs/GUMROAD.md, README download section, build-release checklist, repo_map.
+
+Files touched:
+- START_HERE.txt
+- docs/GUMROAD.md
+- README.md
+- build-release.sh
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1656 290426 - Release checklist: exclude animus-chat/animus.env from zip, zip leak self-test, generic /home/you paths in UI, README version pointer, .gitignore.
+
+Files touched:
+- build-release.sh
+- .gitignore
+- README.md
+- animus-chat/app/index.html
+- docs/GUMROAD.md
+- repo_map.md
+- project_knowledge.md
+- project_history.md
+- project_status.md
+
+
+1705 290426 - Release zip trim: exclude Ghost3D, hermes tests/website, whatsapp-bridge node_modules; 55MB hard fail; INSTALL WhatsApp note; docs/status.
+
+Files touched:
+- build-release.sh
+- INSTALL.md
+- docs/GUMROAD.md
+- scripts/phase3-smoke-checklist.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1720 290426 - Release zip: exclude internal continuity (project_*, repo_map, AGENTS, CLAUDE, .cursor*, setup_repo, animus-chat mirrors), hermes-agent/.cursor and AGENTS.md.
+
+Files touched:
+- build-release.sh
+- docs/GUMROAD.md
+- repo_map.md
+- project_knowledge.md
+- project_status.md
+- project_history.md
+
+1735 290426 - Remove public GitHub link from About; neutral update errors; installer origin via ANIMUS_GIT_ORIGIN_URL only; INSTALL + env example + GUMROAD note.
+
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/server.py
+- installer/install.sh
+- animus.env.example
+- INSTALL.md
+- docs/GUMROAD.md
+- project_knowledge.md
+- project_history.md
+- project_status.md
+- repo_map.md
+
+1745 290426 - Restore default git origin in install.sh for Check for updates; ANIMUS_GIT_ORIGIN_URL override; INSTALL/GUMROAD/knowledge/status/repo_map.
+
+Files touched:
+- installer/install.sh
+- animus.env.example
+- INSTALL.md
+- docs/GUMROAD.md
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+- project_history.md
+
+
+1718 290426 - Buyer updates guide (BUYER_UPDATES.md), install.sh reset only on fresh git init, docs cross-links.
+Files touched:
+- docs/BUYER_UPDATES.md
+- installer/install.sh
+- INSTALL.md
+- START_HERE.txt
+- docs/GUMROAD.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1725 290426 - Clarified Gumroad file updates do not auto-download to buyer machines (BUYER_UPDATES.md).
+Files touched:
+- docs/BUYER_UPDATES.md
+- project_history.md
+
+1736 290426 - Phase 8: manifest+zip updates (ANIMUS_UPDATE_URL), removed git from install+server, launch banner, build-release checks; animus-update-server sibling project.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/repo_map.md
+- installer/install.sh
+- animus.env.example
+- build-release.sh
+- INSTALL.md
+- docs/BUYER_UPDATES.md
+- docs/GUMROAD.md
+- docs/animus-user-guide.md
+- START_HERE.txt
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- /home/sketch/animus-update-server/server.py
+- /home/sketch/animus-update-server/requirements.txt
+- /home/sketch/animus-update-server/README.md
+- /home/sketch/animus-update-server/.env.example
+- /home/sketch/animus-update-server/.gitignore
+- /home/sketch/animus-update-server/systemd/animus-updates.service
+
+1745 290426 - animus-update-server: systemd + README use .venv uvicorn; warn against ~/.local/bin/uvicorn.
+Files touched:
+- /home/sketch/animus-update-server/systemd/animus-updates.service
+- /home/sketch/animus-update-server/README.md
+- project_history.md
+
+1755 290426 - animus-update-server README: port 8765 already in use troubleshooting.
+Files touched:
+- /home/sketch/animus-update-server/README.md
+- project_history.md
+
+1758 290426 - animus-update-server: optional EnvironmentFile, .env from example+token, README 9977; synced user systemd unit.
+Files touched:
+- /home/sketch/animus-update-server/systemd/animus-updates.service
+- /home/sketch/animus-update-server/README.md
+- /home/sketch/animus-update-server/.env (generated, not committed)
+- /home/sketch/.config/systemd/user/animus-updates.service
+- project_knowledge.md
+- project_history.md
+
+1805 290426 - animus-update-server: /updates/* mirror routes + README Tailscale HTTP vs HTTPS and path-on-443; GUMROAD manifest URL note.
+Files touched:
+- /home/sketch/animus-update-server/server.py
+- /home/sketch/animus-update-server/README.md
+- docs/GUMROAD.md
+- project_knowledge.md
+- project_history.md
+
+1812 290426 - Set ANIMUS_UPDATE_URL in animus.env.example; build zip; publish v1.0.0; animus-update-server StaticFiles for releases/zips (mount order fix).
+Files touched:
+- animus.env.example
+- animus-v1.0.0.zip (regenerated)
+- /home/sketch/animus-update-server/releases/latest.json
+- /home/sketch/animus-update-server/releases/history.jsonl
+- /home/sketch/animus-update-server/releases/zips/animus-v1.0.0.zip
+- /home/sketch/animus-update-server/server.py
+- /home/sketch/animus-update-server/README.md
+- project_history.md
+
+1815 290426 - animus-update-server: dual StaticFiles /updates/releases + /releases for Tailscale path strip; README note.
+Files touched:
+- /home/sketch/animus-update-server/server.py
+- /home/sketch/animus-update-server/README.md
+- project_history.md
+
+1825 290426 - build-release.sh: exclude animus-update-server + scripts; zip leak grep for animus-update-server/; comment trim list fix (whatsapp path).
+Files touched:
+- build-release.sh
+- repo_map.md
+- project_history.md
+
+1845 290426 - New sibling animus-site: Vercel marketing + Redis update API; animus.env.example Vercel URL; GUMROAD/INSTALL/repo_map/knowledge/status.
+Files touched:
+- /home/sketch/animus-site/ (new tree: index.html, updates.html, docs.html, css/, js/, assets/, api/, vercel.json, requirements.txt, runtime.txt, README.md, .gitignore, .env.example)
+- animus.env.example
+- docs/GUMROAD.md
+- INSTALL.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1826 290426 - animus-site: vercel.json v2 builds (@vercel/static for HTML/CSS/JS/assets, @vercel/python for api); routes for latest/history/admin; removed runtime.txt; README deploy note; vercel --prod smoke OK.
+Files touched:
+- /home/sketch/animus-site/vercel.json
+- /home/sketch/animus-site/README.md
+- /home/sketch/animus-site/runtime.txt (deleted)
+- /home/sketch/animus/project_history.md
+
+1844 290426 - animus-site: lib_redis supports REDIS_URL (Vercel Upstash) plus KV_/UPSTASH_ REST fallbacks; README/.env.example; vercel --prod.
+Files touched:
+- /home/sketch/animus-site/lib_redis.py
+- /home/sketch/animus-site/README.md
+- /home/sketch/animus-site/.env.example
+- /home/sketch/animus/project_history.md
+- /home/sketch/animus/project_knowledge.md
+
+1855 290426 - animus-site: ADMIN_TOKEN on Vercel Production; lib_redis TCP via redis package for REDIS_URL (REST token != wire password); requirements redis; publish v1.0.0; latest.py Cache-Control; README/.env.example.
+Files touched:
+- /home/sketch/animus-site/lib_redis.py
+- /home/sketch/animus-site/requirements.txt
+- /home/sketch/animus-site/api/latest.py
+- /home/sketch/animus-site/README.md
+- /home/sketch/animus-site/.env.example
+- /home/sketch/animus/project_history.md
+- /home/sketch/animus/project_knowledge.md
+
+2310 290426 - animus-site: full dark marketing redesign (PNG logos, tokens, index/updates/docs, main.css, FAQ accordion, Gumroad default URL); copied logos from animus repo.
+Files touched:
+- /home/sketch/animus-site/index.html
+- /home/sketch/animus-site/updates.html
+- /home/sketch/animus-site/docs.html
+- /home/sketch/animus-site/css/main.css
+- /home/sketch/animus-site/js/main.js
+- /home/sketch/animus-site/assets/ANIMUSLOGO.png
+- /home/sketch/animus-site/assets/ANIMUSLOGOICON.png
+- /home/sketch/animus-site/assets/ghostonlyicon.png
+- project_history.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+
+1928 290426 - animus-site: product-led ANIMUS redesign from actual PWA surfaces; stylized previews; docs/updates chrome; Vercel prod deploy.
+Files touched:
+- /home/sketch/animus-site/index.html
+- /home/sketch/animus-site/updates.html
+- /home/sketch/animus-site/docs.html
+- /home/sketch/animus-site/css/main.css
+- /home/sketch/animus-site/assets/screenshots/chat.svg
+- /home/sketch/animus-site/assets/screenshots/wizard.svg
+- /home/sketch/animus-site/assets/screenshots/settings.svg
+- /home/sketch/animus-site/assets/screenshots/cron.svg
+- project_history.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+
+1931 290426 - Re-aliased animusai.vercel.app to the redesigned animus-site Vercel deployment and verified live HTML.
+Files touched:
+- project_history.md
+- project_status.md
+- project_knowledge.md
+
+1939 290426 - Fixed animusai release notes stuck loading by adding static fallback content and external updates.js enhancer; deployed + re-aliased.
+Files touched:
+- /home/sketch/animus-site/updates.html
+- /home/sketch/animus-site/js/updates.js
+- project_history.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+
+1944 290426 - animus-site homepage copy cleanup: changed hero/workspace text, removed internal paragraphs and stat bar, deployed + re-aliased.
+Files touched:
+- /home/sketch/animus-site/index.html
+- /home/sketch/animus-site/css/main.css
+- project_history.md
+- project_status.md
+- project_knowledge.md
+
+1949 290426 - animus-site brand layout: header uses ghost icon; hero logo centered below header; deployed + re-aliased animusai.
+Files touched:
+- /home/sketch/animus-site/index.html
+- /home/sketch/animus-site/updates.html
+- /home/sketch/animus-site/docs.html
+- /home/sketch/animus-site/css/main.css
+- project_history.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+
+2009 290426 - Gumroad zip readiness: excluded hermes-agent raw env/dev lock files, rebuilt animus-v1.0.0.zip, verified archive clean.
+Files touched:
+- .gitignore
+- build-release.sh
+- animus-v1.0.0.zip
+- project_history.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+
+2018 290426 - animus-site Gumroad launch link: wired all buy CTAs to the live Gumroad product, deployed and re-aliased animusai.
+Files touched:
+- /home/sketch/animus-site/js/main.js
+- project_history.md
+- project_status.md
+- project_knowledge.md
+
+2345 290426 - Fix empty skills on fresh install: run Hermes bundled skills sync once at ANIMUS server import (mirrors CLI startup).
+Files touched:
+- animus-chat/server.py
+- repo_map.md
+- project_knowledge.md
+- project_history.md
+
+0012 290426 - VERSION 1.0.1 + release zip; publish helper script for Vercel manifest (skills seed fix ships in zip).
+Files touched:
+- VERSION
+- animus-v1.0.1.zip
+- scripts/publish-animus-manifest.sh
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+0910 300426 - animus-site: static releases/ + zip; vercel.json; README publish flow; manifest 1.0.1 Vercel download_url (animus-site-ruddy host).
+Files touched:
+- /home/sketch/animus-site/vercel.json
+- /home/sketch/animus-site/releases/README.md
+- /home/sketch/animus-site/README.md
+- project_history.md
+
+0912 300426 - publish script defaults to production ruddy host; project_knowledge publish/ADMIN_TOKEN notes.
+Files touched:
+- scripts/publish-animus-manifest.sh
+- project_knowledge.md
+- project_history.md
+
+0915 300426 - Vercel: alias animusai.vercel.app to animus-site Production; republish manifest download_url on animusai; publish script defaults + README/releases/knowledge.
+Files touched:
+- scripts/publish-animus-manifest.sh
+- /home/sketch/animus-site/releases/README.md
+- /home/sketch/animus-site/README.md
+- project_knowledge.md
+- project_status.md
+- project_history.md

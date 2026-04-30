@@ -1,0 +1,46 @@
+ANIMUS — START HERE
+===================
+
+Thank you for downloading ANIMUS.
+
+What it is
+----------
+ANIMUS is a self-hosted AI workspace: a browser app you run on your own
+computer, plus a bundled Hermes Agent source tree. You control where it runs;
+your chats, projects, and API keys stay on your machine (not a vendor cloud).
+
+Quick install (Linux or macOS)
+------------------------------
+1. Unzip this archive to a folder you own (for example ~/animus or ~/Apps/animus).
+
+2. Open a terminal in that folder and run:
+
+   chmod +x installer/install.sh installer/preflight.sh
+   ./installer/preflight.sh
+   ./installer/install.sh
+
+3. Open http://127.0.0.1:3001 in your browser (default port; see animus.env.example).
+
+4. Complete the on-screen setup wizard on first launch.
+
+Need more detail?
+-----------------
+- INSTALL.md          — full install, systemd, Docker, troubleshooting
+- README.md           — overview and quick links
+- docs/               — Tailscale, models, TTS, SSH, user guide (HELP in the app)
+- docs/BUYER_UPDATES.md — in-app updates (manifest) and re-download from Gumroad
+
+Support
+-------
+Use the contact or reply channel from your marketplace receipt (for example
+Gumroad) so the seller can match your purchase.
+
+License
+-------
+See the LICENSE file in this folder (MIT). The hermes-agent/ directory may
+include additional third-party notices; see docs/hermes-agent-patches.md.
+
+Version
+-------
+See the VERSION file at the root of this folder. The running app also shows
+version under Settings → About ANIMUS.

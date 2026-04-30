@@ -13,6 +13,8 @@
 ./installer/install.sh
 ```
 
+**In-app updates:** Set **`ANIMUS_UPDATE_URL`** in **`animus.env`** to your update manifest URL (see **`animus.env.example`**). The app fetches that JSON and can download the release zip when you use **Check for updates** / **Apply update**. Sellers typically deploy the separate **`animus-site`** repo on **Vercel** (or self-host); see **`docs/GUMROAD.md`**. Buyer-facing help: **`docs/BUYER_UPDATES.md`**.
+
 The installer can **pre-download** the same Piper voice bundle as the server (`installer/fetch-piper-voices.sh` when `curl` exists; six models, ~380 MB). The running ANIMUS server also **downloads those models automatically** when Piper is installed but no voices are on disk — see `docs/tts.md`. Skip both with `SKIP_ANIMUS_PIPER_VOICES=1`.
 
 Default HTTP port is **3001** (`CHAT_PORT` in `animus.env.example`).
@@ -71,11 +73,12 @@ The compose file should expose **3001** for ANIMUS chat (`CHAT_PORT`). If `curl`
 
 ## Troubleshooting
 
-- **In-app “Check for updates” / git errors** — Updates compare your install to `origin/main`. You need a **git clone** (or an unpacked tree that still has commit history and a tracking `main` branch). A plain copy of the folder without `.git`, or `git init` with no commits, cannot receive updates through the UI; clone from GitHub or re-install from a release that sets up `git` as in `installer/install.sh`.
+- **In-app “Check for updates” fails** — Ensure **`ANIMUS_UPDATE_URL`** is set in **`animus.env`** and points at a reachable **`latest.json`** manifest. If the update server is down, the app still runs; try again later or reinstall from Gumroad — see **`docs/BUYER_UPDATES.md`**.
 - **Port in use** — change `CHAT_PORT` in `animus.env`.
 - **`hermes` not found** — ensure the venv where you installed Hermes Agent is on `PATH`, or set `HERMES_BIN`.
 - **Empty model list** — call `POST /api/models/refresh` with a valid `HERMES_API_KEY`, or finish the setup wizard.
 - **PWA shows an old name** — bump the service worker cache in `animus-chat/app/sw.js` (`animus-v1`) and hard-reload.
+- **Hermes WhatsApp bridge** — release zips omit `hermes-agent/scripts/whatsapp-bridge/node_modules/` to save space. If you use the gateway WhatsApp integration, run once: `cd hermes-agent/scripts/whatsapp-bridge && npm ci` (or `npm install`) on the host, then restart the gateway.
 
 ## Tailscale
 

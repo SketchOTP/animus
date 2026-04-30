@@ -1402,13 +1402,13 @@
         <label for="projPathInput">Project folder <span style="font-weight:400;color:var(--muted)">*</span></label>
         <input id="projPathInput" type="text" placeholder="/home/you/myproject" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
         <div class="path-status" id="pathStatus"></div>
-        <small>Type the full path to the folder on the server.<br>Example: <code>/home/sketch/projects/my-project</code></small>
+        <small>Type the full path to the folder on the server.<br>Example: <code>/home/you/projects/my-project</code></small>
       </div>
       <div class="field">
         <label for="projWorkspaceFilesInput">Separate files folder <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
         <input id="projWorkspaceFilesInput" type="text" placeholder="Leave blank to use the project folder" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
         <div class="path-status" id="workspacePathStatus"></div>
-        <small>If project code and workspace docs (<code>project_history.md</code>, <code>notes.md</code>, <code>project_goal.md</code>, etc.) live in different folders, set the workspace root here. Otherwise leave blank.<br>Example: <code>/home/sketch/projects/my-project-docs</code></small>
+        <small>If project code and workspace docs (<code>project_history.md</code>, <code>notes.md</code>, <code>project_goal.md</code>, etc.) live in different folders, set the workspace root here. Otherwise leave blank.<br>Example: <code>/home/you/projects/my-project-docs</code></small>
       </div>
       <div class="field">
         <label for="projOverview">Project goal</label>
@@ -1434,8 +1434,8 @@
           </div>
           <div class="field" style="margin-bottom:10px">
             <label for="projRemoteProjectPath">Remote project path <span style="font-weight:400;color:var(--muted)">*</span></label>
-            <input id="projRemoteProjectPath" type="text" placeholder="/home/sketch/projects/my-project" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
-            <small>Path on the <i>remote</i> machine (not the local mount). Example: <code>/home/sketch/projects/my-project</code></small>
+            <input id="projRemoteProjectPath" type="text" placeholder="/home/you/projects/my-project" spellcheck="false" autocomplete="off" style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-family:inherit">
+            <small>Path on the <i>remote</i> machine (not the local mount). Example: <code>/home/you/projects/my-project</code></small>
           </div>
           <div class="field" style="margin-bottom:10px">
             <label for="projDerivedLocalPath">Local path (auto)</label>
@@ -1825,9 +1825,7 @@
         </ul>
       </div>
       <div id="aboutAnimusRuntime" style="font-size:13px;color:var(--muted)"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px">
-        <a class="btn btn-ghost" href="https://github.com/SketchOTP/animus" target="_blank" rel="noopener">View docs (repo)</a>
-      </div>
+      <p style="margin:0;font-size:13px;color:var(--muted)">Documentation: use <strong>Settings → HELP</strong> for the in-app guide.</p>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" data-close="aboutAnimusBackdrop">Close</button>
@@ -9191,18 +9189,19 @@ if (_checkAnimusUpdatesBtn && _checkAnimusUpdatesStatus) {
       const j = await r.json().catch(() => ({}));
       if (!j.ok) {
         _checkAnimusUpdatesStatus.innerHTML =
-          '✗ ' + esc(String(j.error || 'Could not reach GitHub. Check your connection.'));
+          '✗ ' + esc(String(j.error || 'Could not check for updates. Check your connection and ANIMUS_UPDATE_URL in animus.env.'));
         return;
       }
       if (j.status === 'up_to_date') {
-        _checkAnimusUpdatesStatus.innerHTML = '✓ ' + esc(String(j.message || 'ANIMUS is up to date.'));
+        const cur = j.current_version ? ' (v' + esc(String(j.current_version)) + ')' : '';
+        _checkAnimusUpdatesStatus.innerHTML = '✓ ' + esc(String(j.message || 'ANIMUS is up to date.')) + cur;
         return;
       }
-      const n = Number(j.commits_behind || 0);
+      const lv = esc(String(j.latest_version || ''));
       _checkAnimusUpdatesStatus.innerHTML =
-        '↓ ' +
-        esc(String(n)) +
-        ' update(s) available. <button type="button" class="btn btn-ghost" id="applyAnimusUpdateBtn" style="min-height:32px;padding:4px 10px">Apply update</button>';
+        '↓ ANIMUS v' +
+        lv +
+        ' available. <button type="button" class="btn btn-ghost" id="applyAnimusUpdateBtn" style="min-height:32px;padding:4px 10px">Apply update</button>';
       $('applyAnimusUpdateBtn')?.addEventListener('click', async () => {
         _checkAnimusUpdatesStatus.textContent = 'Updating…';
         try {
@@ -9220,6 +9219,7 @@ if (_checkAnimusUpdatesBtn && _checkAnimusUpdatesStatus) {
             try {
               const rr = await fetch('/api/restart/chat', { method: 'POST', cache: 'no-store' });
               if (!rr.ok) alert('Restart request failed');
+              else location.reload();
             } catch (err) {
               alert(err && err.message ? err.message : 'Restart failed');
             }
@@ -9317,6 +9317,7 @@ async function runWizardIfNeeded() {
     tsVerified: null,
     tsWake: true,
     skillsCaps: null,
+    _wizardMarkedComplete: false,
   };
   const WIZ_ALL_PROVIDERS = [
     { id: 'openai', label: 'OpenAI', kind: 'api', hint: 'API key required' },
@@ -9972,7 +9973,7 @@ async function runWizardIfNeeded() {
           esc(defProj || '') +
           '" autocomplete="off" />' +
           '<p id="wizProjPathStatus" style="font-size:12px;color:var(--muted);margin-top:8px;min-height:1.2em"></p>' +
-          '<small style="display:block;color:var(--muted2);margin-top:6px">Type the full path on the server, e.g. <code>/home/sketch/projects</code></small>';
+          '<small style="display:block;color:var(--muted2);margin-top:6px">Type the full path on the server, e.g. <code>/home/you/projects</code></small>';
         const inp = $('wizProjectsPath');
         if (inp && !inp.value) inp.value = '~/projects';
         nav.innerHTML =
@@ -10150,6 +10151,15 @@ async function runWizardIfNeeded() {
         return;
       }
 
+      // Persist completion as soon as the final summary is shown so refresh / closing
+      // before "Open ANIMUS" does not restart the wizard.
+      if (!st._wizardMarkedComplete) {
+        st._wizardMarkedComplete = true;
+        try {
+          await fetch('/api/setup/complete', { method: 'POST' });
+        } catch (_) {}
+      }
+
       content.innerHTML =
         '<h3 style="margin-top:0">You are all set</h3>' +
         '<p style="color:var(--muted)">Hermes Agent: ' +
@@ -10165,6 +10175,9 @@ async function runWizardIfNeeded() {
         void paint();
       });
       $('wizOpen').addEventListener('click', async () => {
+        try {
+          await fetch('/api/setup/complete', { method: 'POST' });
+        } catch (_) {}
         const wlOn = settings.wake_lock_enabled !== false;
         try {
           await fetch('/api/setup/save-config', {
@@ -10182,9 +10195,6 @@ async function runWizardIfNeeded() {
         } catch (_) {}
         settings.wake_lock_enabled = wlOn;
         save();
-        try {
-          await fetch('/api/setup/complete', { method: 'POST' });
-        } catch (_) {}
         wizOfferDesktopLauncher();
         done();
       });
@@ -11338,6 +11348,129 @@ if (window.speechSynthesis) {
   });
 }
 
+// ─── In-app updates (manifest + zip; no git) ─────────────────────────────────
+async function checkForUpdatesOnLaunch() {
+  const dismissed = localStorage.getItem('animus_update_dismissed');
+  try {
+    const res = await fetch('/api/animus/check-updates', { method: 'POST', cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.ok || data.status !== 'update_available') return;
+    const lv = String(data.latest_version || '');
+    if (!lv || dismissed === lv) return;
+    showUpdateBanner(lv, String(data.notes || ''));
+  } catch (_) {}
+}
+
+function showUpdateBanner(version, notes) {
+  document.getElementById('animus-update-banner')?.remove();
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#6c63ff';
+
+  const banner = document.createElement('div');
+  banner.id = 'animus-update-banner';
+  banner.style.cssText =
+    'position:fixed;top:0;left:0;right:0;z-index:8888;background:' +
+    accent +
+    ';color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;' +
+    'flex-wrap:wrap;gap:8px;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
+
+  const left = document.createElement('span');
+  left.appendChild(document.createTextNode('\u2726 ANIMUS v'));
+  left.appendChild(document.createTextNode(version));
+  left.appendChild(document.createTextNode(' is available'));
+  if (notes && notes.trim()) {
+    left.appendChild(document.createTextNode(' — '));
+    const nt = document.createElement('span');
+    nt.textContent = notes.trim();
+    left.appendChild(nt);
+  }
+
+  const actions = document.createElement('div');
+  actions.style.cssText = 'display:flex;gap:8px;align-items:center';
+
+  const btnNow = document.createElement('button');
+  btnNow.type = 'button';
+  btnNow.id = 'animus-update-now-btn';
+  btnNow.textContent = 'Update now';
+  btnNow.style.cssText =
+    'background:#fff;color:' +
+    accent +
+    ';border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:600;font-size:13px';
+
+  const btnLater = document.createElement('button');
+  btnLater.type = 'button';
+  btnLater.id = 'animus-update-later-btn';
+  btnLater.textContent = 'Later';
+  btnLater.style.cssText =
+    'background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.5);' +
+    'border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px';
+
+  actions.appendChild(btnNow);
+  actions.appendChild(btnLater);
+  banner.appendChild(left);
+  banner.appendChild(actions);
+  document.body.prepend(banner);
+
+  btnLater.addEventListener('click', () => {
+    localStorage.setItem('animus_update_dismissed', version);
+    banner.remove();
+  });
+
+  btnNow.addEventListener('click', async () => {
+    btnNow.textContent = 'Updating…';
+    btnNow.disabled = true;
+    btnLater.disabled = true;
+    try {
+      const res = await fetch('/api/animus/apply-update', { method: 'POST', cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        banner.innerHTML = '';
+        const row = document.createElement('div');
+        row.style.cssText =
+          'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%';
+        const msg = document.createElement('span');
+        msg.textContent = 'Update applied. Restart ANIMUS to use v' + version + '.';
+        const rb = document.createElement('button');
+        rb.type = 'button';
+        rb.textContent = 'Restart now';
+        rb.style.cssText =
+          'background:#fff;color:' +
+          accent +
+          ';border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:600;font-size:13px';
+        rb.addEventListener('click', () => {
+          fetch('/api/restart/chat', { method: 'POST', cache: 'no-store' })
+            .then(() => location.reload())
+            .catch(() => location.reload());
+        });
+        row.appendChild(msg);
+        row.appendChild(rb);
+        banner.appendChild(row);
+      } else {
+        banner.innerHTML = '';
+        const row = document.createElement('div');
+        row.style.cssText =
+          'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;width:100%';
+        const er = document.createElement('span');
+        er.textContent = 'Update failed: ' + (data.error || 'Unknown error');
+        const db = document.createElement('button');
+        db.type = 'button';
+        db.textContent = 'Dismiss';
+        db.style.cssText =
+          'background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.5);' +
+          'border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px';
+        db.addEventListener('click', () => banner.remove());
+        row.appendChild(er);
+        row.appendChild(db);
+        banner.appendChild(row);
+      }
+    } catch (_) {
+      btnNow.textContent = 'Failed — try again';
+      btnNow.disabled = false;
+      btnLater.disabled = false;
+    }
+  });
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 (async function init() {
   ensureChatBackend();
@@ -11443,6 +11576,8 @@ if (window.speechSynthesis) {
   renderChatModelSettings();
   wireSlackSshSettingsOnce();
   renderProjectList(); renderSidebar(); renderMessages(); updateHeader();
+
+  void checkForUpdatesOnLaunch();
 })();
 
 if (

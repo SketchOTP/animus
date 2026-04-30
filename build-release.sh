@@ -52,6 +52,30 @@ if ! grep -q "check-updates" "${ROOT}/animus-chat/server.py"; then
   exit 1
 fi
 
+echo "[check] ANIMUS_UPDATE_URL in animus.env.example..."
+if ! grep -q "ANIMUS_UPDATE_URL" "${ROOT}/animus.env.example"; then
+  echo "FAIL: ANIMUS_UPDATE_URL missing from animus.env.example" >&2
+  exit 1
+fi
+
+echo "[check] No git fetch/pull/rev-parse/rev-list in server.py..."
+if grep -qE "git fetch|git pull|git rev-parse|git rev-list" "${ROOT}/animus-chat/server.py"; then
+  echo "FAIL: git commands still in server.py" >&2
+  exit 1
+fi
+
+echo "[check] httpx in animus-chat/requirements.txt..."
+if ! grep -q "httpx" "${ROOT}/animus-chat/requirements.txt"; then
+  echo "FAIL: httpx not in animus-chat/requirements.txt" >&2
+  exit 1
+fi
+
+echo "[check] No ANIMUS_GIT_ORIGIN_URL or ANIMUS_UPDATE_REPO in animus.env.example..."
+if grep -qE "ANIMUS_GIT_ORIGIN_URL|ANIMUS_UPDATE_REPO" "${ROOT}/animus.env.example"; then
+  echo "FAIL: old git env vars still in animus.env.example" >&2
+  exit 1
+fi
+
 echo "[check] projects_dir in wizard save-config..."
 if ! grep -q "projects_dir" "${ROOT}/animus-chat/setup_wizard/wizard_routes.py"; then
   echo "FAIL: projects_dir not saved by wizard" >&2
@@ -126,12 +150,28 @@ V="$(tr -d '[:space:]' < VERSION)"
 ZIP="${ROOT}/animus-v${V}.zip"
 rm -f "${ZIP}"
 
+# Ship tree trims (v1.0 ≤55MB zip cap, no ANIMUS / core hermes runtime impact):
+# - Ghost3D: optional GLB assets; PWA does not load them yet.
+# - hermes-agent/tests: pytest only; not imported at runtime.
+# - hermes-agent/website: docs site source; not used by `hermes` CLI or ANIMUS chat.
+# - hermes-agent/.env: provider template only; buyers should use checked-in examples / wizard, not raw .env paths.
+# - *.flock / hermes-agent/.envrc: local lock/dev-shell files, not buyer runtime.
+# - hermes-agent/scripts/whatsapp-bridge/node_modules: WhatsApp gateway bridge; reinstall with npm when needed.
+# - animus-update-server/: seller-only update manifest app; never ship to buyers.
+# - ./scripts/: repo-root dev/smoke checklists only (not hermes-agent/.../scripts/).
+# Internal monorepo continuity (not for buyers — clone the repo to develop ANIMUS):
+# - project_*.md, repo_map.md, AGENTS.md, CLAUDE.md, .cursorrules, .cursor/, setup_repo.md,
+#   animus-chat copies of repo_map / project_history / setup_repo; hermes-agent/AGENTS.md (upstream dev doc).
 zip -qr "${ZIP}" . \
   -x"*.git/*" \
   -x"*__pycache__/*" \
   -x"*.pyc" \
+  -x"*.flock" \
   -x"./animus.env" \
+  -x"./animus-chat/animus.env" \
   -x"./animus-chat/hermes-chat.env" \
+  -x"./hermes-agent/.env" \
+  -x"./hermes-agent/.envrc" \
   -x"./data/*" \
   -x"./animus-chat/data/*" \
   -x"./animus-chat/.venv/*" \
@@ -139,18 +179,71 @@ zip -qr "${ZIP}" . \
   -x"./hermes-agent/node_modules/*" \
   -x"./hermes-agent/web/node_modules/*" \
   -x"./hermes-agent/.git/*" \
+  -x"./Ghost3D/*" \
+  -x"./hermes-agent/tests/*" \
+  -x"./hermes-agent/website/*" \
+  -x"./hermes-agent/scripts/whatsapp-bridge/node_modules/*" \
+  -x"./project_goal.md" \
+  -x"./project_status.md" \
+  -x"./project_history.md" \
+  -x"./project_knowledge.md" \
+  -x"./repo_map.md" \
+  -x"./AGENTS.md" \
+  -x"./CLAUDE.md" \
+  -x"./.cursorrules" \
+  -x"./.cursor/*" \
+  -x"./setup_repo.md" \
+  -x"./animus-chat/repo_map.md" \
+  -x"./animus-chat/project_history.md" \
+  -x"./animus-chat/setup_repo.md" \
+  -x"./hermes-agent/.cursor/*" \
+  -x"./hermes-agent/AGENTS.md" \
+  -x"./animus-update-server/*" \
+  -x"./scripts/*" \
   -x"./animus-v*.zip"
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"
 echo "Created ${ZIP} (${SZ} MB)"
 if [[ "${SZ}" -gt 55 ]]; then
-  echo "NOTE: zip is over 55MB (v1.0 acceptance cap). Trim vendored trees or ship agent separately." >&2
+  echo "FAIL: zip is over 55MB (v1.0 acceptance cap in project_goal.md). Add more -x excludes or split the ship tree." >&2
+  exit 1
 fi
+echo "  Zip size OK (≤55MB v1.0 cap)"
+
+echo "== Zip leak check (env + local data) =="
+if unzip -l "${ZIP}" | grep -E '[[:space:]]animus\.env$' | grep -Fv example | grep -q .; then
+  echo "FAIL: raw animus.env path in zip (use animus.env.example only)" >&2
+  unzip -l "${ZIP}" | grep -E '[[:space:]]animus\.env$' | grep -Fv example >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -E '[[:space:]]hermes-chat\.env$' | grep -Fv example | grep -q .; then
+  echo "FAIL: raw hermes-chat.env path in zip" >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -E '[[:space:]]hermes-agent/\.env$' | grep -q .; then
+  echo "FAIL: raw hermes-agent/.env path in zip" >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -q 'animus-chat/data/'; then
+  echo "FAIL: animus-chat/data/ present in zip" >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -q 'animus-update-server/'; then
+  echo "FAIL: animus-update-server/ present in zip — remove it" >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -q '\.flock$'; then
+  echo "FAIL: local .flock lock file present in zip" >&2
+  exit 1
+fi
+echo "  animus-update-server/ not in zip — OK"
+echo "  No raw env or animus-chat/data/ in zip — OK"
 
 cat <<EOF
 ANIMUS release checklist:
 [ ] animus.env is NOT in the zip
 [ ] data/ directory is NOT in the zip
+[ ] START_HERE.txt and docs/GUMROAD.md are in the repo (included in zip for buyers/sellers)
 [ ] No personal API keys in any file
 [ ] No personal hostnames or IPs in any file
 [ ] No Hermes Chat in user-facing strings under animus-chat/app/

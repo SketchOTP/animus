@@ -4,7 +4,7 @@ Python Starlette server (`server.py`) plus static PWA in `app/`.
 
 | Path | Role |
 |------|------|
-| `server.py` | API routes, gateway proxy, workspace helpers, client-config + git `check-updates` / `apply-update` (HEAD + fetch + `origin/main`; friendly errors → INSTALL.md) |
+| `server.py` | API routes, gateway proxy, workspace helpers, client-config + `check-updates` / `apply-update` (`ANIMUS_UPDATE_URL` manifest + zip extract) |
 | `app/index.html` | Main PWA shell |
 | `app/ghostonlyicon.png` | App icon + sidebar/header brand + empty chat + About + notifications (favicon / manifest / apple-touch) |
 | `app/manifest.json` / `app/sw.js` | PWA manifest (icons → `ghostonlyicon.png`) and service worker (`animus-v2` cache) |

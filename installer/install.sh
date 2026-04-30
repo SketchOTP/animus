@@ -6,16 +6,6 @@ echo "========================================="
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 bash "${ROOT}/installer/preflight.sh"
 
-if command -v git >/dev/null 2>&1; then
-  if ! git -C "${ROOT}" remote get-url origin &>/dev/null; then
-    git -C "${ROOT}" remote add origin https://github.com/SketchOTP/animus.git || true
-  fi
-  # Ensure main branch tracks origin so check-updates works
-  if git -C "${ROOT}" fetch origin 2>/dev/null; then
-    git -C "${ROOT}" checkout -B main origin/main 2>/dev/null || true
-  fi
-fi
-
 mkdir -p "${ROOT}/animus-chat/data"
 if [[ ! -f "${ROOT}/animus.env" ]]; then
   cp "${ROOT}/animus.env.example" "${ROOT}/animus.env"

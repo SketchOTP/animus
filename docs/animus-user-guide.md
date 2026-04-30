@@ -89,7 +89,7 @@ Under **Settings → Connections**, add **SSH hosts** (alias, hostname, user, ke
 
 ## Updates
 
-**Settings** may offer **Check for updates** / **Apply update** when the install is a **git** checkout with `origin`. Zip installs without git history cannot use apply-update as shipped.
+**Settings → Check for updates** compares your **`VERSION`** file to a manifest at **`ANIMUS_UPDATE_URL`** (in **`animus.env`**). When a newer version is listed, **Apply update** downloads the release zip and unpacks it over the install. Leave **`ANIMUS_UPDATE_URL`** unset to skip update checks. See **`docs/BUYER_UPDATES.md`**.
 
 ## Data and important paths
 

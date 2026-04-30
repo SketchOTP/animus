@@ -48,7 +48,7 @@ Then start the server in that environment and ensure **animus.env / gateway key*
 13. **Token tracker** — entries from steps 9–10 appear (requires `stream_options.include_usage` from gateway).
 14. **About** — versions from `/api/version`.
 15. **Reload** — wizard does **not** reappear (`first_run: false` in `config.json`).
-16. From repo root (no `CHAT_DATA_DIR` from smoke): `./build-release.sh` — **pass**; zip **≤ 55MB** (v1.0 cap); name `animus-v1.0.0.zip` if `VERSION` is `1.0.0`.
+16. From repo root (no `CHAT_DATA_DIR` from smoke): `./build-release.sh` — **pass** (script **fails** if zip > 55MB); zip **≤ 55MB** (v1.0 cap; typical ~28MB with default trims); name `animus-v1.0.0.zip` if `VERSION` is `1.0.0`.
 
 ## Teardown
 

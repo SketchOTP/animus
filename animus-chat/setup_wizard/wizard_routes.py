@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,27 @@ _ENV_KEY_BY_PROVIDER: dict[str, str] = {
 
 def _config_path() -> Path:
     return chat_data_dir() / "config.json"
+
+
+def cfg_still_first_run(cfg: dict[str, Any]) -> bool:
+    """True when the first-run wizard should run (``first_run`` in ``config.json``).
+
+    Accepts boolean false, numeric 0, and common string spellings so a hand-edited JSON
+    file does not force the wizard to reappear.
+    """
+    v = cfg.get("first_run", True)
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, str):
+        s = v.strip().lower()
+        if s in ("0", "false", "no", "off", ""):
+            return False
+        if s in ("1", "true", "yes", "on"):
+            return True
+        return True
+    if isinstance(v, (int, float)):
+        return v != 0
+    return True
 
 
 def _load_config() -> dict[str, Any]:
@@ -86,7 +108,7 @@ def _read_env_kv() -> dict[str, str]:
 
 async def setup_status(_req: Request) -> Response:
     cfg = _load_config()
-    return JSONResponse({"first_run": bool(cfg.get("first_run", True))})
+    return JSONResponse({"first_run": cfg_still_first_run(cfg)})
 
 
 async def setup_hermes_check(_req: Request) -> Response:
@@ -489,6 +511,7 @@ async def setup_save_config(req: Request) -> Response:
 async def setup_complete(_req: Request) -> Response:
     cfg = _load_config()
     cfg["first_run"] = False
+    cfg["setup_completed_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _save_config(cfg)
     return JSONResponse({"ok": True})
 

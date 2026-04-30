@@ -33,9 +33,9 @@ ANIMUS chat server (Starlette)
   Set ``HERMES_CHAT_PUBLIC_URL`` (e.g. ``https://host.tailnet.ts.net``) so ``/api/hermes-chat-meta``
   stays aligned with what users open.
 
-**Deploy:** Python keeps the old process in memory until restart. After ``git pull`` or any edit to
+**Deploy:** Python keeps the old process in memory until restart. After an in-app zip update or any edit to
 ``server.py``, run ``./restart-after-code-change.sh`` from this directory (or
-``systemctl --user restart hermes-chat.service``), then confirm ``rev`` via ``/api/hermes-chat-meta``.
+``systemctl --user restart animus.service`` / your chat unit), then confirm ``rev`` via ``/api/hermes-chat-meta``.
 """
 import asyncio
 import codecs
@@ -186,6 +186,7 @@ def stt_backend_public() -> str:
 
 
 from hermes_runner import chat_data_dir  # noqa: E402 — single source for wizard + chats + config.json
+from setup_wizard.wizard_routes import cfg_still_first_run  # noqa: E402
 
 
 DATA_DIR = chat_data_dir()
@@ -219,13 +220,40 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260428-codex-auto-footer"
+CHAT_SERVER_REV = "20260429-bundled-skills-sync"
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
 
 # Make Hermes internals importable for skills + cron
 if HERMES_AGENT not in sys.path:
     sys.path.insert(0, HERMES_AGENT)
+
+
+def _ensure_bundled_skills_seeded() -> None:
+    """Copy bundled ``hermes-agent/skills/`` into ``HERMES_HOME/skills`` once per process.
+
+    The Hermes CLI runs ``tools.skills_sync.sync_skills()`` on every ``hermes`` invocation;
+    ANIMUS is usually started via ``server.py`` only, so new profiles stayed empty and
+    ``GET /api/skills/list`` returned []. Mirroring CLI startup fixes fresh installs.
+    """
+    try:
+        from tools.skills_sync import sync_skills
+
+        result = sync_skills(quiet=True)
+        copied = result.get("copied") or []
+        updated = result.get("updated") or []
+        if copied or updated:
+            log.info(
+                "Bundled Hermes skills synced into HERMES_HOME: %d copied, %d updated (total_bundled=%s)",
+                len(copied),
+                len(updated),
+                result.get("total_bundled", "?"),
+            )
+    except Exception as exc:
+        log.warning("Bundled skills sync skipped: %s", exc)
+
+
+_ensure_bundled_skills_seeded()
 
 
 def _collect_hermes_local_alignment() -> dict:
@@ -379,7 +407,7 @@ async def animus_client_config_get(_: Request) -> Response:
     return JSONResponse(
         {
             "wake_lock": bool(wl),
-            "first_run": bool(cfg.get("first_run", True)),
+            "first_run": cfg_still_first_run(cfg),
             "projects_dir": str(cfg.get("projects_dir") or "").strip(),
             "inference_models": im,
             "tts_backend": tb,
@@ -490,100 +518,124 @@ async def animus_desktop_launcher_get(req: Request) -> Response:
     )
 
 
-async def animus_check_updates(_: Request) -> Response:
-    root = _ANIMUS_MONOREPO_ROOT
+def _animus_current_version() -> str:
     try:
-        head_check = subprocess.run(  # exempt: git rev-parse for update check
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if head_check.returncode != 0:
-            return JSONResponse(
-                {
-                    "ok": False,
-                    "error": (
-                        "This ANIMUS install has no git history. "
-                        "Updates require a git clone — see INSTALL.md."
-                    ),
-                }
-            )
-        fetch = subprocess.run(  # exempt: git fetch for release update check
-            ["git", "fetch", "origin"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if fetch.returncode != 0:
-            err = (fetch.stderr or fetch.stdout or "").strip()
-            return JSONResponse({"ok": False, "error": f"Could not reach GitHub: {err}"})
-        status = subprocess.run(  # exempt: git rev-list for update check
-            ["git", "rev-list", "--count", "HEAD..origin/main"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if status.returncode != 0:
-            return JSONResponse(
-                {
-                    "ok": False,
-                    "error": (
-                        "Cannot determine updates (missing origin/main or divergent history). "
-                        "Use a full git clone from GitHub — see INSTALL.md."
-                    ),
-                },
-            )
-        commits_behind = int((status.stdout or "").strip() or "0")
-        if commits_behind == 0:
-            return JSONResponse({"ok": True, "status": "up_to_date", "message": "ANIMUS is up to date."})
+        return (_ANIMUS_MONOREPO_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    except Exception:
+        return "0.0.0"
+
+
+def _version_tuple(v: str) -> list[int]:
+    try:
+        s = (v or "").strip().lstrip("v").split("+", 1)[0]
+        parts = []
+        for x in s.split("."):
+            if not x:
+                continue
+            parts.append(int("".join(c for c in x if c.isdigit()) or "0"))
+        return parts or [0]
+    except Exception:
+        return [0]
+
+
+def _version_is_newer(latest: str, current: str) -> bool:
+    return _version_tuple(latest) > _version_tuple(current)
+
+
+def _safe_extract_release_zip(zf: zipfile.ZipFile, dest: Path) -> None:
+    """Reject zip-slip paths; then extract."""
+    root = dest.resolve()
+    for info in zf.infolist():
+        name = (info.filename or "").replace("\\", "/").lstrip("/")
+        if not name:
+            continue
+        if ".." in name.split("/"):
+            raise ValueError(f"Unsafe path in release zip: {info.filename!r}")
+        target = (root / name).resolve()
+        try:
+            target.relative_to(root)
+        except ValueError as exc:
+            raise ValueError(f"Zip path escapes install root: {info.filename!r}") from exc
+    zf.extractall(root)
+
+
+async def animus_check_updates(_: Request) -> Response:
+    update_url = (os.environ.get("ANIMUS_UPDATE_URL") or "").strip()
+    if not update_url:
         return JSONResponse(
             {
-                "ok": True,
-                "status": "update_available",
-                "commits_behind": commits_behind,
-                "message": f"{commits_behind} update(s) available.",
-            },
+                "ok": False,
+                "error": "Update checking is not configured for this install.",
+            }
         )
+    current = _animus_current_version()
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(update_url)
+            r.raise_for_status()
+            manifest = r.json()
+    except httpx.TimeoutException:
+        return JSONResponse({"ok": False, "error": "Update server timed out. Check your connection."})
     except Exception as exc:
-        return JSONResponse({"ok": False, "error": str(exc)})
+        return JSONResponse({"ok": False, "error": f"Could not reach update server: {exc}"})
+
+    latest = str(manifest.get("version") or "0.0.0").strip()
+    is_newer = _version_is_newer(latest, current)
+    return JSONResponse(
+        {
+            "ok": True,
+            "current_version": current,
+            "latest_version": latest,
+            "status": "update_available" if is_newer else "up_to_date",
+            "download_url": (manifest.get("download_url") or "") if is_newer else None,
+            "notes": str(manifest.get("notes") or ""),
+            "message": (f"ANIMUS v{latest} is available." if is_newer else "ANIMUS is up to date."),
+        }
+    )
 
 
 async def animus_apply_update(_: Request) -> Response:
-    root = _ANIMUS_MONOREPO_ROOT
+    update_url = (os.environ.get("ANIMUS_UPDATE_URL") or "").strip()
+    if not update_url:
+        return JSONResponse({"ok": False, "error": "ANIMUS_UPDATE_URL not set"})
+
+    animus_root = _ANIMUS_MONOREPO_ROOT
+    tmp_path: Optional[Path] = None
     try:
-        head_check = subprocess.run(  # exempt: git rev-parse before apply-update
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=10,
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(update_url)
+            r.raise_for_status()
+            manifest = r.json()
+
+        download_url = (manifest.get("download_url") or "").strip()
+        if not download_url:
+            return JSONResponse({"ok": False, "error": "No download URL in update manifest"})
+
+        fd, tmp_name = tempfile.mkstemp(suffix=".zip")
+        os.close(fd)
+        tmp_path = Path(tmp_name)
+
+        async with httpx.AsyncClient(timeout=120.0) as dl_client:
+            async with dl_client.stream("GET", download_url) as resp:
+                resp.raise_for_status()
+                with tmp_path.open("wb") as out_f:
+                    async for chunk in resp.aiter_bytes(8192):
+                        out_f.write(chunk)
+
+        with zipfile.ZipFile(tmp_path) as zf:
+            _safe_extract_release_zip(zf, animus_root)
+
+        return JSONResponse(
+            {"ok": True, "message": "Update applied. Restart ANIMUS to use the new version."}
         )
-        if head_check.returncode != 0:
-            return JSONResponse(
-                {
-                    "ok": False,
-                    "error": (
-                        "This ANIMUS install has no git history. "
-                        "Updates require a git clone — see INSTALL.md."
-                    ),
-                }
-            )
-        pull = subprocess.run(  # exempt: git pull for release apply-update
-            ["git", "pull", "origin", "main"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if pull.returncode != 0:
-            return JSONResponse({"ok": False, "error": (pull.stderr or pull.stdout or "git pull failed").strip()})
-        return JSONResponse({"ok": True, "message": "Update applied. Restart ANIMUS to use the new version."})
     except Exception as exc:
         return JSONResponse({"ok": False, "error": str(exc)})
+    finally:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 # ─── Chat proxy ───────────────────────────────────────────────────────────────

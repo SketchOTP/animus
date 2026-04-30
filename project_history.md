@@ -383,3 +383,9 @@ Files touched:
 - project_knowledge.md
 - project_history.md
 
+
+1241 300426 - Cursor Cloud dev environment setup: venv, deps, AGENTS.md cloud instructions, project_knowledge cloud setup notes.
+Files touched:
+- AGENTS.md
+- project_knowledge.md
+- project_history.md

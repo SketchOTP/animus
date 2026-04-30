@@ -147,6 +147,13 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Screenshots (Gumroad):** Capture **during** the smoke run (wizard welcome, chat with badge, cron list) while **`CHAT_DATA_DIR`** still shows first-run UI. After teardown + return to normal data, the wizard is gone unless you reset **`config.json`** or start another throwaway **`CHAT_DATA_DIR`** session.
 - **Step 16 (`./build-release.sh`):** Run **last**, from **repo root**, in a **clean shell** — **`unset CHAT_DATA_DIR`** after smoke teardown so the release build is not tied to the temp tree. The script does not need smoke data, but avoiding a stray env var avoids confusion.
 
+## Cursor Cloud dev environment (300426)
+
+- **`python3.12-venv`** apt package required before `python3 -m venv` works on Cloud Agent VMs (Ubuntu 24.04 base image ships Python 3.12.3 but without ensurepip).
+- **`HERMES_BIN`** must be set in `animus.env` to `/workspace/animus-chat/.venv/bin/hermes` for the wizard Agent check step to pass. Without it, `hermes` is not on PATH even though the package is installed in the venv.
+- **`SKIP_ANIMUS_PIPER_VOICES=1`** avoids a ~380 MB HF download on every fresh setup. Set in `animus.env`.
+- **No automated tests:** Validation is `import server` + `build-release.sh` + manual API curls. No pytest/jest.
+
 ## No-new-knowledge template
 
 When a session adds nothing durable, append:

@@ -416,3 +416,37 @@ What state the project is currently in.
 What durable lessons are known.
 What still needs attention.
 ```
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- Python 3.12 venv lives at `animus-chat/.venv/`. The update script creates it and installs deps.
+- `animus.env` at repo root holds runtime config. The update script copies from `animus.env.example` if missing. For dev, set `HERMES_BIN=/workspace/animus-chat/.venv/bin/hermes` and `HERMES_AGENT_DIR=/workspace/hermes-agent` there.
+- Set `SKIP_ANIMUS_PIPER_VOICES=1` in `animus.env` to avoid downloading ~380 MB of Piper TTS voice models.
+
+### Running the server
+
+```bash
+cd /workspace/animus-chat
+/workspace/animus-chat/.venv/bin/python server.py
+```
+
+Default port **3001**. Gateway warning (`Could not reach gateway health/detailed`) is normal without a live Hermes gateway — the web UI and all non-chat APIs still work.
+
+### Validation commands
+
+- **Import check:** `cd /workspace/animus-chat && .venv/bin/python -c "import server"`
+- **Release build:** `cd /workspace && ./build-release.sh` (requires `rg` on PATH)
+- **Hermes CLI:** `/workspace/animus-chat/.venv/bin/hermes --version`
+- **API smoke:** `curl -sS http://127.0.0.1:3001/api/version | python3 -m json.tool`
+
+### No automated test suite
+
+This repo has no `pytest` or unit tests. Validation is `import server` + `build-release.sh` + manual API curls. See `repo_map.md` Tests section.
+
+### Gotchas
+
+- `python3.12-venv` apt package is needed before `python3 -m venv` works on the VM.
+- Never create a venv **inside** `animus-chat/` other than `.venv` — `build-release.sh` walks that tree and pip vendor files cause grep false positives.
+- `animus.env` is gitignored; it must be created per-VM from `animus.env.example`.

@@ -804,3 +804,9 @@ Files touched:
 Files touched:
 - project_status.md
 - project_history.md
+
+1205 300426 - Git: pushed main to GitHub (de82914) — seller-private, preflight/Docker animus.env, animusai docs, release-and-publish; omitted animus-chat/whoami.
+Files touched:
+
+- (commit de82914 — 15 files; see git show)
+

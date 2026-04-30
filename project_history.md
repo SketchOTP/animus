@@ -810,3 +810,606 @@ Files touched:
 
 - (commit de82914 — 15 files; see git show)
 
+
+0953 300426 - VERSION 1.0.2; ./build-release.sh produced animus-v1.0.2.zip (~28MB).
+Files touched:
+
+- VERSION
+- animus-v1.0.2.zip (artifact, gitignored)
+
+- project_status.md
+- project_history.md
+
+1011 300426 - Skills list + wizard step 4: re-seed bundled skills when .bundled_manifest missing; show list API errors in wizard.
+Files touched:
+- animus-chat/skills_routes.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1024 300426 - Skills: re-sync bundled when manifest empty and no SKILL.md but bundle has skills; run seed before skills update-all.
+Files touched:
+- animus-chat/skills_routes.py
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1035 300426 - Dev install: sync-dev-systemd.sh, restart-after-code-change prefers animus.service, HERMES_HOME absolute in env examples + Docker ENV, INSTALL.md.
+Files touched:
+- scripts/sync-dev-systemd.sh
+- animus-chat/restart-after-code-change.sh
+- animus.env.example
+- animus-chat/animus.env.example
+- INSTALL.md
+- docker/Dockerfile
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- animus.env (local, gitignored)
+
+1104 300426 - Multi-device chat list: server convs always on init; refetch on visibility/pageshow; SW cache animus-v3; CHAT_SERVER_REV bump.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- repo_map.md
+- project_knowledge.md
+- project_status.md
+- project_history.md
+1105 300426 - Doc touch: animus-chat/repo_map.md + project_status SW cache string animus-v3.
+Files touched:
+- animus-chat/repo_map.md
+- project_status.md
+- project_history.md
+
+1122 300426 - Settings UI: grouped compact panels, info tooltips, notification + inference active toggles; icon sidebar tabs (Tokens, Help); check-updates uses animusai default manifest + confirm/alert flow; server default manifest URL.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/server.py
+- animus.env.example
+- repo_map.md
+- animus-chat/repo_map.md
+- project_history.md
+- project_status.md
+- project_knowledge.md
+
+1235 300426 - Token tracker: flush chat SSE tail buffer so final usage line parses; accept data: without space; server SSE usage from choices[0], CRLF, input_tokens/output_tokens/total_tokens fallbacks.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/server.py
+- project_history.md
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+
+1310 300426 - Chat/help proxy: allow missing HERMES_API_KEY when gateway has no API key; gateway_upstream_headers + live os.environ bearer; drop mistaken 503 on raw gateway models fetch.
+Files touched:
+- animus-chat/hermes_runner.py
+- animus-chat/server.py
+- animus-chat/help_routes.py
+- project_history.md
+- project_knowledge.md
+- repo_map.md
+
+1345 300426 - Diagnose “still” HERMES_API_KEY chat error: v1.0.2 zip shipped old server gate; VERSION 1.0.3 + CHAT_SERVER_REV bump + meta `chat_proxy_blocks_on_missing_hermes_api_key`; `./build-release.sh` → animus-v1.0.3.zip.
+Files touched:
+- VERSION
+- animus-chat/server.py
+- animus-v1.0.3.zip
+- project_history.md
+- project_status.md
+- project_knowledge.md
+
+1405 300426 - Harden stale-install path: installer/sync-animus-chat-from-zip.sh; /api/version + meta fingerprint; build-release rejects obsolete gate string; START_HERE/INSTALL/user-guide/env.example/restart script; VERSION 1.0.4 + animus-v1.0.4.zip.
+Files touched:
+- VERSION
+- build-release.sh
+- installer/sync-animus-chat-from-zip.sh
+- installer/install.sh
+- animus-chat/server.py
+- animus-chat/restart-after-code-change.sh
+- animus.env.example
+- animus-chat/animus.env.example
+- START_HERE.txt
+- INSTALL.md
+- docs/animus-user-guide.md
+- repo_map.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+- animus-v1.0.4.zip
+
+1425 300426 - animus-chat/sync-from-release-zip.sh for partial installs (no installer/); installer/sync wrapper; VERSION 1.0.5 + animus-v1.0.5.zip; START_HERE + INSTALL + repo_map + user-guide.
+Files touched:
+- VERSION
+- animus-chat/server.py
+- animus-chat/sync-from-release-zip.sh
+- installer/sync-animus-chat-from-zip.sh
+- START_HERE.txt
+- INSTALL.md
+- docs/animus-user-guide.md
+- repo_map.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+- animus-v1.0.5.zip
+
+1445 300426 - START_HERE + INSTALL: partial-tree sync must unzip sync-from-release-zip.sh first (file not on disk until extracted).
+Files touched:
+- START_HERE.txt
+- INSTALL.md
+- project_knowledge.md
+- project_history.md
+1245 300426 - Document HERMES_API_KEY vs API_SERVER_KEY; synced atlas animus.env from ~/.hermes/.env (operational).
+Files touched:
+- animus.env.example
+- project_knowledge.md
+- project_history.md
+1310 300426 - v1.0.6 buyer hardening: API_SERVER_KEY fallback in hermes_runner, startup /v1/models probe + version/meta telemetry, merge-hermes-gateway-auth.py in install/preflight, docs + systemd Description + START_HERE systemctl --user.
+Files touched:
+- VERSION
+- animus-chat/hermes_runner.py
+- animus-chat/server.py
+- animus-chat/restart-after-code-change.sh
+- installer/install.sh
+- installer/preflight.sh
+- installer/merge-hermes-gateway-auth.py
+- systemd/animus.service
+- START_HERE.txt
+- INSTALL.md
+- animus.env.example
+- docs/animus-user-guide.md
+- build-release.sh
+- repo_map.md
+- animus-chat/repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- animus-v1.0.6.zip
+
+1228 300426 - Confirmed ANIMUS monorepo after hermes-update analysis: animus-chat import server + build-release.sh pass; documented atlas hermes update stash conflicts (clean tree = stashed ANIMUS patches not reapplied).
+Files touched:
+- project_history.md
+- project_knowledge.md
+- project_status.md
+1620 300426 - Token tracker: keep explicit zero SSE usage in normalizeUsagePayload; Tokens tab shows recent server rows when chart is empty; Hermes api_server _run_agent usage from run_conversation result.
+Files touched:
+- animus-chat/app/index.html
+- hermes-agent/gateway/platforms/api_server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+
+1235 300426 - Wired hermes project CLI in hermes_cli/main.py; synced monorepo hermes-agent to animus-fresh-install; Patch 6 in hermes-agent-patches.md; repo_map hermes-agent row; tests: hermes_chat_delivery + project_workspace (pytest in disposable env).
+Files touched:
+- hermes-agent/hermes_cli/main.py
+- docs/hermes-agent-patches.md
+- repo_map.md
+- project_history.md
+- project_status.md
+- project_knowledge.md
+1645 300426 - Codex Responses: capture usage from terminal SSE events and merge onto get_final_response() so session token counters populate for ANIMUS token tracker.
+Files touched:
+- hermes-agent/run_agent.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+
+1245 300426 - Repeated hermes-agent rsync to animus-fresh-install; restarted animus.service; isolated CHAT_DATA_DIR spot-check: hermes project init + append_cron_to_hermes_chat (project UUID); did not restart hermes-gateway.service (live ~/.hermes agent path).
+Files touched:
+- project_history.md
+- project_status.md
+
+1255 300426 - Pointed user hermes-gateway.service at animus-fresh-install/hermes-agent venv; HERMES_HOME=default; CHAT_DATA_DIR=animus/animus-chat/data; daemon-reload + restart; backup prior unit as hermes-gateway.service.bak-20260430-dpc; /v1/models probe pass.
+Files touched:
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- /home/sketch/.config/systemd/user/hermes-gateway.service.bak-20260430-dpc
+- project_history.md
+- project_status.md
+- project_knowledge.md
+
+1310 300426 - Single-repo dev: hermes-gateway.service points at monorepo hermes-agent; scripts/sync-dev-systemd.sh writes user hermes-gateway.service from ROOT; repo_map + project docs; removed animus-fresh-install from gateway path.
+Files touched:
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- scripts/sync-dev-systemd.sh
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1325 300426 - Removed dev sandbox directory /home/sketch/animus-fresh-install (~2GB); single-repo workflow only.
+Files touched:
+- (deleted) /home/sketch/animus-fresh-install/
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1515 300426 - Chat assistant bubbles: show provider·model footer for all inference backends (not only OpenAI Codex Auto); rehydrate footer from stored inference_* when inference_label missing.
+Files touched:
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1545 300426 - Settings Codex Sign in: delegated click on inference matrix root + TEXT_NODE target→parent for closest(); per-row .inf-codex-status; try/finally re-enable button (fixes no-op / stuck disabled; banner-only feedback was easy to miss below long matrix).
+Files touched:
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1610 300426 - effectiveChatModelId: prefer inference_models[active] then chat_model before animus_selected_model localStorage; Active toggle + persistChatModelPicker sync inference_models + localStorage so chat/footer match Settings matrix model.
+Files touched:
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1645 300426 - Codex OAuth: new hermes_cli/codex_device_oauth.py (extract from web_server); dashboard + ANIMUS use it; wizard_routes drops hermes subprocess; PWA opens verification_url; docs Patch 7 + repo_map.
+Files touched:
+- hermes-agent/hermes_cli/codex_device_oauth.py
+- hermes-agent/hermes_cli/web_server.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+- docs/hermes-agent-patches.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+1415 300426 - Buyer install: ensure-sshpass.sh from install.sh; Docker sshpass; INSTALL/START_HERE/docs/ssh/env/build-release/preflight/repo_map.
+Files touched:
+- installer/ensure-sshpass.sh
+- installer/install.sh
+- installer/preflight.sh
+- docker/Dockerfile
+- INSTALL.md
+- START_HERE.txt
+- docs/ssh.md
+- animus.env.example
+- build-release.sh
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1745 300426 - Settings inference matrix: Hermes snapshot on provider-status; POST sync-hermes-model; UI reflects Hermes default and syncs on model change / Active toggle / chat picker when bound.
+Files touched:
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+1445 300426 - SSH password test: omit BatchMode=yes for password auth (OpenSSH disables it); PubkeyAuthentication=no + PreferredAuthentications password,kbd-interactive; CHAT_SERVER_REV bump; docs/repo_map/knowledge/status.
+Files touched:
+- animus-chat/ssh_routes.py
+- animus-chat/server.py
+- docs/ssh.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1530 300426 - Research: inventoried Hermes agent gateway/CLI/dashboard surfaces vs ANIMUS wiring (no code).
+Files touched:
+- project_history.md
+- project_knowledge.md
+
+1815 300426 - sync-hermes-model: support cursor-agent, claude-code (→anthropic), copilot-acp; Copilot PATH check; provider base_url env before resolve; mistral/groq/togetherai/cohere fallbacks; missing base →422 not 500.
+Files touched:
+- animus-chat/setup_wizard/wizard_routes.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1645 300426 - Hermes backend wiring: cron→gateway /api/jobs, restart via dashboard/CLI, skills+tokens+dashboard client, gateway messaging panel, gateway schedule_tz PATCH, CHAT_SERVER_REV.
+Files touched:
+- animus-chat/hermes_service_client.py
+- animus-chat/cron_routes.py
+- animus-chat/server.py
+- animus-chat/skills_routes.py
+- animus-chat/token_usage.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/integrations_gateway_routes.py
+- animus-chat/app/index.html
+- animus.env.example
+- hermes-agent/gateway/platforms/api_server.py
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1403 300426 - Settings Messaging: in-app Hermes gateway platform setup (API + UI); writes ~/.hermes/.env and config.yaml; legacy GET /api/integrations/hermes-gateway/* kept; removed integrations_gateway_routes.py.
+Files touched:
+- animus-chat/messaging_routes.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/integrations_gateway_routes.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1415 300426 - Messaging Settings: SW cache animus-v4, reg.update() after register, purge/hard-reload hint, resilient fetch + legacy platforms fallback; clearer API failure copy; CHAT_SERVER_REV bump.
+Files touched:
+- animus-chat/app/sw.js
+- animus-chat/app/index.html
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1520 300426 - POST /api/restart/gateway: async background restart + 12s dashboard timeout (fix browser Failed to fetch); optional chaining on restart buttons; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/server.py
+- animus-chat/hermes_service_client.py
+- animus-chat/app/index.html
+- project_knowledge.md
+- project_history.md
+
+1545 300426 - GET /api/models: merge Hermes CLI rows for openai-codex/cursor-agent/claude-code when hermes_models_cache.json is gateway-only; fixes missing Codex in Settings; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/server.py
+- project_knowledge.md
+- project_history.md
+
+1610 300426 - Read aloud: Piper always selectable; tri-state /api/tts/backends probe; no forced browser fallback; tryReadAloudPiper gate; Messaging group id + border + SW animus-v5; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1745 300426 - Models: normalize gateway owned_by to matrix ids; refresh merges /v1/models; inference OAuth model pick when not signed in; Codex link + Cursor status/errors; SW animus-v6; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1830 300426 - Added scripts/animus CLI (start/stop/restart/status); sync-dev-systemd.sh symlinks to ~/.local/bin; INSTALL + repo_map + project docs.
+Files touched:
+- scripts/animus
+- scripts/sync-dev-systemd.sh
+- INSTALL.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1845 300426 - Settings inference: Claude Code Sign in (server) + POST /api/setup/claude-code-login-start (claude setup-token); SW animus-v7; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1920 300426 - Settings: collapsible Inference + Messaging (CSS grid slide); messaging per-platform On toggle + collapsible Configuration; SW animus-v8; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1645 300426 - Settings: sidebar shrink/collapse + width radios, Screen wake label, one info per section, removed Slack Integrations UI/modal; Messaging POST import-animus-slack; Plan play/stop icons; cron Slack hint → Settings; user guide + sw v9 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/messaging_routes.py
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- docs/animus-user-guide.md
+- project_status.md
+- repo_map.md
+- project_history.md
+- project_knowledge.md
+
+1530 300426 - Settings: sidebar label trim; Notifications + Read aloud collapsible (default collapsed); notification status only when actionable; Piper first in TTS; removed Voice engine / Piper hint copy; sw animus-v10; CHAT_SERVER_REV; user guide aligned.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- docs/animus-user-guide.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1645 300426 - Plan tab: remove intro; draft banner stamp+idea with edit/play/delete; clarification modal per question + cancel saves; draft fields clarifyQuestions/gapClarifyQuestions + answers arrays; sw v11; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- docs/animus-user-guide.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+1613 300426 - Cron UI: project scope + workdir, overseer + composed prompt/invariant, optimize-prompt API, dynamic deliver from messaging overview; gateway jobs workdir + prompt cap; client-config cron_overseer_prompt; SW animus-v12.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/cron_routes.py
+- animus-chat/server.py
+- animus-chat/messaging_routes.py
+- animus-chat/repo_map.md
+- hermes-agent/gateway/platforms/api_server.py
+- docs/hermes-agent-patches.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1625 300426 - Cron overseer collapsible (default closed); prompt optimizer new-btn styling + hourglass spinner; timezone Change opens dialog picker; sw animus-v13; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+
+1730 300426 - Chat UI: 2x empty-state + main header ghost icon; remove sidebar head ghost; sw animus-v14; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1745 300426 - Fix chat branding: restore 2x ghost on sidebar ANIMUS; remove main header ghost; sw animus-v15; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1810 300426 - Default General project: server ensures projects_dir/general + projects.json; lifespan + wizard + client-config hooks; PWA session auto-open; sw animus-v16; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/server.py
+- animus-chat/setup_wizard/wizard_routes.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1845 300426 - Projects sidebar: drag row reorder (gear excluded; ⋮⋮ affordance); persist projects.json + merge order; refetch projects on visibility; Screen wake settings title+toggle+info only; sw animus-v17; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1920 300426 - Projects: purple bold + add button (accent); list collapsed by default (localStorage 1/0); initial HTML + sw animus-v18; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1935 300426 - Add project + control: bold accent text only (no purple chip); sw animus-v19; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1950 300426 - Help sidebar tab SVG: overflow visible on rail icons; Feather-style ?-in-circle (r9, stroke caps); sw animus-v20; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2010 300426 - Cron tab: job row icon buttons (edit/run/pause-play/delete/logs order); add job + matches projects accent +; sw animus-v21; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2035 300426 - Settings sync: animus_ui_settings in config.json + GET ui_settings; client debounced POST on save + pullClientConfig on visibility; sw animus-v22; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2045 300426 - Cron Run now icon: clear stick-figure runner SVG; sw animus-v23; CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_history.md
+
+2115 300426 - Plan: Stop pipeline anytime — shared requestPlanPipelineStop(); clarification modal Stop button (overlay hid toolbar stop); sw v24 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2125 300426 - Plan draft banner: stamp format HHMM MMDDYY (was DDMMYY); sw v25 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md

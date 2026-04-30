@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl git build-essential \
+    curl git build-essential sshpass \
     && rm -rf /var/lib/apt/lists/*
 
 COPY hermes-agent /opt/hermes-agent
@@ -23,6 +23,8 @@ ENV DATA_DIR=/data
 ENV CHAT_HOST=0.0.0.0
 ENV CHAT_PORT=3001
 ENV HERMES_AGENT_DIR=/opt/hermes-agent
+# Example file uses a host placeholder path; container profile lives under root.
+ENV HERMES_HOME=/root/.hermes/profiles/default
 
 EXPOSE 3001
 

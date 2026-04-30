@@ -6,10 +6,18 @@ echo "========================================="
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 bash "${ROOT}/installer/preflight.sh"
 
+echo "[ANIMUS] Optional system package: sshpass (SSH password test in Settings)…"
+bash "${ROOT}/installer/ensure-sshpass.sh" || {
+  echo "[ANIMUS] Note: sshpass step exited non-zero — password SSH tests may fail until you install sshpass (see INSTALL.md)." >&2
+}
+
 mkdir -p "${ROOT}/animus-chat/data"
 if [[ ! -f "${ROOT}/animus.env" ]]; then
   cp "${ROOT}/animus.env.example" "${ROOT}/animus.env"
-  echo "Created ${ROOT}/animus.env — edit HERMES_API_KEY and paths, or use the in-app wizard."
+  echo "Created ${ROOT}/animus.env — edit paths and keys as needed (see animus.env.example). HERMES_API_KEY is only required if your Hermes gateway enforces a bearer token; otherwise leave it blank. Use the in-app wizard for provider keys."
+fi
+if [[ -f "${ROOT}/animus.env" ]] && [[ -f "${ROOT}/installer/merge-hermes-gateway-auth.py" ]]; then
+  python3 "${ROOT}/installer/merge-hermes-gateway-auth.py" "${ROOT}/animus.env" || true
 fi
 
 echo "[ANIMUS] Desktop launcher (skipped on phones/Docker/CI/headless; see animus.env.example)…"

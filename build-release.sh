@@ -52,6 +52,25 @@ if ! grep -q "check-updates" "${ROOT}/animus-chat/server.py"; then
   exit 1
 fi
 
+echo "[check] chat proxy must not ship obsolete HERMES_API_KEY gate string..."
+if grep -qF "HERMES_API_KEY is not configured. Complete onboarding or edit animus.env." "${ROOT}/animus-chat/server.py"; then
+  echo "FAIL: obsolete chat gate SSE string still present in server.py (regression)" >&2
+  exit 1
+fi
+if ! grep -q "gateway_upstream_headers" "${ROOT}/animus-chat/server.py"; then
+  echo "FAIL: gateway_upstream_headers missing from server.py (proxy auth wiring)" >&2
+  exit 1
+fi
+echo "[check] gateway_bearer_source in hermes_runner (API_SERVER_KEY fallback for buyers)..."
+if ! grep -q "gateway_bearer_source" "${ROOT}/animus-chat/hermes_runner.py"; then
+  echo "FAIL: gateway_bearer_source missing from hermes_runner.py" >&2
+  exit 1
+fi
+if [[ ! -f "${ROOT}/installer/merge-hermes-gateway-auth.py" ]]; then
+  echo "FAIL: installer/merge-hermes-gateway-auth.py missing (buyer gateway auth merge)" >&2
+  exit 1
+fi
+
 echo "[check] ANIMUS_UPDATE_URL in animus.env.example..."
 if ! grep -q "ANIMUS_UPDATE_URL" "${ROOT}/animus.env.example"; then
   echo "FAIL: ANIMUS_UPDATE_URL missing from animus.env.example" >&2
@@ -206,6 +225,9 @@ zip -qr "${ZIP}" . \
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"
 echo "Created ${ZIP} (${SZ} MB)"
+echo ""
+echo "Patch an older animus-chat/ tree from this zip (no placeholders — run from repo / unzip root):"
+echo "  chmod +x installer/sync-animus-chat-from-zip.sh && ./installer/sync-animus-chat-from-zip.sh \"${ZIP}\""
 if [[ "${SZ}" -gt 55 ]]; then
   echo "FAIL: zip is over 55MB (v1.0 acceptance cap in project_goal.md). Add more -x excludes or split the ship tree." >&2
   exit 1
@@ -254,7 +276,7 @@ ANIMUS release checklist:
 [ ] No personal API keys in any file
 [ ] No personal hostnames or IPs in any file
 [ ] No Hermes Chat in user-facing strings under animus-chat/app/
-[ ] installer/install.sh is executable (chmod +x)
+[ ] installer/install.sh and installer/ensure-sshpass.sh are executable (chmod +x)
 [ ] README.md references correct version
 [ ] VERSION file updated
 [ ] Docker build passes on a clean host

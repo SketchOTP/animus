@@ -2087,9 +2087,13 @@ class APIServerAdapter(BasePlatformAdapter):
 
     _JOB_ID_RE = __import__("re").compile(r"[a-f0-9]{12}")
     # Allowed fields for update — prevents clients injecting arbitrary keys
-    _UPDATE_ALLOWED_FIELDS = {"name", "schedule", "prompt", "deliver", "skills", "skill", "repeat", "enabled"}
+    _UPDATE_ALLOWED_FIELDS = {
+        "name", "schedule", "prompt", "deliver", "skills", "skill", "repeat", "enabled",
+        "schedule_tz",
+        "workdir",
+    }
     _MAX_NAME_LENGTH = 200
-    _MAX_PROMPT_LENGTH = 5000
+    _MAX_PROMPT_LENGTH = 100_000
 
     @staticmethod
     def _check_jobs_available() -> Optional["web.Response"]:
@@ -2140,6 +2144,8 @@ class APIServerAdapter(BasePlatformAdapter):
             deliver = body.get("deliver", "local")
             skills = body.get("skills")
             repeat = body.get("repeat")
+            schedule_tz = body.get("schedule_tz")
+            workdir = body.get("workdir")
 
             if not name:
                 return web.json_response({"error": "Name is required"}, status=400)
@@ -2166,6 +2172,10 @@ class APIServerAdapter(BasePlatformAdapter):
                 kwargs["skills"] = skills
             if repeat is not None:
                 kwargs["repeat"] = repeat
+            if schedule_tz is not None:
+                kwargs["schedule_tz"] = schedule_tz
+            if workdir is not None:
+                kwargs["workdir"] = workdir
 
             job = _cron_create(**kwargs)
             return web.json_response({"job": job})
@@ -2403,11 +2413,19 @@ class APIServerAdapter(BasePlatformAdapter):
                 conversation_history=conversation_history,
                 task_id="default",
             )
-            usage = {
-                "input_tokens": getattr(agent, "session_prompt_tokens", 0) or 0,
-                "output_tokens": getattr(agent, "session_completion_tokens", 0) or 0,
-                "total_tokens": getattr(agent, "session_total_tokens", 0) or 0,
-            }
+            # Use ``run_conversation`` result totals (authoritative for this turn).
+            if isinstance(result, dict):
+                usage = {
+                    "input_tokens": int(result.get("prompt_tokens", 0) or 0),
+                    "output_tokens": int(result.get("completion_tokens", 0) or 0),
+                    "total_tokens": int(result.get("total_tokens", 0) or 0),
+                }
+            else:
+                usage = {
+                    "input_tokens": int(getattr(agent, "session_prompt_tokens", 0) or 0),
+                    "output_tokens": int(getattr(agent, "session_completion_tokens", 0) or 0),
+                    "total_tokens": int(getattr(agent, "session_total_tokens", 0) or 0),
+                }
             return result, usage
 
         return await loop.run_in_executor(None, _run)

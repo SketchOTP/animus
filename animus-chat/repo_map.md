@@ -4,13 +4,14 @@ Python Starlette server (`server.py`) plus static PWA in `app/`.
 
 | Path | Role |
 |------|------|
-| `server.py` | API routes, gateway proxy, workspace helpers, client-config + `check-updates` / `apply-update` (`ANIMUS_UPDATE_URL` manifest + zip extract) |
-| `app/index.html` | Main PWA shell |
-| `app/ghostonlyicon.png` | App icon + sidebar/header brand + empty chat + About + notifications (favicon / manifest / apple-touch) |
-| `app/manifest.json` / `app/sw.js` | PWA manifest (icons → `ghostonlyicon.png`) and service worker (`animus-v2` cache) |
-| `hermes_runner.py` | Subprocess wrapper for `hermes` CLI |
-| `cron_routes.py` | `/api/cron/*` control-plane endpoints |
+| `server.py` | API routes, gateway proxy, **`GET /api/models`** UI rows + **`POST /api/models/refresh`** (Hermes curated + Cursor + merge **`/v1/models`**), client-config (**`cron_overseer_prompt`**, timezone, TTS, …) + **`ui_settings`** blob (**`animus_ui_settings`** in **`config.json`**, size-capped JSON) for desktop/PWA prefs sync + `check-updates` / `apply-update` (manifest: `ANIMUS_UPDATE_URL` or default `https://animusai.vercel.app/api/latest.json` + zip extract); **`ensure_animus_general_project()`** creates **`<projects_sync_root>/general`** + **`projects.json`** row (stable id); **`_merge_projects_onto_client`** preserves **`POST /api/projects`** array order (drag reorder); **`GET /api/projects/list-simple`** follows **`projects.json`** order (no name sort); lifespan + wizard **`save-config`/`complete`** + **`POST /api/animus/client-config`** when **`projects_dir`** is set |
+| `app/index.html` | Main PWA shell (sidebar icon tabs: Chats, Skills, Cron (**collapsible overseer**, project-scoped jobs, **icon action row** edit / run / pause|play / delete / logs via **`cron-btn--icon`**; **Scheduled Jobs** **+** = **Projects**-style purple **`.add-project-btn`**; accent prompt optimizer + spinner; **timezone dialog**; dynamic deliver targets), Plan (**play/stop** + clarification modal **Stop pipeline** mirrors toolbar stop while overlay is open), Tokens, Settings, Help; token usage + help as tab panels); **Projects** sidebar: **HTML5 drag** rows (gear excluded) to reorder → **`projects.json`** via **`POST /api/projects`**; **`pullProjectsFromServer()`** on **`visibilitychange`** / bfcache **`pageshow`**; init opens **`general`** project once per browser session when **`PROJECTS_ROOT/general`** exists |
+| `app/ghostonlyicon.png` | App icon + **sidebar** ANIMUS row (**2×** mark via **`.brand-ghost--sidebar`**) + empty chat + About + notifications (favicon / manifest / apple-touch); **no** ghost on main-column top bar (title text + New chat only) |
+| `app/manifest.json` / `app/sw.js` | PWA manifest (icons → `ghostonlyicon.png`) and service worker (`animus-v25` cache) |
+| `hermes_runner.py` | Subprocess wrapper for `hermes` CLI; **`gateway_api_bearer()`** / **`gateway_upstream_headers()`** / **`gateway_bearer_source()`** ( **`HERMES_API_KEY`** or **`API_SERVER_KEY`** from **`~/.hermes/.env`** ) |
+| `cron_routes.py` | `/api/cron/*` — jobs CRUD + **`workdir`** forward + **`POST /api/cron/optimize-prompt`** |
+| `messaging_routes.py` | `/api/messaging/*` — gateway health + overview (**`cron_deliver_home_ready`** per platform) + **POST /api/messaging/import-animus-slack** + **GET/POST** per-platform setup (Hermes **`~/.hermes/.env`** + **`config.yaml`**); legacy **`GET /api/integrations/hermes-gateway/*`** |
 | `skills_routes.py` | `/api/skills/*` control-plane endpoints |
-| `setup_wizard/wizard_routes.py` | `/api/setup/*` onboarding (providers, tailscale-check, check-path, provider-status; Codex async `codex-auth-start` + `codex-auth-status/{poll_id}` + `codex-auth-session`) |
+| `setup_wizard/wizard_routes.py` | `/api/setup/*` onboarding (providers, tailscale-check, check-path, provider-status; **`cursor-login-start`**, **`claude-code-login-start`** (spawn `claude setup-token` on host), Codex `codex-auth-start` + `codex-auth-status/{poll_id}` + `codex-auth-session`); after **`projects_dir`** **`save-config`** or **`/complete`**, calls **`server.ensure_animus_general_project()`** |
 | `requirements.txt` | Python dependencies |
 | `restart.sh` | Restart user `animus.service` when present |

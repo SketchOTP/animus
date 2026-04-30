@@ -8,15 +8,16 @@ ANIMUS chat server (Starlette)
 - /api/fs/ls              → list directory contents for the path picker
 - /api/plan/bootstrap     → POST ``{folder_name, content}`` — create ``<projects_sync_root>/<folder>/project_plan.md``
 - /api/skills/*           → see ``skills_routes.py`` (list/detail/install/… + raw SKILL.md editor)
-- /api/cron/*             → see ``cron_routes.py`` (list/create/edit/trigger/…)
+- /api/cron/*             → see ``cron_routes.py`` (proxies gateway ``/api/jobs`` + fallbacks; status via ``hermes cron``)
+- /api/messaging/*        → see ``messaging_routes.py`` (gateway health + platform setup UI backing: Hermes ``~/.hermes/.env`` + ``config.yaml``)
 - /api/hermes-chat-meta   → GET build/rev + **alignment probe** (``HERMES_HOME``, ``cron_jobs_path``,
   ``utils_base_url_host_matches_ok``, gateway ``/health/detailed`` compare). When TLS PEMs are set,
   use **https** for curl (``curl -k https://127.0.0.1:<port>/api/...``); plain ``http`` yields empty reply.
-- /api/restart/gateway    → POST restart gateway (see ``HERMES_GATEWAY_SYSTEMD_UNIT``, ``HERMES_RESTART_GATEWAY_CMD``)
+- /api/restart/gateway    → POST: returns JSON immediately (``scheduled: true``); runs dashboard restart (short HTTP timeout), else ``hermes gateway restart``, else ``HERMES_RESTART_GATEWAY_CMD`` / systemd in **background** (avoids proxy/browser timeouts)
 - /api/restart/chat       → POST schedule chat restart (after response; systemd unit or ``HERMES_RESTART_CHAT_CMD``)
 - ``projects_sync_root`` from ``HERMES_CHAT_PROJECTS_SYNC_ROOT`` or ``~/Projects``; ``chat_data_dir``
 - /api/convs              → load / save / delete conversations (server-side persistence)
-- /api/projects           → load / save projects (server-side persistence)
+- /api/projects           → load / save projects (server-side persistence); startup + wizard + client-config ensure **`<projects_sync_root>/general`** + default **General** row
 - /api/project-sync-exclusions → GET/POST path exclusions (deleted workspace projects stay gone across restarts)
 - /api/project-workspace/* → ensure / read / write project workspace markdown (history, repo_map, notes, project_goal) on registered project paths
 - /api/project-ssh-test → POST JSON ``{user, host, port?, identity_file?}`` — non-interactive ``ssh`` probe from the chat host
@@ -24,7 +25,7 @@ ANIMUS chat server (Starlette)
 - /api/stt/transcribe → POST multipart ``audio`` (or ``file``) — OpenAI Whisper or ``HERMES_CHAT_STT_LOCAL_URL`` HTTP service
 - /api/attachment/text → POST multipart ``file`` — extract text from ``.docx`` (stdlib) or ``.pdf`` (``pdftotext`` from poppler-utils)
 - /api/chat/attachments/text → same handler (fallback when reverse proxies allow only ``/api/chat`` prefixes or an old deploy lacked the primary path)
-- Injects the API key server-side; never exposes it to the browser
+- Injects the gateway API key server-side when ``HERMES_API_KEY`` is set; never exposes it to the browser. When the key is unset, the proxy still calls the gateway (Hermes allows unauthenticated access if the gateway itself has no API key).
 - Optional HTTPS: set ``CHAT_SSL_CERTFILE`` and ``CHAT_SSL_KEYFILE`` (PEM paths)
   so the PWA is a secure context when you open **this server** over HTTPS. The bound port then speaks
   **TLS only**; local probes must use ``https://`` (``curl`` against ``http://`` gets an empty reply).
@@ -36,6 +37,9 @@ ANIMUS chat server (Starlette)
 **Deploy:** Python keeps the old process in memory until restart. After an in-app zip update or any edit to
 ``server.py``, run ``./restart-after-code-change.sh`` from this directory (or
 ``systemctl --user restart animus.service`` / your chat unit), then confirm ``rev`` via ``/api/hermes-chat-meta``.
+
+- ``GET/POST /api/animus/client-config`` — JSON in ``DATA_DIR/config.json``; **``ui_settings``** round-trips a capped
+  **``animus_ui_settings``** blob so desktop and PWA (same ANIMUS host) share sidebar/notification/TTS/inference prefs.
 """
 import asyncio
 import codecs
@@ -84,7 +88,6 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 HERMES_API    = os.environ.get("HERMES_API_URL",  "http://127.0.0.1:8642")
-HERMES_KEY    = os.environ.get("HERMES_API_KEY",  "")
 HERMES_AGENT  = os.environ.get(
     "HERMES_AGENT_DIR",
     str(_ANIMUS_MONOREPO_ROOT / "hermes-agent"),
@@ -185,7 +188,12 @@ def stt_backend_public() -> str:
     return "none"
 
 
-from hermes_runner import chat_data_dir  # noqa: E402 — single source for wizard + chats + config.json
+from hermes_runner import (  # noqa: E402
+    chat_data_dir,
+    gateway_api_bearer,
+    gateway_bearer_source,
+    gateway_upstream_headers,
+)
 from setup_wizard.wizard_routes import cfg_still_first_run  # noqa: E402
 
 
@@ -220,9 +228,43 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260429-bundled-skills-sync"
+CHAT_SERVER_REV = "20260430-plan-draft-stamp-mmdyy-v25"
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
+# Filled in lifespan: GET /v1/models against HERMES_API with gateway_upstream_headers().
+_gateway_v1_models_probe: dict | None = None
+
+
+def _gateway_openai_probe_fields() -> dict:
+    p = _gateway_v1_models_probe or {}
+    return {
+        "gateway_bearer_source": gateway_bearer_source(),
+        "gateway_openai_models_http": p.get("http"),
+        "gateway_openai_models_ok": bool(p.get("ok")),
+    }
+
+
+async def _probe_gateway_openai_models() -> None:
+    """Log + cache whether the gateway accepts our OpenAI-compatible bearer."""
+    global _gateway_v1_models_probe
+    base = HERMES_API.rstrip("/")
+    url = f"{base}/v1/models"
+    try:
+        async with httpx.AsyncClient(timeout=6.0) as c:
+            r = await c.get(url, headers=gateway_upstream_headers(content_type_json=False))
+        ok = r.status_code == 200
+        _gateway_v1_models_probe = {"url": url, "http": r.status_code, "ok": ok}
+        if r.status_code == 401:
+            log.error(
+                "Gateway rejected bearer on GET /v1/models (401 Invalid API key). "
+                "Set HERMES_API_KEY in animus.env to the same value as API_SERVER_KEY in ~/.hermes/.env, "
+                "or ensure this process can read that Hermes env file."
+            )
+        elif not ok:
+            log.warning("Gateway GET /v1/models returned HTTP %s", r.status_code)
+    except Exception as exc:
+        _gateway_v1_models_probe = {"url": url, "http": None, "ok": False, "error": str(exc)}
+        log.warning("Gateway OpenAI /v1/models probe failed: %s", exc)
 
 # Make Hermes internals importable for skills + cron
 if HERMES_AGENT not in sys.path:
@@ -372,6 +414,61 @@ async def _merge_gateway_alignment_meta(out: dict) -> None:
 
 # ─── Client prefs (wake lock, wizard state) — ``DATA_DIR/config.json`` ───────
 
+_ANIMUS_UI_SETTINGS_MAX_JSON = 450_000
+
+
+def _sanitize_ui_settings_blob(raw: object) -> dict:
+    """JSON-safe dict for PWA settings sync; size-capped."""
+    if not isinstance(raw, dict):
+        return {}
+    try:
+        dumped = json.dumps(raw, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return {}
+    if len(dumped) > _ANIMUS_UI_SETTINGS_MAX_JSON:
+        return {}
+    try:
+        out = json.loads(dumped)
+    except json.JSONDecodeError:
+        return {}
+    return out if isinstance(out, dict) else {}
+
+
+def _sync_cfg_flat_from_animus_ui(cfg: dict) -> None:
+    """Copy selected fields from ``animus_ui_settings`` into legacy config keys."""
+    us = cfg.get("animus_ui_settings")
+    if not isinstance(us, dict):
+        return
+    if "wake_lock_enabled" in us:
+        cfg["wake_lock"] = bool(us.get("wake_lock_enabled"))
+    im = us.get("inference_models")
+    if isinstance(im, dict):
+        cur = cfg.get("inference_models")
+        if not isinstance(cur, dict):
+            cur = {}
+        for k, val in im.items():
+            cur[str(k)] = str(val)
+        cfg["inference_models"] = cur
+    if "cron_timezone" in us:
+        cfg["cron_timezone"] = str(us.get("cron_timezone") or "").strip()
+    if "cron_overseer_prompt" in us and isinstance(us.get("cron_overseer_prompt"), str):
+        cfg["cron_overseer_prompt"] = str(us.get("cron_overseer_prompt") or "")
+    tb = str(us.get("tts_backend") or "").strip().lower()
+    if tb in ("browser", "piper"):
+        cfg["tts_backend"] = tb
+
+
+def _merge_animus_ui_inference_into_blob(cfg: dict) -> None:
+    """After a flat ``inference_models`` update, keep ``animus_ui_settings`` aligned."""
+    im = cfg.get("inference_models")
+    if not isinstance(im, dict):
+        return
+    uis = cfg.get("animus_ui_settings")
+    if not isinstance(uis, dict):
+        uis = {}
+    uis = {**uis, "inference_models": dict(im)}
+    cfg["animus_ui_settings"] = uis
+
 
 def _read_animus_client_config() -> dict:
     p = DATA_DIR / "config.json"
@@ -401,9 +498,14 @@ async def animus_client_config_get(_: Request) -> Response:
     wsp = cfg.get("wizard_selected_providers")
     wrp = cfg.get("wizard_ready_providers")
     ctz = str(cfg.get("cron_timezone") or "").strip()
+    cop = str(cfg.get("cron_overseer_prompt") or "")
+    if not isinstance(cop, str):
+        cop = str(cop or "")
     tb = str(cfg.get("tts_backend") or "piper").strip().lower()
     if tb not in ("browser", "piper"):
         tb = "browser"
+    ui_blob = cfg.get("animus_ui_settings")
+    ui_out = ui_blob if isinstance(ui_blob, dict) else {}
     return JSONResponse(
         {
             "wake_lock": bool(wl),
@@ -417,6 +519,8 @@ async def animus_client_config_get(_: Request) -> Response:
             "wizard_selected_providers": wsp if isinstance(wsp, list) else [],
             "wizard_ready_providers": wrp if isinstance(wrp, list) else [],
             "cron_timezone": ctz,
+            "cron_overseer_prompt": cop,
+            "ui_settings": ui_out,
         },
     )
 
@@ -427,8 +531,16 @@ async def animus_client_config_post(req: Request) -> Response:
     except Exception:
         body = {}
     cfg = _read_animus_client_config()
+    if "ui_settings" in body and isinstance(body.get("ui_settings"), dict):
+        cfg["animus_ui_settings"] = _sanitize_ui_settings_blob(body.get("ui_settings"))
+        _sync_cfg_flat_from_animus_ui(cfg)
     if "wake_lock" in body:
         cfg["wake_lock"] = bool(body.get("wake_lock"))
+        uis = cfg.get("animus_ui_settings")
+        if not isinstance(uis, dict):
+            uis = {}
+        uis = {**uis, "wake_lock_enabled": bool(cfg["wake_lock"])}
+        cfg["animus_ui_settings"] = uis
     if "projects_dir" in body:
         raw = str(body.get("projects_dir") or "").strip()
         cfg["projects_dir"] = str(Path(raw).expanduser().resolve()) if raw else ""
@@ -439,6 +551,7 @@ async def animus_client_config_post(req: Request) -> Response:
         for k, val in body["inference_models"].items():
             cur[str(k)] = str(val)
         cfg["inference_models"] = cur
+        _merge_animus_ui_inference_into_blob(cfg)
     if "tailscale_enabled" in body:
         cfg["tailscale_enabled"] = bool(body.get("tailscale_enabled"))
     if "tailscale_hostname" in body:
@@ -451,10 +564,35 @@ async def animus_client_config_post(req: Request) -> Response:
     if "cron_timezone" in body:
         raw_tz = str(body.get("cron_timezone") or "").strip()
         cfg["cron_timezone"] = raw_tz
+    if "cron_overseer_prompt" in body:
+        raw_co = body.get("cron_overseer_prompt")
+        cfg["cron_overseer_prompt"] = (
+            str(raw_co) if raw_co is not None else ""
+        )
+    if "cron_timezone" in body or "cron_overseer_prompt" in body:
+        uis = cfg.get("animus_ui_settings")
+        if not isinstance(uis, dict):
+            uis = {}
+        uis = {
+            **uis,
+            "cron_timezone": str(cfg.get("cron_timezone") or "").strip(),
+            "cron_overseer_prompt": str(cfg.get("cron_overseer_prompt") or ""),
+        }
+        cfg["animus_ui_settings"] = uis
     if "tts_backend" in body:
         tb = str(body.get("tts_backend") or "").strip().lower()
         cfg["tts_backend"] = tb if tb in ("browser", "piper") else "browser"
+        uis = cfg.get("animus_ui_settings")
+        if not isinstance(uis, dict):
+            uis = {}
+        uis = {**uis, "tts_backend": str(cfg["tts_backend"])}
+        cfg["animus_ui_settings"] = uis
     _write_animus_client_config(cfg)
+    if "projects_dir" in body and str(cfg.get("projects_dir") or "").strip():
+        try:
+            ensure_animus_general_project()
+        except Exception:
+            log.warning("ensure_animus_general_project after client-config failed", exc_info=True)
     return JSONResponse({"ok": True, "wake_lock": bool(cfg.get("wake_lock", True))})
 
 
@@ -525,6 +663,15 @@ def _animus_current_version() -> str:
         return "0.0.0"
 
 
+# Buyer-facing manifest when ANIMUS_UPDATE_URL is not set (check + apply use this host).
+ANIMUS_PUBLIC_UPDATE_MANIFEST_URL = "https://animusai.vercel.app/api/latest.json"
+
+
+def _animus_update_manifest_url() -> str:
+    configured = (os.environ.get("ANIMUS_UPDATE_URL") or "").strip()
+    return configured or ANIMUS_PUBLIC_UPDATE_MANIFEST_URL
+
+
 def _version_tuple(v: str) -> list[int]:
     try:
         s = (v or "").strip().lstrip("v").split("+", 1)[0]
@@ -560,14 +707,7 @@ def _safe_extract_release_zip(zf: zipfile.ZipFile, dest: Path) -> None:
 
 
 async def animus_check_updates(_: Request) -> Response:
-    update_url = (os.environ.get("ANIMUS_UPDATE_URL") or "").strip()
-    if not update_url:
-        return JSONResponse(
-            {
-                "ok": False,
-                "error": "Update checking is not configured for this install.",
-            }
-        )
+    update_url = _animus_update_manifest_url()
     current = _animus_current_version()
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -590,14 +730,13 @@ async def animus_check_updates(_: Request) -> Response:
             "download_url": (manifest.get("download_url") or "") if is_newer else None,
             "notes": str(manifest.get("notes") or ""),
             "message": (f"ANIMUS v{latest} is available." if is_newer else "ANIMUS is up to date."),
+            "manifest_url": update_url,
         }
     )
 
 
 async def animus_apply_update(_: Request) -> Response:
-    update_url = (os.environ.get("ANIMUS_UPDATE_URL") or "").strip()
-    if not update_url:
-        return JSONResponse({"ok": False, "error": "ANIMUS_UPDATE_URL not set"})
+    update_url = _animus_update_manifest_url()
 
     animus_root = _ANIMUS_MONOREPO_ROOT
     tmp_path: Optional[Path] = None
@@ -653,6 +792,7 @@ async def hermes_chat_meta(req: Request) -> Response:
     """GET-only probe so you can confirm the correct ``server.py`` is bound (avoids 405 from StaticFiles on POST)."""
     payload = {
         "rev": CHAT_SERVER_REV,
+        "chat_proxy_blocks_on_missing_hermes_api_key": False,
         "server_py": str(Path(__file__).resolve()),
         "cron_edit_post": True,
         "projects_sync_root": str(projects_sync_root()),
@@ -664,6 +804,7 @@ async def hermes_chat_meta(req: Request) -> Response:
     }
     payload.update(_collect_hermes_local_alignment())
     await _merge_gateway_alignment_meta(payload)
+    payload.update(_gateway_openai_probe_fields())
     # meta_schema / browser_tls_hint: curl `jq .meta_schema` — if missing, traffic is not this server.py.
     payload["meta_schema"] = 2
     payload["browser_tls_hint"] = _meta_tls_browser_hint() or ""
@@ -672,6 +813,84 @@ async def hermes_chat_meta(req: Request) -> Response:
 
 def _model_cache_file() -> Path:
     return (DATA_DIR / "hermes_models_cache.json").resolve()
+
+
+def _normalize_ui_model_provider(raw: str) -> str:
+    """Map gateway / Hermes ``owned_by`` slugs to ANIMUS Settings matrix ids."""
+    p = (raw or "").strip().lower()
+    if not p:
+        return ""
+    aliases = {
+        "gemini": "google",
+        "google-gemini": "google",
+        "google_gemini": "google",
+        "togetherai": "together",
+        "x-ai": "xai",
+        "mistralai": "mistral",
+    }
+    return aliases.get(p, p)
+
+
+def _dedupe_merge_model_rows(base: list[dict], extra: list[dict]) -> list[dict]:
+    """Merge UI model rows; ``base`` wins on duplicate (provider, model_id)."""
+    seen: set[tuple[str, str]] = set()
+    out: list[dict] = []
+    for r in base + extra:
+        if not isinstance(r, dict):
+            continue
+        pid = _normalize_ui_model_provider(str(r.get("provider") or ""))
+        mid = str(r.get("model_id") or r.get("id") or "").strip()
+        if not pid or not mid:
+            continue
+        key = (pid.lower(), mid.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        row = dict(r)
+        row["provider"] = pid
+        row["model_id"] = mid
+        row["display_name"] = str(r.get("display_name") or mid)
+        row["description"] = str(r.get("description") or "")[:500]
+        out.append(row)
+    return out
+
+
+async def _fetch_gateway_models_ui_rows() -> list[dict]:
+    """Best-effort: OpenAI-compat ``/v1/models`` from the configured gateway."""
+    rows: list[dict] = []
+    try:
+        url = f"{HERMES_API.rstrip('/')}/v1/models"
+        async with httpx.AsyncClient(timeout=12.0) as c:
+            r = await c.get(url, headers=gateway_upstream_headers(content_type_json=False))
+        if r.status_code != 200:
+            return rows
+        data = r.json()
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict) and isinstance(data.get("data"), list):
+            items = data["data"]
+        else:
+            return rows
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            mid = str(item.get("id") or item.get("model_id") or "").strip()
+            if not mid:
+                continue
+            own = _normalize_ui_model_provider(str(item.get("owned_by") or item.get("provider") or "openai"))
+            if not own:
+                own = "openai"
+            rows.append(
+                {
+                    "provider": own,
+                    "model_id": mid,
+                    "display_name": str(item.get("name") or item.get("id") or mid),
+                    "description": str(item.get("description") or "")[:500],
+                },
+            )
+    except Exception:
+        return rows
+    return rows
 
 
 _UI_MODEL_PROVIDERS = (
@@ -690,6 +909,38 @@ _UI_MODEL_PROVIDERS = (
 )
 
 
+def _models_ui_fill_missing_providers(base: list[dict]) -> list[dict]:
+    """Gateway/OpenAI-shaped ``hermes_models_cache.json`` often lists only ``openai`` ids — re-add CLI rows."""
+    have: set[str] = set()
+    for r in base:
+        p = _normalize_ui_model_provider(str(r.get("provider") or "").strip())
+        if p:
+            have.add(p)
+    out = list(base)
+    for prov in _UI_MODEL_PROVIDERS:
+        if prov.lower() in have:
+            continue
+        if prov == "claude-code":
+            out.extend(_claude_code_catalog_rows())
+            continue
+        if prov == "cursor-agent":
+            out.extend(_cursor_agent_catalog_rows())
+            continue
+        try:
+            for mid in _provider_model_catalog(prov):
+                out.append(
+                    {
+                        "provider": prov,
+                        "model_id": mid,
+                        "display_name": mid,
+                        "description": "",
+                    }
+                )
+        except Exception:
+            continue
+    return out
+
+
 def _models_ui_rows() -> list[dict]:
     """Normalized rows for Settings / wizard: ``{provider, model_id, display_name, description}``."""
     rows: list[dict] = []
@@ -704,7 +955,9 @@ def _models_ui_rows() -> list[dict]:
                     mid = str(item.get("id") or item.get("model_id") or "").strip()
                     if not mid:
                         continue
-                    own = str(item.get("owned_by") or item.get("provider") or "openai").strip().lower()
+                    own = _normalize_ui_model_provider(str(item.get("owned_by") or item.get("provider") or "openai"))
+                    if not own:
+                        own = "openai"
                     rows.append(
                         {
                             "provider": own,
@@ -714,20 +967,21 @@ def _models_ui_rows() -> list[dict]:
                         }
                     )
                 if rows:
-                    return rows
+                    return _models_ui_fill_missing_providers(rows)
             if isinstance(raw, list):
                 for item in raw:
                     if isinstance(item, dict):
+                        prov = _normalize_ui_model_provider(str(item.get("provider") or "openai")) or "openai"
                         rows.append(
                             {
-                                "provider": str(item.get("provider") or "openai"),
+                                "provider": prov,
                                 "model_id": str(item.get("model_id") or item.get("id") or ""),
                                 "display_name": str(item.get("display_name") or item.get("model_id") or ""),
                                 "description": str(item.get("description") or ""),
                             }
                         )
                 if rows:
-                    return rows
+                    return _models_ui_fill_missing_providers(rows)
         except Exception:
             pass
     for prov in _UI_MODEL_PROVIDERS:
@@ -775,14 +1029,9 @@ def _claude_code_catalog_rows() -> list[dict]:
 
 async def models(req: Request) -> Response:
     if (req.query_params.get("gateway") or "").strip() == "1":
-        if not (HERMES_KEY or "").strip():
-            return JSONResponse({"error": "HERMES_API_KEY not configured", "data": []}, status_code=503)
         try:
             async with httpx.AsyncClient(timeout=10) as c:
-                r = await c.get(
-                    f"{HERMES_API}/v1/models",
-                    headers={"Authorization": f"Bearer {HERMES_KEY}"},
-                )
+                r = await c.get(f"{HERMES_API}/v1/models", headers=gateway_upstream_headers())
             return Response(r.content, media_type="application/json")
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=502)
@@ -889,10 +1138,13 @@ def _hermes_curated_ui_rows() -> list[dict]:
 
 
 async def models_refresh(_req: Request) -> Response:
-    """Rebuild ``hermes_models_cache.json`` from local Hermes curated lists + Cursor CLI (no API key)."""
+    """Rebuild ``hermes_models_cache.json`` from Hermes curated lists + Cursor CLI + gateway ``/v1/models``."""
+    gw: list[dict] = []
     try:
         rows = _hermes_curated_ui_rows()
         rows.extend(_cursor_agent_catalog_rows())
+        gw = await _fetch_gateway_models_ui_rows()
+        rows = _models_ui_fill_missing_providers(_dedupe_merge_model_rows(rows, gw))
         if not rows:
             return JSONResponse(
                 {
@@ -903,7 +1155,7 @@ async def models_refresh(_req: Request) -> Response:
             )
         _model_cache_file().parent.mkdir(parents=True, exist_ok=True)
         _model_cache_file().write_text(json.dumps(rows, indent=2), encoding="utf-8")
-        return JSONResponse({"ok": True, "cached": True, "count": len(rows)})
+        return JSONResponse({"ok": True, "cached": True, "count": len(rows), "gateway_models_merged": len(gw)})
     except Exception as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=502)
 
@@ -922,7 +1174,16 @@ async def api_version(_req: Request) -> Response:
             hermes_ver = (vr["stdout"] or vr["stderr"] or "unknown").splitlines()[0].strip()
     except Exception:
         pass
-    return JSONResponse({"app": app_ver, "hermes": hermes_ver, "python": sys.version.split()[0]})
+    body = {
+        "app": app_ver,
+        "hermes": hermes_ver,
+        "python": sys.version.split()[0],
+        # Same fingerprint as GET /api/hermes-chat-meta ``rev`` — use either curl for support / upgrades.
+        "chat_server_rev": CHAT_SERVER_REV,
+        "chat_proxy_blocks_on_missing_hermes_api_key": False,
+    }
+    body.update(_gateway_openai_probe_fields())
+    return JSONResponse(body)
 
 
 def _provider_model_catalog(provider: str) -> list[str]:
@@ -1108,7 +1369,7 @@ async def _resolve_codex_auto_model(chat_body: dict) -> tuple[str, str]:
             },
         ],
     }
-    headers = {"Authorization": f"Bearer {HERMES_KEY}", "Content-Type": "application/json"}
+    headers = gateway_upstream_headers()
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=45, write=15, pool=5)) as c:
             resp = await c.post(f"{HERMES_API}/v1/chat/completions", json=selector_body, headers=headers)
@@ -1126,11 +1387,27 @@ async def _resolve_codex_auto_model(chat_body: dict) -> tuple[str, str]:
     return (fallback, "router unavailable")
 
 
+def _sse_usage_dict(obj: dict) -> Optional[dict]:
+    """Return a ``usage`` dict from an OpenAI-style chunk (top-level or ``choices[0]``)."""
+    u = obj.get("usage")
+    if isinstance(u, dict):
+        return u
+    ch = obj.get("choices")
+    if isinstance(ch, list) and ch:
+        c0 = ch[0]
+        if isinstance(c0, dict):
+            u2 = c0.get("usage")
+            if isinstance(u2, dict):
+                return u2
+    return None
+
+
 def _sse_last_usage_and_model(sse_text: str) -> tuple[Optional[dict], Optional[str]]:
     """Parse concatenated SSE ``data:`` lines; return last ``usage`` object and last explicit ``model`` string."""
     last_usage: Optional[dict] = None
     last_model: Optional[str] = None
-    for block in (sse_text or "").split("\n\n"):
+    raw = (sse_text or "").replace("\r\n", "\n").replace("\r", "\n")
+    for block in raw.split("\n\n"):
         for line in block.split("\n"):
             line = line.strip()
             if not line.startswith("data:"):
@@ -1144,7 +1421,7 @@ def _sse_last_usage_and_model(sse_text: str) -> tuple[Optional[dict], Optional[s
                 continue
             if not isinstance(obj, dict):
                 continue
-            u = obj.get("usage")
+            u = _sse_usage_dict(obj)
             if isinstance(u, dict):
                 last_usage = u
             m = obj.get("model")
@@ -1153,23 +1430,31 @@ def _sse_last_usage_and_model(sse_text: str) -> tuple[Optional[dict], Optional[s
     return last_usage, last_model
 
 
+def _usage_counts_for_log(usage: dict) -> tuple[Optional[int], Optional[int]]:
+    """Map OpenAI / Anthropic-style ``usage`` to (input_tokens, output_tokens) for JSONL."""
+    pt = usage.get("prompt_tokens")
+    ct = usage.get("completion_tokens")
+    it = usage.get("input_tokens")
+    ot = usage.get("output_tokens")
+
+    def _as_int(v: object) -> Optional[int]:
+        if v is None:
+            return None
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+
+    inp_i = _as_int(pt if pt is not None else it)
+    out_i = _as_int(ct if ct is not None else ot)
+    if inp_i is None and out_i is None:
+        tt = _as_int(usage.get("total_tokens"))
+        if tt is not None and tt > 0:
+            return tt, 0
+    return inp_i, out_i
+
+
 async def chat(req: Request) -> Response:
-    if not (HERMES_KEY or "").strip():
-
-        async def err_stream():
-            payload = {
-                "error": {
-                    "message": "HERMES_API_KEY is not configured. Complete onboarding or edit animus.env.",
-                    "type": "configuration_error",
-                    "param": None,
-                    "code": 503,
-                }
-            }
-            yield f"data: {json.dumps(payload)}\n\n".encode()
-            yield b"data: [DONE]\n\n"
-
-        return StreamingResponse(err_stream(), media_type="text/event-stream")
-
     body = await req.body()
     codex_auto_resolved_model: Optional[str] = None
     parsed_body: dict = {}
@@ -1187,10 +1472,7 @@ async def chat(req: Request) -> Response:
             log.info("Codex auto selected model=%s reason=%s", selected, reason)
     except Exception as exc:
         log.warning("Could not inspect chat body for Codex auto model routing: %s", exc)
-    upstream_headers = {
-        "Authorization": f"Bearer {HERMES_KEY}",
-        "Content-Type": "application/json",
-    }
+    upstream_headers = gateway_upstream_headers()
     if sid := req.headers.get("X-Hermes-Session-Id"):
         upstream_headers["X-Hermes-Session-Id"] = sid
 
@@ -1212,16 +1494,9 @@ async def chat(req: Request) -> Response:
             meta = parsed_body.get("metadata")
             if isinstance(meta, dict):
                 conv = conv or str(meta.get("conversation_id") or "").strip()
-            inp_raw = usage.get("prompt_tokens")
-            out_raw = usage.get("completion_tokens")
-            try:
-                inp_i = int(inp_raw) if inp_raw is not None else None
-            except (TypeError, ValueError):
-                inp_i = None
-            try:
-                out_i = int(out_raw) if out_raw is not None else None
-            except (TypeError, ValueError):
-                out_i = None
+            inp_i, out_i = _usage_counts_for_log(usage)
+            if inp_i is None and out_i is None:
+                return
             record_token_usage(pr or "unknown", md or "unknown", inp_i, out_i, "chat", conv)
 
         try:
@@ -1806,33 +2081,49 @@ def _merge_projects_onto_client(disk: list, incoming: list) -> list:
     other device. We merge by normalized path (primary) and id (fallback), with
     incoming values taking precedence on overlapping rows while preserving unmatched
     rows from both sides.
+
+    **Order:** ``incoming`` array order wins for all keys it contains (e.g. drag
+    reorder); keys only present on ``disk`` are appended after, in disk order.
     """
     if not isinstance(disk, list):
         disk = []
     if not isinstance(incoming, list):
         return disk
 
-    merged: list[dict] = []
-    by_key: dict[str, int] = {}
+    latest: dict[str, dict] = {}
 
-    def upsert(project: dict) -> None:
+    def absorb(project: dict) -> None:
         if not isinstance(project, dict):
             return
         key = _project_merge_key(project)
         if not key:
             return
-        idx = by_key.get(key)
-        if idx is None:
-            by_key[key] = len(merged)
-            merged.append(dict(project))
-            return
-        merged[idx] = {**merged[idx], **project}
+        prev = latest.get(key)
+        latest[key] = {**(prev or {}), **dict(project)}
 
     for row in disk:
-        upsert(row)
+        absorb(row)
     for row in incoming:
-        upsert(row)
-    return merged
+        absorb(row)
+
+    ordered_keys: list[str] = []
+    seen: set[str] = set()
+    for row in incoming:
+        if not isinstance(row, dict):
+            continue
+        key = _project_merge_key(row)
+        if key and key not in seen:
+            seen.add(key)
+            ordered_keys.append(key)
+    for row in disk:
+        if not isinstance(row, dict):
+            continue
+        key = _project_merge_key(row)
+        if key and key not in seen:
+            seen.add(key)
+            ordered_keys.append(key)
+
+    return [latest[k] for k in ordered_keys if k in latest]
 
 
 async def convs_get(req: Request) -> Response:
@@ -1866,7 +2157,7 @@ async def convs_purge(req: Request) -> Response:
 
 
 async def projects_list_simple(_req: Request) -> Response:
-    """Minimal project list for cron dropdowns: ``[{id, name}, …]``."""
+    """Minimal project list for cron dropdowns: ``[{id, name, path?}, …]``."""
     raw = _read("projects.json", [])
     if not isinstance(raw, list):
         raw = []
@@ -1878,8 +2169,11 @@ async def projects_list_simple(_req: Request) -> Response:
         pid = str(p.get("id") or "").strip()
         nm = str(p.get("name") or "").strip() or "(unnamed)"
         if pid:
-            items.append({"id": pid, "name": nm})
-    items.sort(key=lambda x: (str(x.get("name") or "").lower(), str(x.get("id") or "")))
+            pth = str(p.get("path") or "").strip()
+            row: dict = {"id": pid, "name": nm}
+            if pth:
+                row["path"] = pth
+            items.append(row)
     return JSONResponse(items)
 
 
@@ -1926,6 +2220,77 @@ def _ensure_workspace_for_saved_projects(projects: list) -> None:
             ensure_workspace_files(root)
         except Exception:
             log.warning("ensure_workspace_files failed for %s", root, exc_info=True)
+
+
+_ANIMUS_GENERAL_FOLDER = "general"
+_ANIMUS_GENERAL_DISPLAY_NAME = "General"
+_ANIMUS_GENERAL_PROJECT_ID = "00000000-0000-4000-8000-000000000001"
+_ANIMUS_GENERAL_OVERVIEW = (
+    "Default general-purpose workspace for everyday chat and notes. "
+    "Add other project folders alongside this one under your Projects directory."
+)
+
+
+def ensure_animus_general_project() -> None:
+    """Create ``<projects_sync_root>/general`` and register it in ``projects.json`` when missing.
+
+    Idempotent. Uses a stable project id so the client can recognise the default workspace.
+    """
+    from datetime import datetime, timezone
+
+    try:
+        sync_root = projects_sync_root().resolve()
+    except Exception as exc:
+        log.debug("ensure_animus_general_project: no projects sync root (%s)", exc)
+        return
+    general_path = sync_root / _ANIMUS_GENERAL_FOLDER
+    try:
+        general_path.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        log.warning("ensure_animus_general_project: mkdir %s failed: %s", general_path, exc)
+        return
+    try:
+        resolved_general = general_path.resolve()
+    except OSError:
+        resolved_general = general_path
+
+    raw = _read("projects.json", [])
+    if not isinstance(raw, list):
+        raw = []
+    excl = _read_exclusion_set()
+    merged = _filter_projects_by_exclusions(raw, excl)
+
+    gid_lc = _ANIMUS_GENERAL_PROJECT_ID.strip().lower()
+    for p in merged:
+        if not isinstance(p, dict):
+            continue
+        pth = str(p.get("path") or "").strip()
+        if not pth:
+            continue
+        try:
+            if Path(pth).expanduser().resolve() == resolved_general:
+                return
+        except OSError:
+            continue
+
+    for p in merged:
+        if isinstance(p, dict) and str(p.get("id") or "").strip().lower() == gid_lc:
+            return
+
+    colors = ("#7c3aed", "#2563eb", "#059669", "#d97706", "#dc2626", "#0891b2", "#be185d", "#0d9488")
+    color = colors[len(merged) % len(colors)]
+    row = {
+        "id": _ANIMUS_GENERAL_PROJECT_ID,
+        "name": _ANIMUS_GENERAL_DISPLAY_NAME,
+        "path": str(resolved_general),
+        "overview": _ANIMUS_GENERAL_OVERVIEW,
+        "color": color,
+        "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    merged.append(row)
+    _write("projects.json", merged)
+    _ensure_workspace_for_saved_projects(merged)
+    log.info("Ensured default General project at %s", resolved_general)
 
 
 async def projects_save(req: Request) -> Response:
@@ -2294,28 +2659,80 @@ async def _delayed_argv_restart(argv: list, delay: float) -> None:
     await asyncio.to_thread(_run_blocking)
 
 
-async def restart_gateway(_: Request) -> Response:
+async def _restart_gateway_background() -> None:
+    """Long-running gateway restart (dashboard / ``hermes`` CLI / systemd) — must not block the HTTP response."""
+    await asyncio.sleep(0.25)
+    try:
+        from hermes_runner import run_hermes
+        from hermes_service_client import dashboard_post_gateway_restart, hermes_dashboard_session_token
+
+        if hermes_dashboard_session_token():
+            st, body = await dashboard_post_gateway_restart(timeout=12.0)
+            if st == 200 and isinstance(body, dict) and body.get("ok"):
+                log.info("gateway restart: hermes_dashboard ok")
+                return
+            if st not in (0, 401, 404):
+                log.warning("dashboard gateway restart HTTP %s: %s", st, body)
+
+        cli_res = await asyncio.to_thread(run_hermes, ["gateway", "restart"], 90)
+        if cli_res.get("ok"):
+            log.info("gateway restart: hermes_cli ok stdout=%s", (cli_res.get("stdout") or "")[:200])
+            return
+        log.warning("hermes gateway restart failed: %s", cli_res.get("stderr") or cli_res)
+    except Exception as exc:
+        log.warning("restart_gateway background Hermes paths failed: %s", exc)
+
     if HERMES_RESTART_GATEWAY_CMD:
         try:
             argv = _parse_restart_argv(HERMES_RESTART_GATEWAY_CMD)
         except ValueError as exc:
-            return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
-        ok, cmd_str, err = _run_argv_now(argv)
-        status = 200 if ok else 500
-        payload: dict = {"ok": ok, "command": cmd_str, "via": "HERMES_RESTART_GATEWAY_CMD"}
-        if err:
-            payload["error"] = err
-        return JSONResponse(payload, status_code=status)
+            log.error("HERMES_RESTART_GATEWAY_CMD invalid: %s", exc)
+            return
+
+        def _run() -> None:
+            ok, cmd_str, err = _run_argv_now(argv)
+            if ok:
+                log.info("gateway restart: HERMES_RESTART_GATEWAY_CMD ok %s", cmd_str)
+            else:
+                log.error("gateway restart: HERMES_RESTART_GATEWAY_CMD failed %s err=%s", cmd_str, err)
+
+        await asyncio.to_thread(_run)
+        return
 
     unit = HERMES_GATEWAY_SYSTEMD_UNIT
-    ok, cmd, err = _restart_service_now(unit)
-    if not ok and err == "systemctl service not found":
-        err = _systemd_unit_missing_detail(unit, for_chat=False)
-    status = 200 if ok else 500
-    payload = {"ok": ok, "command": cmd}
-    if err:
-        payload["error"] = err
-    return JSONResponse(payload, status_code=status)
+
+    def _systemd() -> None:
+        ok, cmd, err = _restart_service_now(unit)
+        if not ok and err == "systemctl service not found":
+            err = _systemd_unit_missing_detail(unit, for_chat=False)
+        if ok:
+            log.info("gateway restart: systemd ok %s", cmd)
+        else:
+            log.error("gateway restart: systemd failed %s err=%s", cmd, err)
+
+    await asyncio.to_thread(_systemd)
+
+
+async def restart_gateway(_: Request) -> Response:
+    """Schedule gateway restart in the background so reverse proxies and browsers do not time out."""
+    if HERMES_RESTART_GATEWAY_CMD:
+        try:
+            _parse_restart_argv(HERMES_RESTART_GATEWAY_CMD)
+        except ValueError as exc:
+            return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
+    tasks = BackgroundTasks()
+    tasks.add_task(_restart_gateway_background)
+    return JSONResponse(
+        {
+            "ok": True,
+            "scheduled": True,
+            "delay_ms": 250,
+            "via": "background",
+            "message": "Gateway restart started on the server; wait a few seconds then confirm health below.",
+        },
+        background=tasks,
+    )
 
 
 async def restart_chat(_: Request) -> Response:
@@ -2393,6 +2810,7 @@ async def restart_cron_daemon(_: Request) -> Response:
 APP_DIR = Path(__file__).parent / "app"
 
 from cron_routes import cron_route_table  # noqa: E402
+from messaging_routes import messaging_route_table  # noqa: E402
 from integrations_slack import slack_route_table  # noqa: E402
 from setup_wizard.wizard_routes import wizard_route_table  # noqa: E402
 from skills_routes import skills_route_table  # noqa: E402
@@ -2404,11 +2822,17 @@ from help_routes import help_route_table  # noqa: E402
 
 @asynccontextmanager
 async def _lifespan(_app):
-    """Warn when the gateway key is missing; chat requests stay blocked until configured."""
-    if not (HERMES_KEY or "").strip():
-        log.warning(
-            "HERMES_API_KEY is unset — chat proxy is disabled until you finish the setup wizard "
-            "or add the key to animus.env."
+    """Log gateway bearer source; probe /v1/models so 401 surfaces at startup."""
+    src = gateway_bearer_source()
+    if src == "none":
+        log.info(
+            "HERMES_API_KEY unset and no API_SERVER_KEY in Hermes ~/.hermes/.env — "
+            "proxying without Authorization (OK only if the gateway has no API key)."
+        )
+    elif src == "hermes_dotenv":
+        log.info(
+            "Gateway bearer from Hermes ~/.hermes/.env (API_SERVER_KEY); "
+            "set HERMES_API_KEY in animus.env to override."
         )
     log.info(
         "ANIMUS rev=%s server_py=%s",
@@ -2438,12 +2862,17 @@ async def _lifespan(_app):
             )
     except Exception as exc:
         log.warning("Hermes alignment: gateway probe failed during startup: %s", exc)
+    await _probe_gateway_openai_models()
     try:
         from tts_routes import schedule_default_piper_voices_if_needed
 
         asyncio.create_task(schedule_default_piper_voices_if_needed())
     except Exception as exc:
         log.warning("Piper voice auto-download schedule failed: %s", exc)
+    try:
+        ensure_animus_general_project()
+    except Exception as exc:
+        log.warning("ensure_animus_general_project at startup failed: %s", exc)
     yield
 
 
@@ -2457,6 +2886,7 @@ app = Starlette(
         *tts_route_table(),
         *token_usage_route_table(),
         *slack_route_table(),
+        *messaging_route_table(),
         *ssh_route_table(),
         *help_route_table(),
         Route("/api/health",               health),

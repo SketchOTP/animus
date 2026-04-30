@@ -15,7 +15,7 @@ Quick install (Linux or macOS)
 
 2. Open a terminal in that folder and run:
 
-   chmod +x installer/install.sh installer/preflight.sh
+   chmod +x installer/install.sh installer/preflight.sh installer/ensure-sshpass.sh
    ./installer/preflight.sh
    ./installer/install.sh
 
@@ -26,6 +26,42 @@ Quick install (Linux or macOS)
 4. Open http://127.0.0.1:3001 in your browser (default port; see animus.env if you need to change it).
 
 5. Complete the on-screen setup wizard on first launch.
+
+Verify the running chat server (after install or any manual upgrade)
+---------------------------------------------------------------------
+From a terminal (same machine as the browser):
+
+  curl -sS http://127.0.0.1:3001/api/version | jq .app,.chat_server_rev,.chat_proxy_blocks_on_missing_hermes_api_key
+
+You should see your VERSION as .app, a non-empty .chat_server_rev, and
+.chat_proxy_blocks_on_missing_hermes_api_key: false. If .chat_server_rev is
+missing or that field is null, you are not on the current server build.
+
+If you have a NEWER release zip (animus-vX.Y.Z.zip) but an older animus-chat/
+tree, you can patch only three Python files without re-unzipping everything.
+
+A) Full unzip layout (this folder contains installer/ and animus-chat/):
+
+  chmod +x installer/sync-animus-chat-from-zip.sh
+  ./installer/sync-animus-chat-from-zip.sh
+  ./installer/sync-animus-chat-from-zip.sh /path/to/animus-v1.0.5.zip
+
+B) You only have animus-chat/ (no installer/ here — common with a partial copy).
+   The helper script is not in that folder until you copy it out of a release zip once:
+
+  cd animus-chat
+  ZIP=/path/to/animus-v1.0.5.zip
+  unzip -p "$ZIP" animus-chat/sync-from-release-zip.sh > sync-from-release-zip.sh
+  chmod +x sync-from-release-zip.sh
+  ./sync-from-release-zip.sh "$ZIP"
+
+  (Replace ZIP= with the real path to animus-v1.0.5.zip or newer on your machine.)
+
+Then restart the chat process. If you installed the user systemd unit:
+
+  systemctl --user restart animus.service
+
+(Do not use  systemctl restart animus  without  --user  — that looks for a system unit and usually fails.)
 
 Need more detail?
 -----------------

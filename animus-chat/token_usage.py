@@ -135,7 +135,17 @@ async def tokens_usage_get(req: Request) -> JSONResponse:
         days = 30
     source = (req.query_params.get("source") or "all").strip().lower() or "all"
     records, summary = read_usage_window(days, source)
-    return JSONResponse({"records": records, "summary": summary})
+    payload: dict[str, Any] = {"records": records, "summary": summary}
+    try:
+        from hermes_service_client import dashboard_get_analytics_usage, hermes_dashboard_session_token
+
+        if hermes_dashboard_session_token():
+            st, body = await dashboard_get_analytics_usage(days)
+            if st == 200 and isinstance(body, dict):
+                payload["hermes_analytics"] = body
+    except Exception as exc:
+        log.debug("Hermes analytics merge skipped: %s", exc)
+    return JSONResponse(payload)
 
 
 async def tokens_record_post(req: Request) -> JSONResponse:

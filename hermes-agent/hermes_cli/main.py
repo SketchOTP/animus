@@ -4466,6 +4466,13 @@ def cmd_cron(args):
     cron_command(args)
 
 
+def cmd_project(args):
+    """Project workspace files (ANIMUS continuity docs under a repo root)."""
+    from hermes_cli.project_workspace_cmd import project_command
+
+    project_command(args)
+
+
 def cmd_webhook(args):
     """Webhook subscription management."""
     from hermes_cli.webhook import webhook_command
@@ -7538,6 +7545,91 @@ For more help on a command:
     _add_accept_hooks_flag(cron_tick)
     _add_accept_hooks_flag(cron_parser)
     cron_parser.set_defaults(func=cmd_cron)
+
+    # =========================================================================
+    # project command — per-repo workspace markdown (ANIMUS + Hermes Chat)
+    # =========================================================================
+    project_parser = subparsers.add_parser(
+        "project",
+        help="Project workspace files (continuity docs under a repo root)",
+        description=(
+            "Initialize or update per-repo workspace markdown (project_goal.md, "
+            "repo_map.md, project_history.md, …) used by ANIMUS and Hermes Chat."
+        ),
+    )
+    project_subparsers = project_parser.add_subparsers(
+        dest="project_action",
+        required=True,
+        metavar="ACTION",
+    )
+
+    p_proj_init = project_subparsers.add_parser(
+        "init", help="Create workspace files under a project root"
+    )
+    p_proj_init.add_argument("path", help="Project root directory path")
+    p_proj_init.add_argument(
+        "--skip-repo-map",
+        action="store_true",
+        dest="skip_repo_map",
+        help="Do not auto-generate repo_map.md when missing",
+    )
+
+    p_proj_hist = project_subparsers.add_parser(
+        "history-append",
+        help="Append one line to project_history.md under a project root",
+    )
+    p_proj_hist.add_argument("path", help="Project root path")
+    p_proj_hist.add_argument(
+        "--summary", required=True, help="Summary text for the history line"
+    )
+    p_proj_hist.add_argument(
+        "--source", default="", help="Optional source label (e.g. session id)"
+    )
+
+    p_proj_rm = project_subparsers.add_parser(
+        "repo-map-refresh", help="Regenerate repo_map.md for one project root"
+    )
+    p_proj_rm.add_argument("path", help="Project root path")
+
+    p_proj_all = project_subparsers.add_parser(
+        "repo-maps-refresh-all",
+        help="Refresh repo_map.md for all Hermes Chat project folders",
+    )
+    p_proj_all.add_argument(
+        "--missing-only",
+        action="store_true",
+        help="Only refresh projects missing repo_map.md",
+    )
+    p_proj_all.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print what would run without writing files",
+    )
+
+    p_proj_show = project_subparsers.add_parser(
+        "show", help="Print a workspace file (project_history, repo_map, …)"
+    )
+    p_proj_show.add_argument("path", help="Project root path")
+    p_proj_show.add_argument(
+        "--file",
+        default="project_history",
+        help="Which workspace file to read (default: project_history)",
+    )
+
+    p_proj_write = project_subparsers.add_parser(
+        "write", help="Write a workspace file (stdin or --content)"
+    )
+    p_proj_write.add_argument("path", help="Project root path")
+    p_proj_write.add_argument(
+        "--file", required=True, help="Workspace file name to write"
+    )
+    p_proj_write.add_argument(
+        "--content",
+        default=None,
+        help="File body; omit to read from stdin",
+    )
+
+    project_parser.set_defaults(func=cmd_project)
 
     # =========================================================================
     # webhook command

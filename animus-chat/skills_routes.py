@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import urllib.parse
 from pathlib import Path
@@ -12,9 +13,71 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from hermes_runner import append_audit, run_hermes
+from hermes_service_client import dashboard_get_skills, dashboard_put_skill_toggle, hermes_dashboard_session_token
 from skills_md import skills_raw_get, skills_raw_put
 
 log = logging.getLogger("animus.skills")
+
+
+def _skills_tree_has_any_skill_md(skills_root: Path) -> bool:
+    """True if *skills_root* contains at least one ``SKILL.md`` (any category)."""
+    if not skills_root.is_dir():
+        return False
+    for _dirpath, dirnames, filenames in os.walk(skills_root):
+        dirnames[:] = [d for d in dirnames if d not in {".git", ".github", ".hub"}]
+        if "SKILL.md" in filenames:
+            return True
+    return False
+
+
+def _ensure_bundled_skills_seeded_if_needed() -> None:
+    """Run manifest-based bundled sync when the user tree was never populated.
+
+    Covers:
+
+    - Import-time ``sync_skills`` in ``server.py`` failed (no manifest).
+    - A **wrote manifest but copied nothing** case: first boot had no bundled
+      skills on disk (wrong ``HERMES_AGENT_DIR`` / incomplete tree), so
+      ``.bundled_manifest`` exists but is **empty** while there is no
+      ``SKILL.md`` under ``HERMES_HOME/skills``. Previously we skipped forever.
+
+    Does **not** re-seed when the manifest is non-empty and there are no
+    ``SKILL.md`` files (Hermes treats that as “user removed skills”).
+    """
+    try:
+        from hermes_constants import get_hermes_home
+        from tools.skills_sync import (
+            _discover_bundled_skills,
+            _get_bundled_dir,
+            _read_manifest,
+            sync_skills,
+        )
+
+        skills_root = get_hermes_home() / "skills"
+        manifest_path = skills_root / ".bundled_manifest"
+        bundled_dir = _get_bundled_dir()
+        bundled_n = (
+            len(_discover_bundled_skills(bundled_dir)) if bundled_dir.is_dir() else 0
+        )
+
+        needs_sync = not manifest_path.is_file()
+        if (
+            not needs_sync
+            and bundled_n > 0
+            and not _skills_tree_has_any_skill_md(skills_root)
+        ):
+            try:
+                mf = _read_manifest()
+            except Exception:
+                mf = {}
+            if not mf:
+                needs_sync = True
+
+        if not needs_sync:
+            return
+        sync_skills(quiet=True)
+    except Exception:
+        log.debug("Bundled skills seed-on-list failed", exc_info=True)
 
 
 def _audit(op: str, **parts: str) -> None:
@@ -22,8 +85,33 @@ def _audit(op: str, **parts: str) -> None:
     append_audit("skills_audit.log", f"{op}  {bits}")
 
 
+def _normalize_skills_list(skills: list) -> list:
+    out = []
+    for s in skills:
+        if not isinstance(s, dict):
+            continue
+        row = dict(s)
+        nm = str(row.get("name") or "").strip()
+        row["id"] = nm
+        row.setdefault("enabled", True)
+        row.setdefault("version", "")
+        row.setdefault("source", "local")
+        row.setdefault("last_updated", "")
+        row.setdefault("path", row.get("path") or "")
+        out.append(row)
+    return out
+
+
 async def skills_list_api(_req: Request) -> Response:
     try:
+        _ensure_bundled_skills_seeded_if_needed()
+        if hermes_dashboard_session_token():
+            st, data = await dashboard_get_skills()
+            if st == 200 and isinstance(data, list):
+                return JSONResponse(_normalize_skills_list(data))
+            if st not in (0, 401):
+                log.warning("dashboard GET /api/skills returned %s: %s", st, data)
+
         from tools.skills_tool import _find_all_skills, _get_disabled_skill_names
 
         disabled = _get_disabled_skill_names()
@@ -197,6 +285,7 @@ async def skills_update_one_api(req: Request) -> Response:
 
 
 async def skills_update_all_api(_req: Request) -> Response:
+    _ensure_bundled_skills_seeded_if_needed()
     res = run_hermes(["skills", "update"], timeout=300)
     _audit("UPDATE_ALL", result="ok" if res["ok"] else "error")
     if not res["ok"]:
@@ -213,22 +302,44 @@ async def skills_remove_api(req: Request) -> Response:
     return JSONResponse({"ok": True})
 
 
-_MSG_NO_TOGGLE = (
-    "Skill enable/disable is not supported by this version of Hermes Agent. "
-    "Use `hermes skills config` in a terminal."
-)
+async def _skills_set_enabled(skill_id: str, enabled: bool) -> tuple[bool, str]:
+    if hermes_dashboard_session_token():
+        st, body = await dashboard_put_skill_toggle(skill_id, enabled)
+        if st == 200 and isinstance(body, dict) and body.get("ok"):
+            return True, ""
+        return False, str((body or {}).get("detail") or body or f"HTTP {st}")
+    try:
+        from hermes_cli.config import load_config
+        from hermes_cli.skills_config import get_disabled_skills, save_disabled_skills
+
+        config = load_config()
+        disabled = get_disabled_skills(config)
+        if enabled:
+            disabled.discard(skill_id)
+        else:
+            disabled.add(skill_id)
+        save_disabled_skills(config, disabled)
+        return True, ""
+    except Exception as exc:
+        return False, str(exc)
 
 
 async def skills_enable_api(req: Request) -> Response:
     sid = urllib.parse.unquote(req.path_params["skill_id"])
-    _audit("ENABLE_ATTEMPT", skill_id=sid, result="unsupported")
-    return JSONResponse({"ok": False, "error": _MSG_NO_TOGGLE}, status_code=200)
+    ok, err = await _skills_set_enabled(sid, True)
+    _audit("ENABLE", skill_id=sid, result="ok" if ok else "error")
+    if ok:
+        return JSONResponse({"ok": True})
+    return JSONResponse({"ok": False, "error": err or "toggle failed"}, status_code=400)
 
 
 async def skills_disable_api(req: Request) -> Response:
     sid = urllib.parse.unquote(req.path_params["skill_id"])
-    _audit("DISABLE_ATTEMPT", skill_id=sid, result="unsupported")
-    return JSONResponse({"ok": False, "error": _MSG_NO_TOGGLE}, status_code=200)
+    ok, err = await _skills_set_enabled(sid, False)
+    _audit("DISABLE", skill_id=sid, result="ok" if ok else "error")
+    if ok:
+        return JSONResponse({"ok": True})
+    return JSONResponse({"ok": False, "error": err or "toggle failed"}, status_code=400)
 
 
 async def skills_updates_available_api(_req: Request) -> Response:
@@ -262,7 +373,7 @@ async def skills_updates_available_api(_req: Request) -> Response:
 
 async def skills_capabilities_api(_req: Request) -> Response:
     out = {
-        "enable_disable_supported": False,
+        "enable_disable_supported": True,
         "check_updates_supported": False,
         "install_supported": False,
     }

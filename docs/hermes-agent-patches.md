@@ -51,10 +51,9 @@ git diff origin/main --stat
 
 ### Skill enable / disable (Phase 2 — Option C) + capabilities (Phase 3)
 
-`GET /api/skills/capabilities` runs `hermes skills --help` / `hermes skill --help` and reports whether install / update checks / enable-disable verbs appear in help text. The UI hides enable/disable controls when `enable_disable_supported` is false.
+`GET /api/skills/capabilities` still probes `hermes skills --help` for install/update verbs; **`enable_disable_supported`** is **true** in ANIMUS because toggles use **`hermes_cli.skills_config`** (same persistence as Hermes dashboard **`PUT /api/skills/toggle`**) or the dashboard HTTP path when **`HERMES_DASHBOARD_SESSION_TOKEN`** is set.
 
-- `POST /api/skills/enable/{id}` and `POST /api/skills/disable/{id}` return **HTTP 200** with `{ "ok": false, "error": "…Use \`hermes skills config\`…" }` when the CLI does not support toggles (not HTTP 501).
-- Operators should use **`hermes skills config`** in a terminal until a future Hermes Agent adds scriptable toggles.
+- `POST /api/skills/enable/{id}` / **`disable`** return **`{ "ok": true }`** on success; **`{ "ok": false, "error": … }`** with HTTP 400 when Hermes config cannot be updated.
 
 ## Patch 4 — ANIMUS monorepo alignment (chat data dir)
 
@@ -73,6 +72,42 @@ git diff origin/main --stat
 **Why it exists:** Some builds or hosts do not expose log tail to the chat process; a clear error is preferable to fabricated log lines.  
 **Risk if removed:** Users may see misleading placeholder “log” content.  
 **Test to verify:** Open Cron → Logs on a job that has run; expect either real lines or the documented error string — never a fake success message.
+
+## Patch 6 — `hermes project` CLI (workspace + repo maps)
+
+**File(s):** `hermes-agent/hermes_cli/main.py` (argparse + `cmd_project`), `hermes-agent/hermes_cli/project_workspace_cmd.py` (handlers; unchanged)  
+**Type:** CLI surface  
+**What it does:** Registers **`hermes project`** with subcommands **`init`**, **`history-append`**, **`repo-map-refresh`**, **`repo-maps-refresh-all`**, **`show`**, **`write`** — same behaviour as `project_workspace_cmd.project_command` (continuity markdown under a repo root; bulk repo-map refresh across Hermes Chat project dirs).  
+**Why it exists:** Gateway and cron already import `agent.project_workspace` / `cron.hermes_chat_delivery`; operators had no CLI entrypoint until `main.py` wired the existing handler module.  
+**Risk if removed:** Scripts and docs referencing `hermes project …` fail with “invalid choice”.  
+**Test to verify:** `hermes project --help` lists actions; `hermes project init /path/to/repo` creates workspace files when that tree is writable.
+
+## Patch 7 — Codex device OAuth module (ANIMUS + dashboard)
+
+**File(s):** `hermes-agent/hermes_cli/codex_device_oauth.py` (new), `hermes-agent/hermes_cli/web_server.py` (delegate start/poll/cancel + GC), `animus-chat/setup_wizard/wizard_routes.py` (Codex start/poll uses module instead of `hermes auth` subprocess), `animus-chat/app/index.html` (open `verification_url`, poll interval from API)  
+**Type:** refactor / shared implementation  
+**What it does:** Extracts OpenAI Codex **device OAuth** (credential pool persist) into **`hermes_cli.codex_device_oauth`** so ANIMUS chat (no FastAPI in venv) calls the **same** code path as **`hermes dashboard`** instead of spawning **`hermes auth add openai-codex`** or duplicating httpx logic in ANIMUS only.  
+**Why it exists:** Hermes already implements the flow in the dashboard server; ANIMUS should reuse it, not fork.  
+**Risk if removed:** ANIMUS Codex sign-in regresses to subprocess/terminal-only or duplicate divergent OAuth code.  
+**Test to verify:** `PYTHONPATH=hermes-agent` from `animus-chat`: `import server`; Settings **Sign in** for Codex returns `verification_url` + `user_code` and polling reaches success after browser approval.
+
+## Patch 8 — Gateway `/api/jobs` create+PATCH accept `schedule_tz`
+
+**File(s):** `hermes-agent/gateway/platforms/api_server.py`  
+**Type:** API parity with `cron.jobs.create_job` / `update_job`  
+**What it does:** **`POST /api/jobs`** passes **`schedule_tz`** into **`create_job`**; **`PATCH /api/jobs/{id}`** allows updating **`schedule_tz`** (whitelisted field).  
+**Why it exists:** ANIMUS Cron UI sends **`schedule_tz`**; the gateway HTTP path previously dropped it so wall-time jobs differed from in-process **`cron_routes`**.  
+**Risk if removed:** Cron jobs created/edited only through the gateway lose timezone metadata.  
+**Test to verify:** `POST /api/jobs` with **`schedule_tz`** set; **`GET /api/jobs/{id}`** returns the field; ANIMUS **Save** on an edited job preserves timezone.
+
+## Patch 9 — Gateway `/api/jobs` create+PATCH accept `workdir`; larger cron `prompt` cap
+
+**File(s):** `hermes-agent/gateway/platforms/api_server.py`  
+**Type:** API parity with `cron.jobs.create_job` / `update_job`  
+**What it does:** **`POST /api/jobs`** passes **`workdir`** into **`create_job`**; **`PATCH`** whitelists **`workdir`**; raises **`_MAX_PROMPT_LENGTH`** to **100000** so ANIMUS can store overseer + invariant + task in one job prompt.  
+**Why it exists:** ANIMUS Cron binds jobs to a project repo path and prepends overseer / documentation-update instructions.  
+**Risk if removed:** Jobs fall back to in-process create without `workdir` when the gateway is up, or prompt save fails with “too long”.  
+**Test to verify:** Create a job with **`workdir`** set to an absolute existing directory; **`GET /api/jobs`** includes **`workdir`**; long composed prompt saves.
 
 ## Maintenance
 

@@ -5,6 +5,9 @@ if [[ ! -f "${ROOT}/animus.env" ]] && [[ -f "${ROOT}/animus.env.example" ]]; the
   cp "${ROOT}/animus.env.example" "${ROOT}/animus.env"
   echo "Created ${ROOT}/animus.env from animus.env.example (same as install.sh — edit keys/paths before relying on it)."
 fi
+if [[ -f "${ROOT}/animus.env" ]] && [[ -f "${ROOT}/installer/merge-hermes-gateway-auth.py" ]]; then
+  python3 "${ROOT}/installer/merge-hermes-gateway-auth.py" "${ROOT}/animus.env" || true
+fi
 echo "ANIMUS preflight"
 ok=0
 fail=0
@@ -28,6 +31,10 @@ fi
 
 command -v pip3 >/dev/null 2>&1 && check "pip3" "ok" || check "pip3" "fail"
 command -v git >/dev/null 2>&1 && check "git (optional)" "ok" || check "git (optional)" "ok"
+
+if [[ "$(uname -s)" == "Linux" ]] && ! command -v sshpass >/dev/null 2>&1; then
+  printf "  [note] sshpass not on PATH — SSH password tests in Settings need it; ./installer/install.sh can install (or sudo apt install -y sshpass).\n"
+fi
 
 if command -v ss >/dev/null 2>&1; then
   if ss -lntp 2>/dev/null | grep -q ':3001 '; then

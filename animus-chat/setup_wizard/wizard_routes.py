@@ -4,26 +4,24 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import sys
 import shutil
 import socket
 import subprocess
-import tempfile
 import time
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-# Background ``hermes auth add openai-codex`` jobs (poll_id -> metadata).
-_codex_poll_jobs: dict[str, dict[str, Any]] = {}
 
 import httpx
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from hermes_runner import chat_data_dir, get_hermes_bin, run_hermes
+
+log = logging.getLogger("animus.wizard")
 
 _PACKAGE_DIR = Path(__file__).resolve().parents[1]
 
@@ -145,6 +143,18 @@ def _claude_code_authenticated() -> bool:
         return False
 
 
+def _copilot_acp_cli_resolved() -> tuple[bool, str]:
+    """Best-effort: Copilot CLI on PATH (ACP sync needs the subprocess)."""
+    raw_cmd = (
+        (os.getenv("HERMES_COPILOT_ACP_COMMAND", "") or os.getenv("COPILOT_CLI_PATH", "") or "copilot").strip()
+    )
+    exe = raw_cmd.split()[0] if raw_cmd else "copilot"
+    found = shutil.which(exe)
+    if found:
+        return True, found
+    return False, exe
+
+
 def _cursor_status_dict() -> dict[str, Any]:
     cursor_bin = shutil.which("cursor")
     if not cursor_bin:
@@ -186,80 +196,80 @@ async def setup_cursor_login_start(_req: Request) -> Response:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 
 
-async def setup_codex_auth_start(_req: Request) -> Response:
-    """Spawn ``hermes auth add openai-codex`` in the background; poll ``GET …/codex-auth-status/{poll_id}``."""
+async def setup_claude_code_login_start(_req: Request) -> Response:
+    """Spawn ``claude setup-token`` on the ANIMUS host (same entrypoint as Hermes / Claude Code docs)."""
+    claude_bin = shutil.which("claude")
+    if not claude_bin:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": (
+                    "claude CLI not found on PATH. Install: npm install -g @anthropic-ai/claude-code "
+                    "(restart animus.service or re-login if PATH was updated)."
+                ),
+            },
+            status_code=404,
+        )
     try:
-        hb = get_hermes_bin()
-    except RuntimeError as exc:
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
-    poll_id = uuid.uuid4().hex
-    log_dir = Path(tempfile.mkdtemp(prefix="animus-codex-auth-"))
-    stdout_path = log_dir / "stdout.txt"
-    stderr_path = log_dir / "stderr.txt"
-    out_f = None
-    err_f = None
-    try:
-        out_f = open(stdout_path, "wb")  # noqa: SIM115 — closed after Popen dups fds
-        err_f = open(stderr_path, "wb")
-        proc = subprocess.Popen(  # exempt: background hermes codex OAuth
-            [hb, "auth", "add", "openai-codex"],
-            stdout=out_f,
-            stderr=err_f,
+        subprocess.Popen(  # noqa: S603 — controlled argv; exempt: spawn claude setup-token for Settings
+            [claude_bin, "setup-token"],
             start_new_session=True,
         )
     except Exception as exc:  # noqa: BLE001
-        for fh in (out_f, err_f):
-            if fh:
-                try:
-                    fh.close()
-                except OSError:
-                    pass
-        shutil.rmtree(log_dir, ignore_errors=True)
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
-    out_f.close()
-    err_f.close()
-    _codex_poll_jobs[poll_id] = {
-        "proc": proc,
-        "log_dir": str(log_dir),
-        "stdout_path": str(stdout_path),
-        "stderr_path": str(stderr_path),
-        "started": time.monotonic(),
-    }
-    return JSONResponse({"ok": True, "status": "pending", "poll_id": poll_id})
+    return JSONResponse(
+        {
+            "ok": True,
+            "message": "claude setup-token started on the server.",
+            "hint": (
+                "Finish the browser/terminal prompts on the ANIMUS host. "
+                "If you only use SSH without a display, run `claude setup-token` in a TTY on that machine."
+            ),
+        },
+    )
 
 
-def _pop_codex_poll_job(poll_id: str) -> dict[str, Any] | None:
-    return _codex_poll_jobs.pop(poll_id, None)
+async def setup_codex_auth_start(_req: Request) -> Response:
+    """Start OpenAI Codex device OAuth via Hermes ``codex_device_oauth`` (same logic as ``hermes dashboard``)."""
+    try:
+        from hermes_cli.codex_device_oauth import start_openai_codex_oauth
 
-
-def _cleanup_codex_log_dir(log_dir: str) -> None:
-    if log_dir and Path(log_dir).is_dir():
-        shutil.rmtree(log_dir, ignore_errors=True)
+        out = await start_openai_codex_oauth()
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+    return JSONResponse(
+        {
+            "ok": True,
+            "status": "pending",
+            "poll_id": out.get("session_id"),
+            "flow": out.get("flow"),
+            "user_code": out.get("user_code"),
+            "verification_url": out.get("verification_url"),
+            "poll_interval": out.get("poll_interval", 3),
+            "expires_in": out.get("expires_in"),
+        },
+    )
 
 
 async def setup_codex_auth_poll_status(req: Request) -> Response:
-    """Poll background Codex auth: ``pending`` | ``success`` | ``failed``."""
+    """Poll Codex device OAuth session (Hermes ``codex_device_oauth``): maps to ``success`` | ``failed`` | ``pending``."""
     poll_id = str(req.path_params.get("poll_id") or "").strip()
-    if not poll_id or poll_id not in _codex_poll_jobs:
+    if not poll_id:
+        return JSONResponse({"status": "failed", "error": "missing poll_id"}, status_code=400)
+    try:
+        from hermes_cli.codex_device_oauth import poll_openai_codex_oauth
+
+        body = poll_openai_codex_oauth(poll_id)
+    except KeyError:
         return JSONResponse({"status": "failed", "error": "unknown or expired poll_id"}, status_code=404)
-    job = _codex_poll_jobs[poll_id]
-    proc: subprocess.Popen = job["proc"]
-    rc = proc.poll()
-    if rc is None:
-        return JSONResponse({"status": "pending"})
-    _pop_codex_poll_job(poll_id)
-    err_tail = ""
-    sp = job.get("stderr_path")
-    if sp:
-        try:
-            err_tail = Path(sp).read_text(encoding="utf-8", errors="replace")[-8000:]
-        except OSError:
-            pass
-    _cleanup_codex_log_dir(str(job.get("log_dir") or ""))
-    if rc == 0:
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"status": "failed", "error": str(exc)}, status_code=500)
+    raw = str(body.get("status") or "pending")
+    if raw == "approved":
         return JSONResponse({"status": "success"})
-    msg = (err_tail or f"process exited with code {rc}").strip()
-    return JSONResponse({"status": "failed", "error": msg[:2000]})
+    if raw in ("error", "expired", "denied"):
+        return JSONResponse({"status": "failed", "error": str(body.get("error_message") or raw)[:2000]})
+    return JSONResponse({"status": "pending"})
 
 
 def _codex_authenticated() -> tuple[bool, str]:
@@ -274,6 +284,230 @@ async def setup_codex_auth_session(_req: Request) -> Response:
     """Whether OpenAI Codex is already authenticated (``hermes auth status openai-codex``)."""
     authed, detail = _codex_authenticated()
     return JSONResponse({"ok": True, "authenticated": authed, "detail": detail})
+
+
+def _hermes_agent_src_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "hermes-agent"
+
+
+def _ensure_hermes_agent_on_path() -> bool:
+    ag = _hermes_agent_src_dir()
+    if not ag.is_dir():
+        return False
+    s = str(ag)
+    if s not in sys.path:
+        sys.path.insert(0, s)
+    return True
+
+
+def _animus_provider_to_hermes(animus_id: str) -> str:
+    """Map Settings inference matrix ids to Hermes ``model.provider`` slugs."""
+    a = animus_id.strip().lower()
+    # Hermes aliases Claude Code CLI to the Anthropic transport + Claude Code OAuth.
+    return {"google": "gemini", "together": "togetherai", "claude-code": "anthropic"}.get(a, a)
+
+
+def _hermes_provider_to_animus(hermes_id: str | None) -> str | None:
+    if not hermes_id:
+        return None
+    h = str(hermes_id).strip().lower()
+    return {"gemini": "google", "togetherai": "together"}.get(h, h)
+
+
+def _hermes_config_model_snapshot() -> dict[str, Any]:
+    """Read ``~/.hermes/config.yaml`` model.provider + model.default (raw YAML)."""
+    snap: dict[str, Any] = {"hermes_active_provider": None, "hermes_default_model": None}
+    if not _ensure_hermes_agent_on_path():
+        return snap
+    try:
+        from hermes_cli.auth import _get_config_provider
+        from hermes_cli.config import read_raw_config
+    except Exception:
+        return snap
+    try:
+        raw = read_raw_config() or {}
+        model = raw.get("model")
+        default_model: str | None = None
+        provider_from_yaml: str | None = None
+        if isinstance(model, str) and model.strip():
+            default_model = model.strip()
+        elif isinstance(model, dict):
+            p = model.get("provider")
+            if isinstance(p, str) and p.strip():
+                provider_from_yaml = p.strip().lower()
+            d = model.get("default")
+            if isinstance(d, str) and d.strip():
+                default_model = d.strip()
+        conf_prov = _get_config_provider()
+        hp = (provider_from_yaml or conf_prov or "").strip().lower() or None
+        snap["hermes_active_provider"] = hp
+        snap["hermes_default_model"] = default_model
+        return snap
+    except Exception:
+        return snap
+
+
+# Last-resort OpenAI-compatible (or documented) bases when models.dev / registry miss a slug.
+_HERMES_SYNC_BASE_FALLBACKS: dict[str, str] = {
+    "mistral": "https://api.mistral.ai/v1",
+    "groq": "https://api.groq.com/openai/v1",
+    "togetherai": "https://api.together.xyz/v1",
+    # Cohere OpenAI-compatible API (see Cohere compatibility docs).
+    "cohere": "https://api.cohere.ai/compatibility/v1",
+}
+
+
+def _resolve_hermes_sync_base_url(hermes_pid: str) -> str:
+    """Base URL for ``_update_config_for_provider`` (Codex, registry, models.dev, env, fallbacks)."""
+    if not _ensure_hermes_agent_on_path():
+        return ""
+    hp = (hermes_pid or "").strip().lower()
+    if hp == "openai-codex":
+        try:
+            from hermes_cli.auth import DEFAULT_CODEX_BASE_URL
+
+            return str(DEFAULT_CODEX_BASE_URL).rstrip("/")
+        except Exception:
+            return ""
+    try:
+        from hermes_cli.auth import PROVIDER_REGISTRY
+
+        pc0 = PROVIDER_REGISTRY.get(hp)
+        evn = getattr(pc0, "base_url_env_var", "") if pc0 else ""
+        if evn:
+            raw = (os.getenv(evn, "") or "").strip().rstrip("/")
+            if raw:
+                return raw
+    except Exception:
+        pass
+    try:
+        from hermes_cli.config import load_config
+        from hermes_cli.providers import resolve_provider_full
+
+        cfg = load_config()
+        user_p = cfg.get("providers") if isinstance(cfg.get("providers"), dict) else None
+        custom = cfg.get("custom_providers") if isinstance(cfg.get("custom_providers"), list) else None
+        pdef = resolve_provider_full(hp, user_p, custom)
+        if pdef is not None:
+            bu = (getattr(pdef, "base_url", None) or "").strip()
+            if bu:
+                return bu.rstrip("/")
+    except Exception:
+        pass
+    try:
+        from hermes_cli.auth import PROVIDER_REGISTRY
+
+        pc = PROVIDER_REGISTRY.get(hp)
+        if pc and (getattr(pc, "inference_base_url", None) or "").strip():
+            return str(pc.inference_base_url).rstrip("/")
+    except Exception:
+        pass
+    if hp == "openai":
+        raw = (os.getenv("OPENAI_BASE_URL", "") or "").strip().rstrip("/")
+        return raw or "https://api.openai.com/v1"
+    return (_HERMES_SYNC_BASE_FALLBACKS.get(hp) or "").strip().rstrip("/")
+
+
+async def setup_sync_hermes_model(req: Request) -> Response:
+    """Write Hermes ``config.yaml`` active provider + default model (CLI / gateway source of truth)."""
+    try:
+        body = await req.json()
+    except Exception:
+        body = {}
+    animus_pid = str(body.get("provider") or "").strip().lower()
+    model_id = str(body.get("model") or "").strip()
+    if not animus_pid:
+        return JSONResponse({"ok": False, "error": "provider is required"}, status_code=400)
+    hermes_pid = _animus_provider_to_hermes(animus_pid)
+    if animus_pid == "openai-codex":
+        codex_ok, detail = _codex_authenticated()
+        if not codex_ok:
+            return JSONResponse(
+                {"ok": False, "error": "OpenAI Codex is not signed in", "detail": (detail or "")[:800]},
+                status_code=400,
+            )
+    elif animus_pid == "cursor-agent":
+        cur = _cursor_status_dict()
+        if str(cur.get("status") or "") != "authenticated":
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "Cursor CLI is not signed in on the server (run `cursor login` or use Settings → Sign in).",
+                },
+                status_code=400,
+            )
+    elif animus_pid == "claude-code":
+        if not _claude_code_authenticated():
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": "Claude Code is not signed in on the server (install @anthropic-ai/claude-code and run `claude` login).",
+                },
+                status_code=400,
+            )
+    elif animus_pid == "copilot-acp":
+        ok_cp, cp_exe = _copilot_acp_cli_resolved()
+        if not ok_cp:
+            return JSONResponse(
+                {
+                    "ok": False,
+                    "error": f"Copilot CLI not found ({cp_exe!r}). Install GitHub Copilot CLI or set COPILOT_CLI_PATH / HERMES_COPILOT_ACP_COMMAND.",
+                },
+                status_code=400,
+            )
+    elif animus_pid in _ENV_KEY_BY_PROVIDER:
+        envk = _ENV_KEY_BY_PROVIDER[animus_pid]
+        if not (_read_env_kv().get(envk) or "").strip():
+            return JSONResponse(
+                {"ok": False, "error": f"Missing API key ({envk}) in animus.env"},
+                status_code=400,
+            )
+    else:
+        return JSONResponse({"ok": False, "error": "unknown provider"}, status_code=400)
+
+    base = _resolve_hermes_sync_base_url(hermes_pid)
+    if not base:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": (
+                    f"Could not resolve inference base URL for {hermes_pid!r}. "
+                    "Set the provider-specific *_BASE_URL env var in animus.env or Hermes ~/.hermes/.env, "
+                    "or upgrade Hermes so models.dev lists this provider."
+                ),
+            },
+            status_code=422,
+        )
+    if not _ensure_hermes_agent_on_path():
+        return JSONResponse({"ok": False, "error": "hermes-agent source not found"}, status_code=500)
+    try:
+        from hermes_cli.auth import _save_model_choice, _update_config_for_provider
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+    try:
+        _update_config_for_provider(hermes_pid, base, default_model=None)
+        if model_id:
+            _save_model_choice(model_id)
+        try:
+            from hermes_service_client import (
+                dashboard_get_config,
+                dashboard_put_config,
+                hermes_dashboard_session_token,
+            )
+
+            if model_id and hermes_dashboard_session_token():
+                st, cur = await dashboard_get_config()
+                if st == 200 and isinstance(cur, dict):
+                    merged = dict(cur)
+                    merged["model"] = model_id
+                    st2, _body = await dashboard_put_config(merged)
+                    if st2 != 200:
+                        log.debug("dashboard PUT /api/config after model sync: HTTP %s", st2)
+        except Exception as exc:
+            log.debug("dashboard model mirror skipped: %s", exc)
+        return JSONResponse({"ok": True, "hermes_provider": hermes_pid, "model": model_id or None})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)[:2000]}, status_code=500)
 
 
 async def setup_test_key(req: Request) -> Response:
@@ -444,7 +678,20 @@ async def setup_provider_status(_req: Request) -> Response:
         },
     )
 
-    return JSONResponse({"ok": True, "providers": rows})
+    hsnap = _hermes_config_model_snapshot()
+    hp = hsnap.get("hermes_active_provider")
+    hd = hsnap.get("hermes_default_model")
+    animus_hp = _hermes_provider_to_animus(hp) if isinstance(hp, str) else None
+
+    return JSONResponse(
+        {
+            "ok": True,
+            "providers": rows,
+            "hermes_active_provider": hp,
+            "hermes_default_model": hd,
+            "hermes_active_animus_id": animus_hp,
+        },
+    )
 
 
 async def setup_save_config(req: Request) -> Response:
@@ -505,6 +752,16 @@ async def setup_save_config(req: Request) -> Response:
     env_path.write_text("\n".join(out) + "\n", encoding="utf-8")
     os.environ.update({k: v for k, v in kv.items()})
     _save_config(cfg)
+    if "projects_dir" in body and str(cfg.get("projects_dir") or "").strip():
+        try:
+            import importlib
+
+            importlib.import_module("server").ensure_animus_general_project()
+        except Exception:
+            log.warning(
+                "ensure_animus_general_project after wizard save-config failed",
+                exc_info=True,
+            )
     return JSONResponse({"ok": True})
 
 
@@ -513,6 +770,16 @@ async def setup_complete(_req: Request) -> Response:
     cfg["first_run"] = False
     cfg["setup_completed_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _save_config(cfg)
+    if str(cfg.get("projects_dir") or "").strip():
+        try:
+            import importlib
+
+            importlib.import_module("server").ensure_animus_general_project()
+        except Exception:
+            log.warning(
+                "ensure_animus_general_project after wizard complete failed",
+                exc_info=True,
+            )
     return JSONResponse({"ok": True})
 
 
@@ -524,6 +791,7 @@ def wizard_route_table():
         Route("/api/setup/hermes-check", setup_hermes_check, methods=["GET"]),
         Route("/api/setup/cursor-check", setup_cursor_check, methods=["GET"]),
         Route("/api/setup/cursor-login-start", setup_cursor_login_start, methods=["POST"]),
+        Route("/api/setup/claude-code-login-start", setup_claude_code_login_start, methods=["POST"]),
         Route("/api/setup/codex-auth-start", setup_codex_auth_start, methods=["POST"]),
         Route("/api/setup/codex-auth-status/{poll_id}", setup_codex_auth_poll_status, methods=["GET"]),
         Route("/api/setup/codex-auth-session", setup_codex_auth_session, methods=["GET"]),
@@ -534,4 +802,5 @@ def wizard_route_table():
         Route("/api/setup/tailscale-check", setup_tailscale_check, methods=["GET"]),
         Route("/api/setup/check-path", setup_check_path, methods=["GET"]),
         Route("/api/setup/provider-status", setup_provider_status, methods=["GET"]),
+        Route("/api/setup/sync-hermes-model", setup_sync_hermes_model, methods=["POST"]),
     ]

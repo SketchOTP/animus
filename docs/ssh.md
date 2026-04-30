@@ -26,6 +26,8 @@ Use **Settings → Connections → SSH Hosts → + Add SSH host**. **Test connec
 
 | Symptom | Likely cause |
 |--------|----------------|
+| `sshpass not installed (required for password auth)` | Install **`sshpass`** on the machine that runs ANIMUS. Buyer **`./installer/install.sh`** prompts for it on Linux/macOS when missing; Debian/Ubuntu: `sudo apt install -y sshpass`; Fedora: `sudo dnf install -y sshpass`; macOS: `brew install sshpass`. Set **`SKIP_ANIMUS_SSHPASS=1`** to skip the installer prompt. |
+| `Permission denied (publickey,password)` with password auth | On the **remote**, ensure **`PasswordAuthentication yes`** in **`sshd_config`** (and **`KbdInteractiveAuthentication`** if you rely on challenge-response). ANIMUS must run **`ssh`** with **`BatchMode=no`** for password login — older builds used **`BatchMode=yes`**, which disables password auth even when **`sshpass`** is installed. |
 | Connection refused | Remote `sshd` down, firewall, or wrong port. |
 | Permission denied (publickey) | Key not in `authorized_keys`, wrong `IdentityFile`, or `IdentitiesOnly` mismatch. |
 | Host key verification failed | First connect needs host key acceptance; avoid disabling `StrictHostKeyChecking` unless you understand the risk. |

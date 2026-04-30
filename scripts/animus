@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# ANIMUS chat UI — thin wrapper around user systemd (default: animus.service).
+# Install: ./scripts/sync-dev-systemd.sh symlinks ~/.local/bin/animus → this file.
+set -euo pipefail
+
+UNIT="${ANIMUS_SYSTEMD_UNIT:-animus.service}"
+cmd="${1:-}"
+
+usage() {
+  cat <<'EOF'
+animus — control the ANIMUS chat user service (port 3001 by default)
+
+  animus start      systemctl --user start animus.service
+  animus stop       systemctl --user stop animus.service
+  animus restart    systemctl --user restart animus.service
+  animus status     systemctl --user status animus.service --no-pager
+
+Override unit: ANIMUS_SYSTEMD_UNIT=my.service animus restart
+
+After code edits, use: animus restart
+Then check: curl -fsS http://127.0.0.1:3001/api/version | jq .chat_server_rev
+EOF
+}
+
+case "${cmd}" in
+  start) systemctl --user start "${UNIT}" ;;
+  stop) systemctl --user stop "${UNIT}" ;;
+  restart) systemctl --user restart "${UNIT}" ;;
+  status)
+    shift
+    systemctl --user status "${UNIT}" --no-pager "$@"
+    ;;
+  '' | -h | --help | help) usage ;;
+  *)
+    echo "animus: unknown command '${cmd}'. Try: animus help" >&2
+    exit 1
+    ;;
+esac

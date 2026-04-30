@@ -5014,6 +5014,58 @@ class AIAgent:
     def _close_request_openai_client(self, client: Any, *, reason: str) -> None:
         self._close_openai_client(client, reason=reason, shared=False)
 
+    def _codex_coerce_usage_for_session(self, raw_usage: Any) -> Any:
+        """Normalize stream ``usage`` payloads so ``normalize_usage`` can read them."""
+        if raw_usage is None:
+            return None
+        if isinstance(raw_usage, dict):
+            det = raw_usage.get("input_tokens_details")
+            det_ns = None
+            if isinstance(det, dict):
+                det_ns = SimpleNamespace(
+                    cached_tokens=det.get("cached_tokens"),
+                    cache_creation_tokens=det.get("cache_creation_tokens"),
+                )
+            return SimpleNamespace(
+                input_tokens=int(raw_usage.get("input_tokens") or 0),
+                output_tokens=int(raw_usage.get("output_tokens") or 0),
+                total_tokens=int(raw_usage.get("total_tokens") or 0),
+                input_tokens_details=det_ns,
+            )
+        return raw_usage
+
+    def _codex_merge_stream_usage(self, final_response: Any, captured_usage: Any) -> Any:
+        """Attach ``usage`` from terminal SSE events when ``get_final_response()`` omits it."""
+        if final_response is None or captured_usage is None:
+            return final_response
+
+        def _tok_sum(u: Any) -> int:
+            if u is None:
+                return 0
+            try:
+                it = int(getattr(u, "input_tokens", 0) or getattr(u, "prompt_tokens", 0) or 0)
+                ot = int(getattr(u, "output_tokens", 0) or getattr(u, "completion_tokens", 0) or 0)
+                tt = int(getattr(u, "total_tokens", 0) or 0)
+                return tt if tt > 0 else it + ot
+            except Exception:
+                return 0
+
+        coerced = self._codex_coerce_usage_for_session(captured_usage)
+        final_u = getattr(final_response, "usage", None)
+        if _tok_sum(coerced) <= _tok_sum(final_u):
+            return final_response
+        try:
+            final_response.usage = coerced
+            return final_response
+        except Exception:
+            model_copy = getattr(final_response, "model_copy", None)
+            if callable(model_copy):
+                try:
+                    return model_copy(update={"usage": coerced})
+                except Exception:
+                    pass
+        return final_response
+
     def _run_codex_stream(self, api_kwargs: dict, client: Any = None, on_first_delta: callable = None):
         """Execute one streaming Responses API request and return the final response."""
         import httpx as _httpx
@@ -5030,11 +5082,14 @@ class AIAgent:
             collected_output_items: list = []
             try:
                 with active_client.responses.stream(**api_kwargs) as stream:
+                    captured_usage = None
                     for event in stream:
                         self._touch_activity("receiving stream response")
                         if self._interrupt_requested:
                             break
-                        event_type = getattr(event, "type", "")
+                        event_type = getattr(event, "type", "") or ""
+                        if not event_type and isinstance(event, dict):
+                            event_type = str(event.get("type") or "")
                         # Fire callbacks on text content deltas (suppress during tool calls)
                         if "output_text.delta" in event_type or event_type == "response.output_text.delta":
                             delta_text = getattr(event, "delta", "")
@@ -5065,19 +5120,28 @@ class AIAgent:
                             done_item = getattr(event, "item", None)
                             if done_item is not None:
                                 collected_output_items.append(done_item)
-                        # Log non-completed terminal events for diagnostics
-                        elif event_type in ("response.incomplete", "response.failed"):
+                        elif event_type in ("response.completed", "response.incomplete", "response.failed"):
                             resp_obj = getattr(event, "response", None)
-                            status = getattr(resp_obj, "status", None) if resp_obj else None
-                            incomplete_details = getattr(resp_obj, "incomplete_details", None) if resp_obj else None
-                            logger.warning(
-                                "Codex Responses stream received terminal event %s "
-                                "(status=%s, incomplete_details=%s, streamed_chars=%d). %s",
-                                event_type, status, incomplete_details,
-                                sum(len(p) for p in self._codex_streamed_text_parts),
-                                self._client_log_context(),
-                            )
+                            if resp_obj is None and isinstance(event, dict):
+                                resp_obj = event.get("response")
+                            if resp_obj is not None:
+                                u = getattr(resp_obj, "usage", None)
+                                if u is None and isinstance(resp_obj, dict):
+                                    u = resp_obj.get("usage")
+                                if u is not None:
+                                    captured_usage = u
+                            if event_type in ("response.incomplete", "response.failed"):
+                                status = getattr(resp_obj, "status", None) if resp_obj else None
+                                incomplete_details = getattr(resp_obj, "incomplete_details", None) if resp_obj else None
+                                logger.warning(
+                                    "Codex Responses stream received terminal event %s "
+                                    "(status=%s, incomplete_details=%s, streamed_chars=%d). %s",
+                                    event_type, status, incomplete_details,
+                                    sum(len(p) for p in self._codex_streamed_text_parts),
+                                    self._client_log_context(),
+                                )
                     final_response = stream.get_final_response()
+                    final_response = self._codex_merge_stream_usage(final_response, captured_usage)
                     # PATCH: ChatGPT Codex backend streams valid output items
                     # but get_final_response() can return an empty output list.
                     # Backfill from collected items or synthesize from deltas.

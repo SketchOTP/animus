@@ -213,13 +213,32 @@ def _run_ssh_probe(
         return False, "invalid user"
     if not _HOST_SAFE.match(hostname):
         return False, "invalid hostname"
+    auth_method = (auth_method or "key").strip().lower() or "key"
+    if auth_method == "password":
+        pwd_s = (password or "").strip()
+        if not pwd_s:
+            return False, "password required (enter password in the form or save host with password)"
     base_ssh = [
         "ssh",
         "-o",
         "ConnectTimeout=8",
-        "-o",
-        "BatchMode=yes",
     ]
+    # BatchMode=yes disables password auth in OpenSSH; sshpass needs BatchMode=no.
+    if auth_method == "password":
+        base_ssh.extend(
+            [
+                "-o",
+                "BatchMode=no",
+                "-o",
+                "PreferredAuthentications=password,keyboard-interactive",
+                "-o",
+                "PubkeyAuthentication=no",
+                "-o",
+                "NumberOfPasswordPrompts=1",
+            ]
+        )
+    else:
+        base_ssh.extend(["-o", "BatchMode=yes"])
     if not strict_host_key_checking:
         base_ssh.extend(["-o", "StrictHostKeyChecking=no"])
     else:
@@ -242,11 +261,11 @@ def _run_ssh_probe(
     cmd = base_ssh + [target, "echo", "ok"]
     env = os.environ.copy()
     try:
-        if auth_method == "password" and password:
+        if auth_method == "password":
             sshpass = shutil.which("sshpass")
             if not sshpass:
                 return False, "sshpass not installed (required for password auth)"
-            env["SSHPASS"] = password
+            env["SSHPASS"] = (password or "").strip()
             cmd = [sshpass, "-e"] + cmd
         proc = subprocess.run(  # exempt: ssh connectivity probe
             cmd,

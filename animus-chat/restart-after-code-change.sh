@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# After editing server.py (or anything under this directory), run this so systemd
-# loads the new code. Optional: pull the monorepo first.
+# After editing server.py (or anything under animus-chat/), restart user systemd
+# so the running process loads new code. Prefers animus.service (ANIMUS); falls
+# back to legacy hermes-chat.service if present.
 set -euo pipefail
 CHAT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO="$(cd "${CHAT_DIR}/.." && pwd)"
-ENV_FILE="${CHAT_DIR}/hermes-chat.env"
-PORT=3000
-if [[ -f "${ENV_FILE}" ]]; then
-  line="$(grep -E '^[[:space:]]*CHAT_PORT=' "${ENV_FILE}" | head -1 || true)"
-  if [[ -n "${line}" ]]; then
-    PORT="${line#*=}"
-    PORT="${PORT//[$'\r']}"
+PORT=3001
+for envf in "${MONO}/animus.env" "${CHAT_DIR}/animus.env" "${CHAT_DIR}/hermes-chat.env"; do
+  if [[ -f "${envf}" ]]; then
+    line="$(grep -E '^[[:space:]]*CHAT_PORT=' "${envf}" | head -1 || true)"
+    if [[ -n "${line}" ]]; then
+      PORT="${line#*=}"
+      PORT="${PORT//[$'\r']}"
+      PORT="${PORT// /}"
+      break
+    fi
   fi
-fi
+done
 
 if [[ "${1:-}" == "--pull" ]]; then
   if [[ -d "${MONO}/.git" ]]; then
@@ -24,22 +28,32 @@ if [[ "${1:-}" == "--pull" ]]; then
   fi
 fi
 
-restart() {
+restart_unit() {
+  local u="$1"
   systemctl --user daemon-reload 2>/dev/null || true
-  systemctl --user restart hermes-chat.service
-  systemctl --user is-active hermes-chat.service
+  systemctl --user restart "${u}"
+  systemctl --user is-active "${u}"
 }
 
-if systemctl --user cat hermes-chat.service &>/dev/null; then
-  restart
+if systemctl --user cat animus.service &>/dev/null; then
+  restart_unit animus.service
+elif systemctl --user cat hermes-chat.service &>/dev/null; then
+  restart_unit hermes-chat.service
+elif sudo -n systemctl cat animus.service &>/dev/null 2>&1; then
+  sudo systemctl daemon-reload
+  sudo systemctl restart animus.service
+  sudo systemctl is-active animus.service
 elif sudo -n systemctl cat hermes-chat.service &>/dev/null 2>&1; then
   sudo systemctl daemon-reload
   sudo systemctl restart hermes-chat.service
   sudo systemctl is-active hermes-chat.service
 else
-  echo "No hermes-chat.service (user or passwordless sudo system). Restart manually." >&2
+  echo "No animus.service or hermes-chat.service (user or passwordless sudo). Restart manually." >&2
+  echo "Hint: user units use  systemctl --user restart animus.service  (not  systemctl restart animus )." >&2
   exit 1
 fi
 
-echo "GET https://127.0.0.1:${PORT}/api/hermes-chat-meta (use -k if TLS):"
-curl -kfsS "https://127.0.0.1:${PORT}/api/hermes-chat-meta" | jq '{rev, tls_enabled, public_url}'
+echo "GET http://127.0.0.1:${PORT}/api/version (app semver + chat_server_rev fingerprint):"
+curl -fsS "http://127.0.0.1:${PORT}/api/version" | jq '{app, chat_server_rev, chat_proxy_blocks_on_missing_hermes_api_key}' || true
+echo "GET http://127.0.0.1:${PORT}/api/hermes-chat-meta (use https -k if TLS on loopback):"
+curl -fsS "http://127.0.0.1:${PORT}/api/hermes-chat-meta" | jq '{rev, chat_proxy_blocks_on_missing_hermes_api_key, server_py, tls_enabled, public_url}' || true

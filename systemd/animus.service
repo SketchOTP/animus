@@ -1,5 +1,5 @@
 [Unit]
-Description=ANIMUS chat UI
+Description=ANIMUS chat UI (restart: systemctl --user restart animus.service)
 After=network.target
 
 [Service]

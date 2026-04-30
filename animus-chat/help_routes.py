@@ -11,12 +11,13 @@ import httpx
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from hermes_runner import gateway_upstream_headers
+
 log = logging.getLogger("animus.help")
 
 _MONO_ROOT = Path(__file__).resolve().parent.parent
 _GUIDE_PATH = _MONO_ROOT / "docs" / "animus-user-guide.md"
 HERMES_API = (os.environ.get("HERMES_API_URL") or "http://127.0.0.1:8642").strip().rstrip("/")
-HERMES_KEY = (os.environ.get("HERMES_API_KEY") or "").strip()
 
 _MAX_GUIDE_CHARS = 120_000
 
@@ -151,11 +152,6 @@ async def help_guide_get(_: Request) -> Response:
 
 
 async def help_ask_post(req: Request) -> Response:
-    if not HERMES_KEY:
-        return JSONResponse(
-            {"ok": False, "error": "HERMES_API_KEY is not configured. Complete onboarding or edit animus.env."},
-            status_code=503,
-        )
     try:
         body = await req.json()
     except Exception:
@@ -185,7 +181,7 @@ async def help_ask_post(req: Request) -> Response:
     }
     if base_url:
         payload["hermes_base_url"] = base_url
-    headers = {"Authorization": f"Bearer {HERMES_KEY}", "Content-Type": "application/json"}
+    headers = gateway_upstream_headers()
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(connect=15, read=120, write=30, pool=5)) as c:
             resp = await c.post(f"{HERMES_API}/v1/chat/completions", json=payload, headers=headers)

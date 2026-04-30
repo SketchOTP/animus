@@ -89,6 +89,18 @@ if ! grep -q "httpx" "${ROOT}/animus-chat/requirements.txt"; then
   exit 1
 fi
 
+echo "[check] python-multipart in animus-chat/requirements.txt (STT / attachment multipart)..."
+if ! grep -qE '^[[:space:]]*python-multipart' "${ROOT}/animus-chat/requirements.txt"; then
+  echo "FAIL: python-multipart missing from animus-chat/requirements.txt (Starlette form parsing)" >&2
+  exit 1
+fi
+
+echo "[check] faster-whisper in animus-chat/requirements.txt (buyer + dev local STT)..."
+if ! grep -qE '^[[:space:]]*faster-whisper' "${ROOT}/animus-chat/requirements.txt"; then
+  echo "FAIL: faster-whisper missing from animus-chat/requirements.txt (embedded STT / install.sh)" >&2
+  exit 1
+fi
+
 echo "[check] No ANIMUS_GIT_ORIGIN_URL or ANIMUS_UPDATE_REPO in animus.env.example..."
 if grep -qE "ANIMUS_GIT_ORIGIN_URL|ANIMUS_UPDATE_REPO" "${ROOT}/animus.env.example"; then
   echo "FAIL: old git env vars still in animus.env.example" >&2

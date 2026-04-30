@@ -13,5 +13,5 @@ Python Starlette server (`server.py`) plus static PWA in `app/`.
 | `messaging_routes.py` | `/api/messaging/*` — gateway health + overview (**`cron_deliver_home_ready`** per platform) + **POST /api/messaging/import-animus-slack** + **GET/POST** per-platform setup (Hermes **`~/.hermes/.env`** + **`config.yaml`**); legacy **`GET /api/integrations/hermes-gateway/*`** |
 | `skills_routes.py` | `/api/skills/*` control-plane endpoints |
 | `setup_wizard/wizard_routes.py` | `/api/setup/*` onboarding (providers, tailscale-check, check-path, provider-status; **`cursor-login-start`**, **`claude-code-login-start`** (spawn `claude setup-token` on host), Codex `codex-auth-start` + `codex-auth-status/{poll_id}` + `codex-auth-session`); after **`projects_dir`** **`save-config`** or **`/complete`**, calls **`server.ensure_animus_general_project()`** |
-| `requirements.txt` | Python dependencies |
+| `requirements.txt` | Python dependencies (**`python-multipart`**, **`faster-whisper`**, Starlette stack, etc.) |
 | `restart.sh` | Restart user `animus.service` when present |

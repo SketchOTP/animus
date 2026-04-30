@@ -2,7 +2,7 @@
 
 ## Recommended pattern
 
-1. Run ANIMUS on loopback only: `CHAT_HOST=127.0.0.1` and `CHAT_PORT=3001` (default in `animus.env.example`).
+1. Run ANIMUS on loopback only: set `CHAT_HOST=127.0.0.1` and `CHAT_PORT=3001` in `animus.env` (the stock example defaults to `CHAT_HOST=::` for browser `localhost` compatibility; Tailscale Serve to this port is tighter with `127.0.0.1`).
 2. On the machine, use **Tailscale Serve** to publish HTTPS to your tailnet, proxying to the local HTTP port.
 
 Example (adjust hostname and port):

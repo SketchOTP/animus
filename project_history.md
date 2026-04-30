@@ -1418,3 +1418,183 @@ Files touched:
 Files touched:
 - (git push only; commit 3156589 on remote)
 - project_history.md
+
+2145 300426 - VERSION 1.0.7; ./build-release.sh produced animus-v1.0.7.zip (~31 MB).
+Files touched:
+- VERSION
+- animus-v1.0.7.zip (gitignored artifact)
+- project_status.md
+- project_history.md
+
+1741 300426 - Hardened beta Conversation mode loop so active mic hands-free flow auto-retries listening after empty/failed STT turns instead of stalling.
+Files touched:
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+1741 043026 — Chat: Let's add a new feature to Animus. In settings add a conversation mode with a toggle for on/off and → Implemented the Conversation Mode behavior you asked for in `animus-chat/app/index.html`, and tightened one key gap so i (hermes-chat)
+
+1535 300426 - Documented chat STT env vars; Settings Read aloud hint when stt_backend none; docs/tts.md + animus.env.example; sw v26 + CHAT_SERVER_REV.
+Files touched:
+- animus.env.example
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- docs/tts.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1628 300426 - Embedded local STT: HERMES_CHAT_STT_LOCAL_EMBEDDED faster-whisper path for /api/stt/transcribe; transcribe_audio_force_local_faster_whisper in transcription_tools; requirements + docs + Patch 10.
+Files touched:
+- animus-chat/server.py
+- animus-chat/requirements.txt
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- hermes-agent/tools/transcription_tools.py
+- animus.env.example
+- docs/tts.md
+- docs/hermes-agent-patches.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1645 300426 - Read aloud STT hint: refresh stt_backend from /api/hermes-chat-meta in renderTtsSettings and async onVoiceInputClick; applySttBackendFromMeta in init; clearer hint copy; sw v28 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1712 300426 - Buyer/dev: enforce faster-whisper in animus-chat/requirements.txt via build-release.sh; INSTALL.md + START_HERE.txt + install.sh notes; requirements comment.
+Files touched:
+- animus-chat/requirements.txt
+- build-release.sh
+- installer/install.sh
+- INSTALL.md
+- START_HERE.txt
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1745 300426 - Wired Settings Local/Online STT: postAnimusChatSttSource, Save/Clear key listeners, single-fetch renderTtsSettings bootstrap; sw v29 + CHAT_SERVER_REV; docs/tts.md; repo_map + status + knowledge.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- docs/tts.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1820 300426 - Conversation mode: purple rotating laser ring on mic while listening; normal red pulse when conversation off; sw v30 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1845 300426 - Added python-multipart to animus-chat/requirements.txt for Starlette multipart (STT transcribe, attachments); repo_map + knowledge + status.
+Files touched:
+- animus-chat/requirements.txt
+- repo_map.md
+- project_knowledge.md
+- project_status.md
+- project_history.md
+
+1846 300426 - build-release.sh: assert python-multipart in animus-chat/requirements.txt.
+Files touched:
+- build-release.sh
+- project_history.md
+
+1905 300426 - Buyer/dev bundle: document python-multipart in INSTALL.md, START_HERE.txt, docs/tts.md; install.sh echo + post-pip import check; repo_map build-release blurb.
+Files touched:
+- INSTALL.md
+- START_HERE.txt
+- docs/tts.md
+- installer/install.sh
+- repo_map.md
+- project_knowledge.md
+- project_status.md
+- project_history.md
+
+1906 300426 - animus-chat/repo_map.md: requirements.txt notes python-multipart + faster-whisper.
+Files touched:
+- animus-chat/repo_map.md
+- project_history.md
+
+1935 300426 - localhost ERR_FAILED: startup log tip for 127.0.0.1 bind; animus.env.example + START_HERE + INSTALL troubleshooting (IPv6 localhost vs IPv4 bind).
+Files touched:
+- animus-chat/server.py
+- animus.env.example
+- START_HERE.txt
+- INSTALL.md
+- project_knowledge.md
+- project_history.md
+
+2010 300426 - Read aloud STT/TTS layout + CSS; conversation mode send() finally always calls maybeContinue; faster-whisper beam for ANIMUS force path; docs/env/patch; sw v32 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- hermes-agent/tools/transcription_tools.py
+- animus.env.example
+- docs/tts.md
+- docs/hermes-agent-patches.md
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2045 300426 - Conversation mode: defer assistant TTS text when maybeContinue re-enters during listen→send (fixes Piper/Web Speech stopping after first reply); sw v33 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2105 300426 - Conversation mode Settings on: voice input button shows talking-head SVG; off: mic SVG; refreshVoiceInputButtonState + toggle handler; sw v34 + CHAT_SERVER_REV.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1215 300426 - Default CHAT_HOST to :: (dual-stack) when unset; startup warning; env examples + INSTALL/START_HERE/tailscale; desktop launcher URL for ::/0.0.0.0; CHAT_SERVER_REV v35.
+Files touched:
+- animus-chat/server.py
+- animus.env.example
+- animus-chat/animus.env.example
+- animus-chat/hermes-chat.env.example
+- INSTALL.md
+- START_HERE.txt
+- docs/tailscale.md
+- installer/create-desktop-launcher.sh
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+- project_history.md
+
+1235 300426 - CHAT_HOST=::: pre-bind socket with IPV6_V6ONLY=0 + uvicorn Server(sockets=) so 127.0.0.1 and localhost both work; CHAT_SERVER_REV v36; project_status/knowledge/repo_map.
+Files touched:
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md

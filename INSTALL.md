@@ -4,6 +4,7 @@
 
 - Linux or macOS (Windows via WSL2 is untested but should work).
 - Python **3.10+**, `pip`, and ~2GB disk for the bundled Hermes Agent source (excluding its `venv/`).
+- **`animus-chat/requirements.txt`** includes **`python-multipart`** (required for Starlette to parse **`POST /api/stt/transcribe`** and attachment uploads) and **[faster-whisper](https://github.com/SYSTRAN/faster-whisper)** (and its **`ctranslate2`** wheel) so **buyer installs** and **`./installer/install.sh`** get on-device **`POST /api/stt/transcribe`** when **`HERMES_CHAT_STT_LOCAL_EMBEDDED=1`** (or Settings → Local STT). First transcription downloads a Whisper model (size depends on **`HERMES_CHAT_STT_LOCAL_MODEL`**, default **`small`** — allow roughly **0.5–3 GB** cache under `~/.cache/huggingface` depending on model). Install **`ffmpeg`** on the host for reliable browser **webm** decoding.
 - **`sshpass`** (optional but recommended on Linux if you use **SSH password** auth in Settings): `install.sh` prompts to install it when missing; Docker image includes it. Key-based SSH does not need it.
 - A running **Hermes gateway** (OpenAI-compatible) reachable at `HERMES_API_URL`, or install gateway from the bundled `hermes-agent/` per upstream docs.
 
@@ -56,7 +57,7 @@ See `animus.env.example` at the repository root. Important keys:
 | `HERMES_API_URL` | Gateway base URL |
 | `HERMES_API_KEY` | Gateway bearer token (omit if the gateway allows unauthenticated local access) |
 | `HERMES_AGENT_DIR` | Path to bundled `hermes-agent/` |
-| `CHAT_HOST` / `CHAT_PORT` | Bind address / port (default port **3001**) |
+| `CHAT_HOST` / `CHAT_PORT` | Bind address / port (default host **`::`** dual-stack, default port **3001**) |
 | `CHAT_DATA_DIR` / `HERMES_CHAT_DATA_DIR` | Where conversations and `config.json` live (wizard + wake lock use the same directory) |
 | `DATA_DIR` | Optional override read by some ANIMUS helpers; prefer `CHAT_DATA_DIR` for consistency |
 
@@ -83,6 +84,7 @@ The compose file should expose **3001** for ANIMUS chat (`CHAT_PORT`). The Docke
 - **“HERMES_API_KEY is not configured…” in chat** — That exact text only appears in **older** `animus-chat/server.py` builds. Confirm you are running current code: `curl -sS http://127.0.0.1:3001/api/version | jq .chat_server_rev,.chat_proxy_blocks_on_missing_hermes_api_key` — you should see a recent **`chat_server_rev`** string and **`chat_proxy_blocks_on_missing_hermes_api_key`: false**. If `chat_server_rev` is months old or `chat_proxy_blocks_on_missing_hermes_api_key` is missing/`null`, patch from a newer release zip (see below) or reinstall, then **restart** the chat process.
 - **Patch `animus-chat/` from a newer `animus-vX.Y.Z.zip` without re-unzipping everything** — (1) Full tree ( **`installer/`** + **`animus-chat/`** next to **`VERSION`**): `chmod +x installer/sync-animus-chat-from-zip.sh` then `./installer/sync-animus-chat-from-zip.sh /path/to/animus-v1.0.5.zip` (optional second arg: target **`animus-chat`** dir). (2) **Only `animus-chat/`** on disk (no **`installer/`**): the script is **inside** the zip — extract it once, then run: `cd animus-chat && unzip -p /path/to/animus-v1.0.5.zip animus-chat/sync-from-release-zip.sh > sync-from-release-zip.sh && chmod +x sync-from-release-zip.sh && ./sync-from-release-zip.sh /path/to/animus-v1.0.5.zip`. Then restart the chat server.
 - **In-app “Check for updates” fails** — Ensure **`ANIMUS_UPDATE_URL`** is set in **`animus.env`** and points at a reachable **`latest.json`** manifest. If the update server is down, the app still runs; try again later or reinstall from Gumroad — see **`docs/BUYER_UPDATES.md`**.
+- **Browser: “This site can’t be reached” / ERR_FAILED for `http://localhost:3001` but `http://127.0.0.1:3001` works** — Older **`animus.env`** copies may still have **`CHAT_HOST=127.0.0.1`** (IPv4 loopback only). Some systems resolve **`localhost`** to **IPv6 (`::1`)** first, so nothing is listening on that address. **Fix:** set **`CHAT_HOST=::`** in **`animus.env`** (matches current **`animus.env.example`**) and restart, or open **`http://127.0.0.1:3001`**. **`CHAT_HOST=0.0.0.0`** is IPv4-all-interfaces (see server log warning).
 - **Port in use** — change `CHAT_PORT` in `animus.env`.
 - **`hermes` not found** — ensure the venv where you installed Hermes Agent is on `PATH`, or set `HERMES_BIN`.
 - **Empty model list** — call `POST /api/models/refresh` with a valid `HERMES_API_KEY`, or finish the setup wizard.

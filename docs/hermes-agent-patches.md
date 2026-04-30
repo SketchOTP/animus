@@ -109,6 +109,15 @@ git diff origin/main --stat
 **Risk if removed:** Jobs fall back to in-process create without `workdir` when the gateway is up, or prompt save fails with “too long”.  
 **Test to verify:** Create a job with **`workdir`** set to an absolute existing directory; **`GET /api/jobs`** includes **`workdir`**; long composed prompt saves.
 
+## Patch 10 — `transcribe_audio_force_local_faster_whisper` (ANIMUS chat STT)
+
+**File(s):** `hermes-agent/tools/transcription_tools.py`  
+**Type:** small API addition (downstream: `animus-chat/server.py` embedded STT)  
+**What it does:** Adds **`transcribe_audio_force_local_faster_whisper(file_path, model=None)`**, which runs **`_transcribe_local`** / faster-whisper only and **ignores** `stt.provider` in Hermes `config.yaml`, so ANIMUS **`POST /api/stt/transcribe`** can stay on-device when **`HERMES_CHAT_STT_LOCAL_EMBEDDED=1`** even if messaging STT defaults to a cloud provider. The force path passes a tunable **`beam_size`** (env **`HERMES_CHAT_STT_BEAM_SIZE`**, default **1**) for lower chat latency vs Hermes messaging STT (**`beam_size` 5**).  
+**Why it exists:** Conversation mode and the chat mic must not silently use cloud Whisper when the product expects local STT.  
+**Risk if removed:** ANIMUS would need to duplicate faster-whisper wiring or call private `_transcribe_local`.  
+**Test to verify:** With embedded flag on, `curl` multipart to **`/api/stt/transcribe`** returns JSON **`text`** without **`OPENAI_API_KEY`**.
+
 ## Maintenance
 
 Before merging new upstream Hermes Agent commits into ANIMUS:

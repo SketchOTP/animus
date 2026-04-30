@@ -25,10 +25,14 @@ REPO_ROOT="${ROOT}" bash "${ROOT}/installer/create-desktop-launcher.sh" || {
   echo "[ANIMUS] Note: desktop launcher step exited non-zero (often normal on servers)." >&2
 }
 
-echo "[ANIMUS] Installing Python deps for animus-chat (venv)…"
+echo "[ANIMUS] Installing Python deps for animus-chat (venv) — includes python-multipart (mic/attachments) and faster-whisper for on-device speech-to-text when HERMES_CHAT_STT_LOCAL_EMBEDDED=1 (see animus.env.example, docs/tts.md)…"
 python3 -m venv "${ROOT}/animus-chat/.venv"
 "${ROOT}/animus-chat/.venv/bin/pip" install -U pip
 "${ROOT}/animus-chat/.venv/bin/pip" install -r "${ROOT}/animus-chat/requirements.txt"
+"${ROOT}/animus-chat/.venv/bin/python" -c "import multipart" || {
+  echo "[ANIMUS] FAIL: python-multipart not importable after pip install -r animus-chat/requirements.txt (conversation mode / STT need it)." >&2
+  exit 1
+}
 
 echo "[ANIMUS] Installing Hermes Agent from bundle…"
 if [[ -f "${ROOT}/hermes-agent/pyproject.toml" ]]; then

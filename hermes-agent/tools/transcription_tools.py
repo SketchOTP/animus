@@ -373,8 +373,17 @@ def _load_local_whisper_model(model_name: str):
         return WhisperModel(model_name, device="cpu", compute_type="int8")
 
 
-def _transcribe_local(file_path: str, model_name: str) -> Dict[str, Any]:
-    """Transcribe using faster-whisper (local, free)."""
+def _transcribe_local(
+    file_path: str,
+    model_name: str,
+    *,
+    transcribe_extras: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Transcribe using faster-whisper (local, free).
+
+    ``transcribe_extras`` are merged into faster-whisper ``transcribe()`` kwargs (e.g. lower
+    ``beam_size`` for ANIMUS chat latency). Defaults preserve prior behaviour when omitted.
+    """
     global _local_model, _local_model_name
 
     if not _HAS_FASTER_WHISPER:
@@ -393,7 +402,9 @@ def _transcribe_local(file_path: str, model_name: str) -> Dict[str, Any]:
             or os.getenv(LOCAL_STT_LANGUAGE_ENV)
             or None
         )
-        transcribe_kwargs = {"beam_size": 5}
+        transcribe_kwargs: Dict[str, Any] = {"beam_size": 5}
+        if transcribe_extras:
+            transcribe_kwargs.update(transcribe_extras)
         if _forced_lang:
             transcribe_kwargs["language"] = _forced_lang
 
@@ -853,6 +864,33 @@ def transcribe_audio(file_path: str, model: Optional[str] = None) -> Dict[str, A
             "or OPENAI_API_KEY for the OpenAI Whisper API."
         ),
     }
+
+
+def transcribe_audio_force_local_faster_whisper(
+    file_path: str, model: Optional[str] = None
+) -> Dict[str, Any]:
+    """Transcribe using **local** faster-whisper only (ignores ``stt.provider`` in config).
+
+    Used by ANIMUS ``POST /api/stt/transcribe`` when ``HERMES_CHAT_STT_LOCAL_EMBEDDED=1`` so
+    chat / conversation-mode STT stays on-device even if messaging STT defaults to a cloud
+    provider.
+
+    Tuning (ANIMUS / env): ``HERMES_CHAT_STT_BEAM_SIZE`` (default **1** for lower latency vs
+    the messaging path's beam 5); clamped to 1–5. Model size: ``HERMES_CHAT_STT_LOCAL_MODEL``
+    in ANIMUS (passed as ``model`` from the server) — ``tiny`` / ``base`` are much faster than
+    ``small`` on CPU.
+    """
+    error = _validate_audio_file(file_path)
+    if error:
+        return error
+    model_name = _normalize_local_model(model or DEFAULT_LOCAL_MODEL)
+    raw_beam = (os.environ.get("HERMES_CHAT_STT_BEAM_SIZE") or "1").strip()
+    try:
+        beam = int(raw_beam)
+    except ValueError:
+        beam = 1
+    beam = max(1, min(beam, 5))
+    return _transcribe_local(file_path, model_name, transcribe_extras={"beam_size": beam})
 
 
 def _resolve_openai_audio_client_config() -> tuple[str, str]:

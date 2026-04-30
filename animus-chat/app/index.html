@@ -606,13 +606,54 @@
     .user-part-text:first-child{margin-top:0}
     .user-part-img{margin-top:10px}
     .user-part-img img{max-width:100%;max-height:min(50vh,380px);border-radius:10px;display:block;border:1px solid var(--border)}
-    .input-mic-btn{width:48px;height:48px;border-radius:14px;border:1px solid var(--border);
+    .input-mic-btn{position:relative;isolation:isolate;overflow:visible;width:48px;height:48px;border-radius:14px;border:1px solid var(--border);
       background:var(--surface2);color:var(--muted2);cursor:pointer;display:flex;
       align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,color .15s,border-color .15s,transform .1s}
     .input-mic-btn:hover{color:var(--text);border-color:var(--accent);background:var(--surface3)}
     .input-mic-btn:disabled{opacity:.45;cursor:not-allowed}
-    .input-mic-btn.recording{background:rgba(239,68,68,.18);color:var(--danger);border-color:rgba(239,68,68,.45);
+    .input-mic-btn.recording:not(.conversation-on){background:rgba(239,68,68,.18);color:var(--danger);border-color:rgba(239,68,68,.45);
       animation:micPulse 1.1s ease-in-out infinite}
+    .input-mic-btn.conversation-on{background:rgba(59,130,246,.16);color:var(--accent);border-color:rgba(59,130,246,.45)}
+    /* Conversation mode + listening: slow purple laser trace (not the red one-shot pulse) */
+    .input-mic-btn.conversation-on.recording{
+      animation:none;
+      background:rgba(24,22,38,.88);
+      border-color:rgba(167,139,250,.55);
+      color:#e9d5ff;
+      box-shadow:0 0 0 1px rgba(88,28,135,.35) inset,0 0 18px rgba(168,85,247,.28);
+    }
+    .input-mic-btn.conversation-on.recording::before{
+      content:'';
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:calc(100% + 12px);
+      height:calc(100% + 12px);
+      border-radius:18px;
+      z-index:0;
+      pointer-events:none;
+      transform:translate(-50%,-50%);
+      transform-origin:50% 50%;
+      background:conic-gradient(from 0deg,
+        rgba(88,28,135,0) 0deg,
+        rgba(88,28,135,0) 248deg,
+        rgba(167,139,250,.2) 268deg,
+        #f0abfc 286deg,
+        #c084fc 296deg,
+        #a855f7 304deg,
+        #7c3aed 312deg,
+        rgba(167,139,250,.25) 324deg,
+        rgba(88,28,135,0) 344deg,
+        rgba(88,28,135,0) 360deg);
+      animation:micLaserSpin 4.2s linear infinite;
+      -webkit-mask:radial-gradient(circle at 50% 50%,transparent 0 23px,#000 24px,#000 27.5px,transparent 28.5px);
+      mask:radial-gradient(circle at 50% 50%,transparent 0 23px,#000 24px,#000 27.5px,transparent 28.5px);
+    }
+    .input-mic-btn.conversation-on.recording svg{position:relative;z-index:1}
+    @keyframes micLaserSpin{
+      from{transform:translate(-50%,-50%) rotate(0deg)}
+      to{transform:translate(-50%,-50%) rotate(360deg)}
+    }
     @keyframes micPulse{50%{opacity:.82}}
     .input-tts-btn{width:48px;height:48px;border-radius:14px;border:1px solid var(--border);
       background:var(--surface2);color:var(--muted2);cursor:pointer;display:flex;
@@ -646,6 +687,9 @@
     .modal-header{display:flex;align-items:center;justify-content:space-between;
       padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
     .modal-header h2{font-size:16px;font-weight:700}
+    .beta-chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;
+      border:1px solid rgba(59,130,246,.45);background:rgba(59,130,246,.15);color:#93c5fd;
+      font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
     .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;
       font-size:20px;line-height:1;padding:8px;border-radius:8px;transition:color .1s;
       min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
@@ -766,6 +810,14 @@
     #ttsBackendRadios label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;
       font-weight:500;color:var(--text);margin-bottom:0;font-size:14px;line-height:1.45;min-width:0}
     #ttsBackendRadios label span{flex:1;min-width:0;overflow-wrap:anywhere}
+    /* Read aloud: STT source radios — same .field input{width:100%} trap as TTS */
+    #animusSttSourceRadios input[type="radio"]{
+      width:auto;min-width:18px;max-width:none;height:18px;margin-top:3px;padding:0;
+      flex-shrink:0;accent-color:var(--accent);align-self:flex-start;
+      background:transparent;border:none;border-radius:0;outline:none}
+    #animusSttSourceRadios label{display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+      font-weight:500;color:var(--text);margin-bottom:0;font-size:14px;line-height:1.45;min-width:0;width:100%}
+    #animusSttSourceRadios label span{flex:1;min-width:0;line-height:1.35}
     /* SSH host modal: same .field input{width:100%} breaks auth radios */
     #sshFormAuthRadios input[type="radio"]{
       width:auto;min-width:18px;max-width:none;height:18px;margin-top:3px;padding:0;
@@ -972,6 +1024,13 @@
       .input-row{padding:10px 10px 10px 16px;border-radius:18px}
       .input-plus-btn{min-width:52px;min-height:52px;font-size:24px;padding:10px 16px}
       .input-mic-btn{width:56px;height:56px;border-radius:16px}
+      .input-mic-btn.conversation-on.recording::before{
+        width:calc(100% + 14px);
+        height:calc(100% + 14px);
+        border-radius:22px;
+        -webkit-mask:radial-gradient(circle at 50% 50%,transparent 0 27px,#000 28px,#000 32.5px,transparent 33.5px);
+        mask:radial-gradient(circle at 50% 50%,transparent 0 27px,#000 28px,#000 32.5px,transparent 33.5px);
+      }
       .input-tts-btn{width:56px;height:56px;border-radius:16px}
       .send-btn{width:56px;height:56px;border-radius:16px}
 
@@ -1424,15 +1483,63 @@
           <div id="readAloudCollapsePanel" class="settings-collapse-panel">
             <div class="settings-collapse-inner">
               <div class="field" style="margin-bottom:8px;display:flex;flex-direction:column;gap:10px">
-                <div id="ttsBackendRadios" style="display:flex;flex-direction:column;gap:6px">
-                  <label id="ttsBackendPiperLabel" style="cursor:pointer;font-size:13px">
-                    <input type="radio" name="ttsBackend" value="piper" id="ttsBackendPiper" />
-                    <span>Piper (server)</span>
+                <div class="settings-label-row" style="align-items:center;margin-bottom:2px">
+                  <span class="settings-inline-label" style="display:flex;align-items:center;gap:8px">
+                    Conversation mode
+                    <span class="beta-chip">Beta</span>
+                  </span>
+                  <label class="ssh-toggle-row" style="padding:0;margin:0;width:auto;flex-shrink:0" for="conversationModeToggle">
+                    <span class="ssh-toggle-ui" style="margin-left:4px">
+                      <input type="checkbox" id="conversationModeToggle" />
+                      <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+                    </span>
                   </label>
-                  <label style="cursor:pointer;font-size:13px">
-                    <input type="radio" name="ttsBackend" value="browser" id="ttsBackendBrowser" />
-                    <span>Browser (Web Speech)</span>
-                  </label>
+                </div>
+                <div style="font-size:11px;color:var(--muted2);line-height:1.35;margin-top:-3px">
+                  When enabled, the chat mic button toggles hands-free conversation: ANIMUS reads each reply aloud, then listens with VAD and auto-sends your next spoken turn.
+                </div>
+                <div id="conversationModeSttHint" style="display:none;font-size:11px;color:var(--danger);line-height:1.35;margin-top:4px;padding:8px;border-radius:6px;border:1px solid var(--border)"></div>
+                <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+                  <div class="settings-inline-label" style="font-weight:600;margin-bottom:6px;color:var(--text)">Speech-to-text (mic &amp; conversation)</div>
+                  <div id="animusSttSourceRadios" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;font-size:13px">
+                    <label style="cursor:pointer;margin:0">
+                      <input type="radio" name="animusChatSttSource" value="embedded" id="animusSttEmbedded" />
+                      <span>Local (on-device)</span>
+                    </label>
+                    <label style="cursor:pointer;margin:0">
+                      <input type="radio" name="animusChatSttSource" value="openai" id="animusSttOpenai" />
+                      <span>Online (OpenAI Whisper)</span>
+                    </label>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted2);line-height:1.35;margin-bottom:8px">
+                    Local uses faster-whisper on this server (no API key). Online stores your Whisper key in server <code>config.json</code> only — not in browser localStorage. For speed, tune <code>HERMES_CHAT_STT_LOCAL_MODEL</code> and <code>HERMES_CHAT_STT_BEAM_SIZE</code> in <code>animus.env</code> (<code>docs/tts.md</code>).
+                  </div>
+                  <div id="animusSttOnlinePanel" style="display:none;margin-top:4px;padding:10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary, rgba(0,0,0,0.04))">
+                    <label for="animusSttOpenaiKey" class="settings-inline-label" style="display:block;margin-bottom:4px;font-size:12px">OpenAI API key</label>
+                    <input type="password" id="animusSttOpenaiKey" autocomplete="off" placeholder="sk-… (leave blank to keep current)" style="width:100%;max-width:420px;padding:6px 10px;margin-bottom:4px;font-size:13px" />
+                    <div id="animusSttOpenaiKeyStatus" style="font-size:11px;color:var(--muted);margin-bottom:8px;min-height:1em"></div>
+                    <label for="animusSttOpenaiBase" class="settings-inline-label" style="display:block;margin-bottom:4px;font-size:12px">API base (optional)</label>
+                    <input type="text" id="animusSttOpenaiBase" placeholder="https://api.openai.com/v1" style="width:100%;max-width:420px;padding:6px 10px;margin-bottom:8px;font-size:13px" />
+                    <label for="animusSttOpenaiModel" class="settings-inline-label" style="display:block;margin-bottom:4px;font-size:12px">Model</label>
+                    <input type="text" id="animusSttOpenaiModel" placeholder="whisper-1" style="width:100%;max-width:420px;padding:6px 10px;margin-bottom:10px;font-size:13px" />
+                    <div class="settings-btn-row" style="flex-wrap:wrap">
+                      <button type="button" class="btn btn-ghost" id="animusSttOnlineSaveBtn">Save online STT</button>
+                      <button type="button" class="btn btn-ghost" id="animusSttOnlineClearKeyBtn">Clear saved API key</button>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+                  <div class="settings-inline-label" style="font-weight:600;margin-bottom:8px;color:var(--text)">Read-aloud voice (text-to-speech)</div>
+                  <div id="ttsBackendRadios" style="display:flex;flex-direction:column;gap:6px">
+                    <label id="ttsBackendPiperLabel" style="cursor:pointer;font-size:13px">
+                      <input type="radio" name="ttsBackend" value="piper" id="ttsBackendPiper" />
+                      <span>Piper (server)</span>
+                    </label>
+                    <label style="cursor:pointer;font-size:13px">
+                      <input type="radio" name="ttsBackend" value="browser" id="ttsBackendBrowser" />
+                      <span>Browser (Web Speech)</span>
+                    </label>
+                  </div>
                 </div>
                 <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:6px">
                   <div class="settings-label-row">
@@ -2270,6 +2377,17 @@ let sttBackend = 'none';
 let mediaRecorder = null;
 let mediaChunks = [];
 let mediaMime = '';
+let mediaOnTranscript = null;
+let mediaOnError = null;
+let mediaSuppressTranscribe = false;
+let mediaVadState = null;
+let conversationModeActive = false;
+let conversationLoopPending = false;
+let conversationLoopRunning = false;
+let conversationStopAfterCurrentTurn = false;
+/** When ``maybeContinue`` is re-entered while ``listen→send`` still holds ``conversationLoopRunning``, stash assistant text here so TTS is not dropped. */
+let conversationDeferredAssistantTts = null;
+let conversationListenRetryTimer = null;
 const PROJECT_OVERVIEWS = {
   'HexCurse': 'HexCurse governance workspace. Primary source is under cursor-governance/ with scripts and package wiring at repo root.',
   'Nexus': 'Local-first Linux command center with unified dashboard, notebook, and command bus (Python backend + web frontend).',
@@ -2785,6 +2903,9 @@ async function persistUiSettingsToServerNow() {
     ui_settings = { ...settings };
   }
   try {
+    delete ui_settings.animus_chat_stt_openai_key;
+  } catch (_) {}
+  try {
     await fetch('/api/animus/client-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2859,6 +2980,39 @@ async function applyAnimusClientConfigFromJson(cj, opts = {}) {
     if (cj.tts_backend === 'browser' || cj.tts_backend === 'piper') {
       if (settings.tts_backend !== cj.tts_backend) {
         settings.tts_backend = cj.tts_backend;
+        changed = true;
+      }
+    }
+    if (cj.animus_chat_stt_source === 'embedded' || cj.animus_chat_stt_source === 'openai') {
+      if (settings.animus_chat_stt_source !== cj.animus_chat_stt_source) {
+        settings.animus_chat_stt_source = cj.animus_chat_stt_source;
+        changed = true;
+      }
+    }
+    if (typeof cj.animus_chat_stt_openai_key_set === 'boolean') {
+      if (settings.animus_chat_stt_openai_key_set !== cj.animus_chat_stt_openai_key_set) {
+        settings.animus_chat_stt_openai_key_set = cj.animus_chat_stt_openai_key_set;
+        changed = true;
+      }
+    }
+    if (cj.animus_chat_stt_openai_key_preview != null) {
+      const pv = String(cj.animus_chat_stt_openai_key_preview || '');
+      if (String(settings.animus_chat_stt_openai_key_preview || '') !== pv) {
+        settings.animus_chat_stt_openai_key_preview = pv;
+        changed = true;
+      }
+    }
+    if (cj.animus_chat_stt_openai_base != null) {
+      const b = String(cj.animus_chat_stt_openai_base || '');
+      if (String(settings.animus_chat_stt_openai_base || '') !== b) {
+        settings.animus_chat_stt_openai_base = b;
+        changed = true;
+      }
+    }
+    if (cj.animus_chat_stt_openai_model != null) {
+      const m = String(cj.animus_chat_stt_openai_model || '');
+      if (String(settings.animus_chat_stt_openai_model || '') !== m) {
+        settings.animus_chat_stt_openai_model = m;
         changed = true;
       }
     }
@@ -2987,6 +3141,8 @@ if (
 ) {
   settings.tts_piper_voice = DEFAULT_PIPER_VOICE_ID;
 }
+if (settings.conversation_mode_enabled === undefined) settings.conversation_mode_enabled = false;
+if (settings.animus_chat_stt_source === undefined) settings.animus_chat_stt_source = 'embedded';
 
 function migrateLegacyChatProviderToBackend() {
   if (settings.chat_backend && CHAT_BACKEND_PRESETS[settings.chat_backend]) return;
@@ -3951,6 +4107,38 @@ function _stopPiperAudio() {
   _piperAudioEl = null;
 }
 
+/** Sync ``sttBackend`` from ``GET /api/hermes-chat-meta`` (call when Read aloud renders or before mic STT). */
+function applySttBackendFromMeta(meta) {
+  if (!meta || typeof meta !== 'object') return;
+  const sb = (meta.stt_backend && String(meta.stt_backend).trim().toLowerCase()) || 'none';
+  if (sb === 'local' || sb === 'openai') sttBackend = sb;
+  else sttBackend = 'none';
+}
+
+async function refreshSttBackendFromMeta() {
+  try {
+    const r = await fetch('/api/hermes-chat-meta', { cache: 'no-store' });
+    if (!r.ok) return;
+    const meta = await r.json().catch(() => ({}));
+    applySttBackendFromMeta(meta);
+  } catch (_) {}
+}
+
+async function postAnimusChatSttSource(raw) {
+  const v = raw === 'openai' ? 'openai' : 'embedded';
+  settings.animus_chat_stt_source = v;
+  save();
+  try {
+    await fetch('/api/animus/client-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ animus_chat_stt_source: v }),
+    });
+  } catch (_) {}
+  await refreshSttBackendFromMeta();
+  await renderTtsSettings();
+}
+
 /** @returns {Promise<boolean|null>} true = server lists piper; false = confirmed absent; null = could not reach API */
 async function fetchTtsBackendsOnce() {
   try {
@@ -4035,6 +4223,32 @@ async function populatePiperVoiceSelect() {
 }
 
 async function renderTtsSettings() {
+  await refreshSttBackendFromMeta();
+  let cjStt = null;
+  try {
+    const cr = await fetch('/api/animus/client-config', { cache: 'no-store' });
+    if (cr.ok) {
+      cjStt = await cr.json();
+      await applyAnimusClientConfigFromJson(cjStt, { persistLocal: true, refreshUi: false });
+    }
+  } catch (_) {}
+  if (
+    sttBackend === 'none' &&
+    cjStt &&
+    !cjStt.animus_chat_stt_source &&
+    (settings.animus_chat_stt_source === 'embedded' || settings.animus_chat_stt_source === undefined)
+  ) {
+    try {
+      await fetch('/api/animus/client-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ animus_chat_stt_source: 'embedded' }),
+      });
+      settings.animus_chat_stt_source = 'embedded';
+      save();
+      await refreshSttBackendFromMeta();
+    } catch (_) {}
+  }
   const probe = await fetchTtsBackendsOnce();
   const hasPiper = probe === true;
   const probeUnknown = probe === null;
@@ -4047,6 +4261,38 @@ async function renderTtsSettings() {
   const want = settings.tts_backend === 'piper' ? 'piper' : 'browser';
   if (br) br.checked = want === 'browser';
   if (pr) pr.checked = want === 'piper';
+  const cm = $('conversationModeToggle');
+  if (cm) cm.checked = conversationModeEnabled();
+  const sttSrc = settings.animus_chat_stt_source === 'openai' ? 'openai' : 'embedded';
+  const emb = $('animusSttEmbedded');
+  const onl = $('animusSttOpenai');
+  if (emb) emb.checked = sttSrc === 'embedded';
+  if (onl) onl.checked = sttSrc === 'openai';
+  const sttPanel = $('animusSttOnlinePanel');
+  if (sttPanel) sttPanel.style.display = sttSrc === 'openai' ? 'block' : 'none';
+  const bInp = $('animusSttOpenaiBase');
+  const mInp = $('animusSttOpenaiModel');
+  const kInp = $('animusSttOpenaiKey');
+  if (bInp) bInp.value = String(settings.animus_chat_stt_openai_base || '').trim();
+  if (mInp) mInp.value = String(settings.animus_chat_stt_openai_model || '').trim();
+  if (kInp) kInp.value = '';
+  const ks = $('animusSttOpenaiKeyStatus');
+  if (ks) {
+    ks.textContent = settings.animus_chat_stt_openai_key_set
+      ? `Saved key ${String(settings.animus_chat_stt_openai_key_preview || '…').trim() || '…'}`
+      : 'No API key stored on server for online STT.';
+  }
+  const sttHint = $('conversationModeSttHint');
+  if (sttHint) {
+    if (sttBackend === 'none') {
+      sttHint.style.display = 'block';
+      sttHint.textContent =
+        'Speech-to-text is not active yet. Pick Local (on-device) or Online above — Local is saved automatically on first open; Online needs an API key and Save. Install faster-whisper for Local (`pip install -r animus-chat/requirements.txt`). See docs/tts.md.';
+    } else {
+      sttHint.style.display = 'none';
+      sttHint.textContent = '';
+    }
+  }
   if (dl) dl.style.display = want === 'piper' ? 'inline-flex' : 'none';
   if (want === 'piper') await populatePiperVoiceSelect();
   else {
@@ -4054,6 +4300,7 @@ async function renderTtsSettings() {
     if (lab) lab.textContent = 'Browser voice';
     populateTtsVoiceSelect();
   }
+  refreshVoiceInputButtonState();
 }
 
 function escAttr(s) {
@@ -7973,6 +8220,7 @@ async function send(retryConvId, opts = {}) {
   let codexAutoResolvedModel = '';
   let chatProvider = '';
   let requestedModel = '';
+  let conversationReplyText = '';
 
   try {
     const chatBody = { model: MODEL, messages: buildMessages(conv), stream: true, stream_options: { include_usage: true } };
@@ -8050,8 +8298,9 @@ async function send(retryConvId, opts = {}) {
     const work = captureStreamWork();
     const full = endStream();
     recordStreamDuration(work);
-    if (full) {
-      const msg = { role: 'assistant', content: full, created_at: new Date().toISOString() };
+    conversationReplyText = typeof full === 'string' ? full : '';
+    if (conversationReplyText.trim()) {
+      const msg = { role: 'assistant', content: conversationReplyText, created_at: new Date().toISOString() };
       if (streamUsage) msg.usage = streamUsage;
       if (work) msg.work = work;
       attachInferenceMeta(msg, {
@@ -8077,7 +8326,7 @@ async function send(retryConvId, opts = {}) {
             break;
           }
         }
-        const sa = String(full).replace(/\s+/g, ' ').trim();
+        const sa = String(conversationReplyText).replace(/\s+/g, ' ').trim();
         const summary = `Chat: ${lastUser.slice(0, 100) || '(message)'} → ${sa.slice(0, 120) || 'response'}`;
         try {
           await fetch('/api/project-workspace/history-append', {
@@ -8087,13 +8336,14 @@ async function send(retryConvId, opts = {}) {
           });
         } catch (_) {}
       }
-      const preview = full.replace(/\s+/g, ' ').trim().slice(0, 140) || 'Hermes finished a response.';
+      const preview = conversationReplyText.replace(/\s+/g, ' ').trim().slice(0, 140) || 'Hermes finished a response.';
       await showRunFinishedNotification('Hermes run finished', preview);
     }
   } catch (err) {
     const work = captureStreamWork();
     const partial = endStream();
     recordStreamDuration(work);
+    conversationReplyText = typeof partial === 'string' ? partial : '';
     if (err.name === 'AbortError') {
       if (partial) {
         const msg = { role: 'assistant', content: partial, created_at: new Date().toISOString() };
@@ -8142,7 +8392,13 @@ async function send(retryConvId, opts = {}) {
         showReconnectBanner('Connection interrupted. Your message was not lost.', true);
       }
     }
-  } finally { setSending(false); controller = null; }
+  } finally {
+    setSending(false);
+    controller = null;
+    if (conversationModeActive && conversationModeEnabled()) {
+      void maybeContinueConversationAfterAssistant(String(conversationReplyText || ''));
+    }
+  }
 }
 
 function setSending(on) {
@@ -8161,12 +8417,10 @@ function setSending(on) {
     } catch (_) {}
     mediaRecorder = null;
     mediaChunks = [];
-    if (mic) {
-      mic.classList.remove('recording');
-      mic.title = 'Voice input (tap to speak / tap again to stop and transcribe)';
-    }
+    if (mic) mic.classList.remove('recording');
   }
   if (mic) mic.disabled = !!on;
+  refreshVoiceInputButtonState();
   syncTtsReadBtn();
   if (on) {
     btn.classList.add('stop'); btn.title = 'Stop';
@@ -8986,6 +9240,66 @@ if (wakeLockToggle) {
     }
   });
 }
+
+const conversationModeToggle = $('conversationModeToggle');
+if (conversationModeToggle) {
+  conversationModeToggle.addEventListener('change', (e) => {
+    settings.conversation_mode_enabled = !!e.target.checked;
+    save();
+    if (!settings.conversation_mode_enabled) {
+      stopConversationMode();
+    }
+    refreshVoiceInputButtonState();
+  });
+}
+
+document.querySelectorAll('input[name="animusChatSttSource"]').forEach((rb) => {
+  rb.addEventListener('change', () => {
+    void postAnimusChatSttSource(String(rb.value || ''));
+  });
+});
+$('animusSttOnlineSaveBtn')?.addEventListener('click', async () => {
+  const keyEl = $('animusSttOpenaiKey');
+  const baseEl = $('animusSttOpenaiBase');
+  const modelEl = $('animusSttOpenaiModel');
+  const body = {
+    animus_chat_stt_openai_base: String(baseEl?.value || '').trim(),
+    animus_chat_stt_openai_model: String(modelEl?.value || '').trim(),
+  };
+  const k = String(keyEl?.value || '').trim();
+  if (k) body.animus_chat_stt_openai_key = k;
+  try {
+    const r = await fetch('/api/animus/client-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    if (keyEl) keyEl.value = '';
+    await pullClientConfigFromServer();
+    await refreshSttBackendFromMeta();
+    void renderTtsSettings();
+  } catch (e) {
+    alert('Save online STT failed: ' + (e && e.message ? e.message : String(e)));
+  }
+});
+$('animusSttOnlineClearKeyBtn')?.addEventListener('click', async () => {
+  try {
+    const r = await fetch('/api/animus/client-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ animus_chat_stt_openai_key: '' }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    settings.animus_chat_stt_openai_key_set = false;
+    settings.animus_chat_stt_openai_key_preview = '';
+    save();
+    await refreshSttBackendFromMeta();
+    void renderTtsSettings();
+  } catch (e) {
+    alert('Clear key failed: ' + (e && e.message ? e.message : String(e)));
+  }
+});
 
 const ttsVoiceSelectEl = $('ttsVoiceSelect');
 if (ttsVoiceSelectEl) {
@@ -12780,6 +13094,53 @@ function updateTtsButtonState(speaking) {
     b.setAttribute('aria-label', 'Read last reply aloud');
   }
 }
+function conversationModeEnabled() {
+  return settings.conversation_mode_enabled === true;
+}
+/** Mic (normal voice input) vs talking head (conversation mode enabled in Settings). */
+const VOICE_INPUT_ICON_MIC_SVG =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>' +
+  '<path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v3M8 22h8"/>' +
+  '</svg>';
+const VOICE_INPUT_ICON_HEAD_SVG =
+  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<circle cx="10" cy="10" r="3.5"/>' +
+  '<path d="M4 20v-.5a6 6 0 0 1 6-6h0a6 6 0 0 1 6 6v.5"/>' +
+  '<path d="M15.5 9.5a3 3 0 0 1 0 5"/>' +
+  '<path d="M18 7a6 6 0 0 1 0 10"/>' +
+  '</svg>';
+function refreshVoiceInputButtonState() {
+  const btn = $('voiceInputBtn');
+  if (!btn) return;
+  const convUi = conversationModeEnabled() ? 'head' : 'mic';
+  if (btn.dataset.voiceIconMode !== convUi) {
+    btn.dataset.voiceIconMode = convUi;
+    btn.innerHTML = convUi === 'head' ? VOICE_INPUT_ICON_HEAD_SVG : VOICE_INPUT_ICON_MIC_SVG;
+  }
+  const recording = !!(mediaRecorder && mediaRecorder.state === 'recording');
+  const enabled = conversationModeEnabled();
+  const active = enabled && conversationModeActive;
+  btn.classList.toggle('conversation-on', active);
+  if (recording) {
+    btn.classList.add('recording');
+  } else {
+    btn.classList.remove('recording');
+  }
+  if (recording) {
+    btn.title = active
+      ? 'Conversation mode: listening… tap to stop'
+      : 'Tap to stop and transcribe';
+    return;
+  }
+  if (enabled) {
+    btn.title = active
+      ? 'Conversation mode on (tap to turn off)'
+      : 'Conversation mode off (tap to turn on)';
+    return;
+  }
+  btn.title = 'Voice input (tap to speak / tap again to stop and transcribe)';
+}
 function cancelTtsPlayback() {
   _stopPiperAudio();
   if (!window.speechSynthesis) return;
@@ -12840,6 +13201,67 @@ async function tryReadAloudPiper(plain) {
   } catch (_) {
     _stopPiperAudio();
     return false;
+  }
+}
+
+async function playPiperSpeechAndWait(plain) {
+  if (settings.tts_backend !== 'piper') return false;
+  const voice = (settings.tts_piper_voice || '').trim();
+  if (!voice) return false;
+  const r = await fetch('/api/tts/piper/speak', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: plain.slice(0, 120000), voice }),
+  });
+  if (!r.ok) throw new Error(await r.text().catch(() => `HTTP ${r.status}`));
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  _stopPiperAudio();
+  const a = new Audio(url);
+  _piperAudioEl = a;
+  updateTtsButtonState(true);
+  await new Promise((resolve, reject) => {
+    a.addEventListener('ended', () => resolve(), { once: true });
+    a.addEventListener('error', () => reject(new Error('Piper playback failed')), { once: true });
+    a.play().catch(reject);
+  }).finally(() => {
+    try { URL.revokeObjectURL(url); } catch (_) {}
+    _piperAudioEl = null;
+    updateTtsButtonState(false);
+    syncTtsReadBtn();
+  });
+  return true;
+}
+
+async function speakTextForConversationMode(rawText) {
+  const plain = markdownToPlainSpeechText(String(rawText || ''));
+  if (!plain.trim()) return;
+  if (settings.tts_backend === 'piper') {
+    try {
+      await playPiperSpeechAndWait(plain);
+      return;
+    } catch (_) {}
+  }
+  if (!window.speechSynthesis) return;
+  await waitForSpeechVoices(900);
+  const parts = splitTextForTts(plain, 8000);
+  updateTtsButtonState(true);
+  try {
+    for (const chunk of parts) {
+      if (!conversationModeActive || !conversationModeEnabled()) break;
+      await new Promise((resolve, reject) => {
+        const u = new SpeechSynthesisUtterance(chunk);
+        applyTtsVoiceToUtterance(u, resolveReadAloudVoice());
+        u.rate = 0.98;
+        u.pitch = 1;
+        u.onend = () => resolve();
+        u.onerror = () => reject(new Error('Browser speech failed'));
+        speechSynthesis.speak(u);
+      });
+    }
+  } finally {
+    updateTtsButtonState(false);
+    syncTtsReadBtn();
   }
 }
 
@@ -12919,11 +13341,10 @@ function appendTranscriptToInput(text) {
   inp.focus();
 }
 
-async function uploadRecordingForStt() {
-  const blob = new Blob(mediaChunks, { type: mediaMime || undefined });
-  mediaChunks = [];
-  if (!blob.size) return;
-  const ext = (mediaMime && mediaMime.indexOf('mp4') >= 0) ? 'speech.m4a' : 'speech.webm';
+async function transcribeAudioBlobWithStt(blob, mime) {
+  if (!blob || !blob.size) return '';
+  const mediaType = String(mime || '').trim();
+  const ext = (mediaType && mediaType.indexOf('mp4') >= 0) ? 'speech.m4a' : 'speech.webm';
   const fd = new FormData();
   fd.append('audio', blob, ext);
   const r = await fetch('/api/stt/transcribe', { method: 'POST', body: fd });
@@ -12933,92 +13354,321 @@ async function uploadRecordingForStt() {
     const det = j.detail ? String(j.detail) : '';
     throw new Error((j.error ? `${j.error}: ${det}` : det) || `HTTP ${r.status}`);
   }
-  appendTranscriptToInput(j.text || '');
+  return String(j.text || '').trim();
 }
 
-function runBrowserSpeechOnce() {
+function _teardownMediaVad() {
+  if (!mediaVadState) return;
+  try { clearInterval(mediaVadState.timer); } catch (_) {}
+  try { mediaVadState.source && mediaVadState.source.disconnect(); } catch (_) {}
+  try { mediaVadState.analyser && mediaVadState.analyser.disconnect(); } catch (_) {}
+  try {
+    if (mediaVadState.ctx && typeof mediaVadState.ctx.close === 'function') {
+      mediaVadState.ctx.close().catch(() => {});
+    }
+  } catch (_) {}
+  mediaVadState = null;
+}
+
+function _resetMediaCallbacks() {
+  mediaOnTranscript = null;
+  mediaOnError = null;
+  mediaSuppressTranscribe = false;
+}
+
+async function uploadRecordingForStt() {
+  const blob = new Blob(mediaChunks, { type: mediaMime || undefined });
+  mediaChunks = [];
+  if (!blob.size) {
+    if (typeof mediaOnTranscript === 'function') mediaOnTranscript('');
+    return '';
+  }
+  const text = await transcribeAudioBlobWithStt(blob, mediaMime);
+  if (!mediaSuppressTranscribe) appendTranscriptToInput(text);
+  if (typeof mediaOnTranscript === 'function') mediaOnTranscript(text);
+  return text;
+}
+
+async function runBrowserSpeechOnceCapture() {
   const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
   const btn = $('voiceInputBtn');
   if (!Ctor) {
-    alert('Voice input needs server STT (set HERMES_CHAT_STT_OPENAI_KEY or HERMES_CHAT_STT_LOCAL_URL on the ANIMUS host) or a browser with Web Speech (e.g. Chrome).');
-    return;
+    throw new Error(
+      'Voice input needs server STT (set HERMES_CHAT_STT_OPENAI_KEY or HERMES_CHAT_STT_LOCAL_URL on the ANIMUS host) or a browser with Web Speech (e.g. Chrome).'
+    );
   }
   if (btn) {
     btn.classList.add('recording');
-    btn.title = 'Listening… (browser)';
+    refreshVoiceInputButtonState();
   }
-  const rec = new Ctor();
-  rec.lang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en-US';
-  rec.interimResults = false;
-  rec.continuous = false;
-  let said = '';
-  rec.onresult = ev => {
-    for (let i = ev.resultIndex; i < ev.results.length; i++) {
-      if (ev.results[i].isFinal) said += ev.results[i][0].transcript;
+  return await new Promise((resolve, reject) => {
+    const rec = new Ctor();
+    rec.lang = (navigator.languages && navigator.languages[0]) || navigator.language || 'en-US';
+    rec.interimResults = false;
+    rec.continuous = false;
+    let said = '';
+    rec.onresult = (ev) => {
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal) said += ev.results[i][0].transcript;
+      }
+    };
+    rec.onerror = (ev) => {
+      if (btn) {
+        btn.classList.remove('recording');
+        refreshVoiceInputButtonState();
+      }
+      reject(new Error((ev && ev.error) ? String(ev.error) : 'Speech recognition error'));
+    };
+    rec.onend = () => {
+      if (btn) {
+        btn.classList.remove('recording');
+        refreshVoiceInputButtonState();
+      }
+      resolve(String(said || '').trim());
+    };
+    try {
+      rec.start();
+    } catch (e) {
+      if (btn) {
+        btn.classList.remove('recording');
+        refreshVoiceInputButtonState();
+      }
+      reject(new Error(e && e.message ? e.message : 'Could not start speech recognition'));
     }
-  };
-  rec.onerror = () => {
-    if (btn) {
-      btn.classList.remove('recording');
-      btn.title = 'Voice input (tap to speak / tap again to stop and transcribe)';
-    }
-  };
-  rec.onend = () => {
-    if (btn) {
-      btn.classList.remove('recording');
-      btn.title = 'Voice input (tap to speak / tap again to stop and transcribe)';
-    }
-    appendTranscriptToInput(said);
-  };
-  try {
-    rec.start();
-  } catch (e) {
-    if (btn) {
-      btn.classList.remove('recording');
-      btn.title = 'Voice input (tap to speak / tap again to stop and transcribe)';
-    }
-    alert(e && e.message ? e.message : 'Could not start speech recognition');
-  }
+  });
 }
 
-function startMediaRecording() {
+function runBrowserSpeechOnce() {
+  runBrowserSpeechOnceCapture()
+    .then((text) => appendTranscriptToInput(text))
+    .catch((e) => alert(e && e.message ? e.message : 'Could not start speech recognition'));
+}
+
+function startMediaRecording(opts = {}) {
   const mime = pickRecorderMime();
   const btn = $('voiceInputBtn');
   if (!mime || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    runBrowserSpeechOnce();
+    if (opts.captureOnly) {
+      runBrowserSpeechOnceCapture()
+        .then((text) => {
+          if (typeof opts.onTranscript === 'function') opts.onTranscript(text);
+        })
+        .catch((e) => {
+          if (typeof opts.onError === 'function') opts.onError(e);
+          else alert(e && e.message ? e.message : 'Could not start speech recognition');
+        });
+    } else {
+      runBrowserSpeechOnce();
+    }
     return;
   }
+  const useVad = !!opts.vad;
+  const vadThreshold = Number.isFinite(opts.vadThreshold) ? Number(opts.vadThreshold) : 0.012;
+  const vadSilenceMs = Number.isFinite(opts.vadSilenceMs) ? Number(opts.vadSilenceMs) : 1400;
+  const maxMs = Number.isFinite(opts.maxMs) ? Number(opts.maxMs) : 60000;
   mediaMime = mime;
   mediaChunks = [];
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+  mediaSuppressTranscribe = !!opts.captureOnly;
+  mediaOnTranscript = typeof opts.onTranscript === 'function' ? opts.onTranscript : null;
+  mediaOnError = typeof opts.onError === 'function' ? opts.onError : null;
+  navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
     mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
-    mediaRecorder.ondataavailable = e => {
+    mediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) mediaChunks.push(e.data);
     };
     mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} });
+      _teardownMediaVad();
+      stream.getTracks().forEach((t) => { try { t.stop(); } catch (_) {} });
       if (btn) {
         btn.classList.remove('recording');
-        btn.title = 'Voice input (tap to speak / tap again to stop and transcribe)';
+        refreshVoiceInputButtonState();
       }
       mediaRecorder = null;
       try {
         await uploadRecordingForStt();
       } catch (e) {
-        alert('Transcription failed: ' + (e && e.message ? e.message : String(e)));
+        if (typeof mediaOnError === 'function') mediaOnError(e);
+        else alert('Transcription failed: ' + (e && e.message ? e.message : String(e)));
+      } finally {
+        _resetMediaCallbacks();
       }
     };
-    mediaRecorder.start(400);
+    mediaRecorder.start(250);
     if (btn) {
       btn.classList.add('recording');
-      btn.title = 'Tap to stop and transcribe';
+      refreshVoiceInputButtonState();
     }
-  }).catch(e => {
-    alert('Microphone: ' + (e && e.message ? e.message : String(e)));
+    if (useVad) {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) {
+          const ctx = new Ctx();
+          const source = ctx.createMediaStreamSource(stream);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 1024;
+          source.connect(analyser);
+          const arr = new Uint8Array(analyser.fftSize);
+          const startedAt = Date.now();
+          let speechSeen = false;
+          let lastVoiceAt = startedAt;
+          const timer = setInterval(() => {
+            if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+            analyser.getByteTimeDomainData(arr);
+            let sum = 0;
+            for (let i = 0; i < arr.length; i++) {
+              const v = (arr[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / arr.length);
+            const now = Date.now();
+            if (rms > vadThreshold) {
+              speechSeen = true;
+              lastVoiceAt = now;
+            }
+            const tooLong = (now - startedAt) > maxMs;
+            const longPause = speechSeen && ((now - lastVoiceAt) >= vadSilenceMs);
+            if (tooLong || longPause) {
+              try { mediaRecorder.stop(); } catch (_) {}
+            }
+          }, 120);
+          mediaVadState = { ctx, source, analyser, timer };
+        }
+      } catch (_) {}
+    }
+  }).catch((e) => {
+    _teardownMediaVad();
+    _resetMediaCallbacks();
+    if (typeof mediaOnError === 'function') {
+      mediaOnError(e);
+    } else {
+      alert('Microphone: ' + (e && e.message ? e.message : String(e)));
+    }
   });
 }
 
-function onVoiceInputClick() {
+async function listenConversationTurnAndSend() {
+  if (!conversationModeActive || !conversationModeEnabled()) return;
+  if (conversationLoopPending || streaming) return;
+  conversationLoopPending = true;
+  refreshVoiceInputButtonState();
+  const transcript = await new Promise((resolve, reject) => {
+    startMediaRecording({
+      vad: true,
+      captureOnly: true,
+      vadSilenceMs: 1450,
+      maxMs: 60000,
+      onTranscript: (text) => resolve(String(text || '').trim()),
+      onError: reject,
+    });
+  }).catch((e) => {
+    const msg = e && e.message ? e.message : String(e);
+    if (conversationModeActive && conversationModeEnabled()) {
+      alert('Conversation mode listening failed: ' + msg);
+      scheduleConversationListenRetry(900);
+    }
+    return '';
+  });
+  conversationLoopPending = false;
+  if (!conversationModeActive || !conversationModeEnabled()) {
+    refreshVoiceInputButtonState();
+    return;
+  }
+  const text = String(transcript || '').trim();
+  if (!text) {
+    refreshVoiceInputButtonState();
+    if (conversationModeActive && conversationModeEnabled() && !streaming) {
+      scheduleConversationListenRetry(250);
+    }
+    return;
+  }
+  const inp = $('input');
+  if (!inp) return;
+  inp.value = text;
+  inp.dispatchEvent(new Event('input'));
+  await send();
+}
+
+function scheduleConversationListenRetry(delayMs = 300) {
+  if (!conversationModeActive || !conversationModeEnabled() || streaming) return;
+  try { clearTimeout(conversationListenRetryTimer); } catch (_) {}
+  conversationListenRetryTimer = setTimeout(() => {
+    conversationListenRetryTimer = null;
+    if (conversationModeActive && conversationModeEnabled() && !streaming) {
+      void listenConversationTurnAndSend();
+    }
+  }, Math.max(120, Number(delayMs) || 300));
+}
+
+function stopConversationMode() {
+  conversationModeActive = false;
+  conversationLoopPending = false;
+  conversationLoopRunning = false;
+  conversationDeferredAssistantTts = null;
+  conversationStopAfterCurrentTurn = true;
+  try { clearTimeout(conversationListenRetryTimer); } catch (_) {}
+  conversationListenRetryTimer = null;
+  cancelTtsPlayback();
+  _teardownMediaVad();
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaSuppressTranscribe = true;
+    mediaOnTranscript = null;
+    mediaOnError = null;
+    try { mediaRecorder.stop(); } catch (_) {}
+  } else {
+    _resetMediaCallbacks();
+  }
+  refreshVoiceInputButtonState();
+}
+
+function startConversationMode() {
+  if (!conversationModeEnabled()) return;
+  conversationStopAfterCurrentTurn = false;
+  conversationModeActive = true;
+  conversationDeferredAssistantTts = null;
+  try { clearTimeout(conversationListenRetryTimer); } catch (_) {}
+  conversationListenRetryTimer = null;
+  refreshVoiceInputButtonState();
+  if (!streaming) {
+    void listenConversationTurnAndSend();
+  }
+}
+
+async function maybeContinueConversationAfterAssistant(fullText) {
+  if (!conversationModeActive || !conversationModeEnabled()) return;
+  if (conversationStopAfterCurrentTurn) {
+    stopConversationMode();
+    return;
+  }
+  if (conversationLoopRunning) {
+    const t = String(fullText || '').trim();
+    if (t) conversationDeferredAssistantTts = t;
+    return;
+  }
+  conversationLoopRunning = true;
+  try {
+    await speakTextForConversationMode(fullText);
+    if (!conversationModeActive || !conversationModeEnabled()) return;
+    await listenConversationTurnAndSend();
+  } finally {
+    conversationLoopRunning = false;
+    const deferred = conversationDeferredAssistantTts;
+    conversationDeferredAssistantTts = null;
+    if (deferred && conversationModeActive && conversationModeEnabled() && !streaming) {
+      void maybeContinueConversationAfterAssistant(deferred);
+    }
+  }
+}
+
+async function onVoiceInputClick() {
+  await refreshSttBackendFromMeta();
+  if (conversationModeEnabled()) {
+    if (conversationModeActive) {
+      stopConversationMode();
+    } else {
+      startConversationMode();
+    }
+    return;
+  }
   if (streaming) return;
   cancelTtsPlayback();
   syncTtsReadBtn();
@@ -13035,15 +13685,18 @@ function onVoiceInputClick() {
     runBrowserSpeechOnce();
     return;
   }
-  startMediaRecording();
+  startMediaRecording({ captureOnly: false, vad: false });
 }
 
 // ─── Buttons ──────────────────────────────────────────────────────────────────
 $('newBtnSide').addEventListener('click',   () => { newConv(); closeSidebar(); });
 $('newBtnHeader').addEventListener('click', () => newConv());
-$('voiceInputBtn').addEventListener('click', () => onVoiceInputClick());
+$('voiceInputBtn').addEventListener('click', () => {
+  void onVoiceInputClick().catch(() => {});
+});
 if ($('ttsReadBtn')) $('ttsReadBtn').addEventListener('click', () => { onTtsReadClick().catch(() => {}); });
 $('sendBtn').addEventListener('click', () => send());
+refreshVoiceInputButtonState();
 $('reconnectBtn').addEventListener('click', () => {
   resetReconnectState();
   const id = lastInterruptedConvId;
@@ -13283,14 +13936,12 @@ function showUpdateBanner(version, notes) {
   if (activeId && !convs.find(c => c.id === activeId)) activeId = convs[0]?.id ?? null;
 
   try {
-    const mRes = await fetch('/api/hermes-chat-meta');
+    const mRes = await fetch('/api/hermes-chat-meta', { cache: 'no-store' });
     if (mRes.ok) {
       const meta = await mRes.json();
       const pr = (meta.projects_sync_root && String(meta.projects_sync_root).trim()) || '';
       if (pr) PROJECTS_ROOT = pr;
-      const sb = (meta.stt_backend && String(meta.stt_backend).trim().toLowerCase()) || 'none';
-      if (sb === 'local' || sb === 'openai') sttBackend = sb;
-      else sttBackend = 'none';
+      applySttBackendFromMeta(meta);
     }
   } catch (_) {}
 

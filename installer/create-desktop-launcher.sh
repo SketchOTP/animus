@@ -62,7 +62,12 @@ fi
 if [[ -n "$PUB" ]]; then
   LAUNCH_URL="${PUB%/}"
 else
-  LAUNCH_URL="http://${CHAT_HOST}:${CHAT_PORT}"
+  # :: and 0.0.0.0 are bind addresses, not valid in a browser URL host field
+  LAUNCH_HOST="$CHAT_HOST"
+  if [[ "$CHAT_HOST" == "::" || "$CHAT_HOST" == "0.0.0.0" ]]; then
+    LAUNCH_HOST="127.0.0.1"
+  fi
+  LAUNCH_URL="http://${LAUNCH_HOST}:${CHAT_PORT}"
 fi
 LAUNCH_URL="${LAUNCH_URL%/}/"
 

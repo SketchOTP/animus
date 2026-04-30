@@ -20,10 +20,15 @@ Quick install (Linux or macOS)
    ./installer/install.sh
 
 3. install.sh creates animus.env from animus.env.example automatically if it is missing
-   (preflight.sh does the same if you run it first). Edit animus.env for API keys and paths,
-   or use the setup wizard after first launch.
+   (preflight.sh does the same if you run it first). It also pip-installs animus-chat/requirements.txt
+   (includes python-multipart for mic/attachment uploads and faster-whisper for optional on-device
+   speech-to-text — see INSTALL.md / docs/tts.md).
+   Edit animus.env for API keys and paths, or use the setup wizard after first launch.
 
-4. Open http://127.0.0.1:3001 in your browser (default port; see animus.env if you need to change it).
+4. Open http://localhost:3001 or http://127.0.0.1:3001 (default port **3001**; see animus.env).
+   New installs default **CHAT_HOST=::** (dual-stack) so localhost usually works. If you still see
+   ERR_FAILED on localhost only, your animus.env may still say **CHAT_HOST=127.0.0.1** — change it to
+   **::** and restart, or bookmark **127.0.0.1**.
 
 5. Complete the on-screen setup wizard on first launch.
 

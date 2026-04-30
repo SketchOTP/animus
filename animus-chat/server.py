@@ -22,7 +22,8 @@ ANIMUS chat server (Starlette)
 - /api/project-workspace/* → ensure / read / write project workspace markdown (history, repo_map, notes, project_goal) on registered project paths
 - /api/project-ssh-test → POST JSON ``{user, host, port?, identity_file?}`` — non-interactive ``ssh`` probe from the chat host
 - ``/api/ssh/hosts`` + ``/api/ssh/test`` → global SSH hosts (``ssh_routes.py``); token usage JSONL uses JSON fields ``"source"`` / ``"source_id"`` (``token_usage.py``)
-- /api/stt/transcribe → POST multipart ``audio`` (or ``file``) — OpenAI Whisper or ``HERMES_CHAT_STT_LOCAL_URL`` HTTP service
+- /api/stt/transcribe → POST multipart ``audio`` (or ``file``) — ``HERMES_CHAT_STT_LOCAL_URL`` HTTP,
+  optional **embedded** local faster-whisper (``HERMES_CHAT_STT_LOCAL_EMBEDDED=1``), or OpenAI Whisper API
 - /api/attachment/text → POST multipart ``file`` — extract text from ``.docx`` (stdlib) or ``.pdf`` (``pdftotext`` from poppler-utils)
 - /api/chat/attachments/text → same handler (fallback when reverse proxies allow only ``/api/chat`` prefixes or an old deploy lacked the primary path)
 - Injects the gateway API key server-side when ``HERMES_API_KEY`` is set; never exposes it to the browser. When the key is unset, the proxy still calls the gateway (Hermes allows unauthenticated access if the gateway itself has no API key).
@@ -50,6 +51,7 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import subprocess  # exempt: used only for systemctl, ssh, pdftotext — never invoke ``hermes`` here (use hermes_runner).
 import sys
 import tempfile
@@ -97,7 +99,10 @@ _CHAT_PACKAGE_DIR = Path(__file__).resolve().parent
 _DEFAULT_SETUP_REPO_MD = _CHAT_PACKAGE_DIR / "setup_repo.md"
 if _DEFAULT_SETUP_REPO_MD.is_file():
     os.environ.setdefault("HERMES_CHAT_SETUP_REPO_MD", str(_DEFAULT_SETUP_REPO_MD))
-HOST          = os.environ.get("CHAT_HOST", "127.0.0.1")
+# Default :: (IPv6 any) so Linux browsers using localhost→::1 still connect; OS often maps IPv4 too.
+# Override with 127.0.0.1 for loopback-only (e.g. Tailscale Serve to this port).
+_raw_chat_host = (os.environ.get("CHAT_HOST") or "").strip()
+HOST = _raw_chat_host if _raw_chat_host else "::"
 PORT          = int(os.environ.get("CHAT_PORT", os.environ.get("PORT", "3001")))
 SSL_CERTFILE = (os.environ.get("CHAT_SSL_CERTFILE") or "").strip()
 SSL_KEYFILE = (os.environ.get("CHAT_SSL_KEYFILE") or "").strip()
@@ -165,7 +170,7 @@ def _meta_curl_example() -> str:
     return f"curl -fsS http://127.0.0.1:{PORT}/api/hermes-chat-meta | jq"
 
 
-# Speech-to-text (optional). Local URL takes precedence over OpenAI Whisper.
+# Speech-to-text (optional). Order: HTTP local URL → embedded faster-whisper → OpenAI Whisper API.
 STT_LOCAL_URL = (os.environ.get("HERMES_CHAT_STT_LOCAL_URL") or "").strip()
 STT_OPENAI_KEY = (
     (os.environ.get("HERMES_CHAT_STT_OPENAI_KEY") or "").strip()
@@ -179,13 +184,10 @@ STT_OPENAI_BASE = (
 STT_MODEL = (os.environ.get("HERMES_CHAT_STT_MODEL") or "whisper-1").strip()
 
 
-def stt_backend_public() -> str:
-    """``local`` | ``openai`` | ``none`` — exposed in ``/api/hermes-chat-meta`` (no secrets)."""
-    if STT_LOCAL_URL:
-        return "local"
-    if STT_OPENAI_KEY:
-        return "openai"
-    return "none"
+def _stt_embedded_local_enabled() -> bool:
+    """True when ``HERMES_CHAT_STT_LOCAL_EMBEDDED`` env requests in-process faster-whisper."""
+    raw = (os.environ.get("HERMES_CHAT_STT_LOCAL_EMBEDDED") or "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
 
 
 from hermes_runner import (  # noqa: E402
@@ -228,7 +230,7 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260430-plan-draft-stamp-mmdyy-v25"
+CHAT_SERVER_REV = "20260430-chat-host-dualstack-v36"
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
 # Filled in lifespan: GET /v1/models against HERMES_API with gateway_upstream_headers().
@@ -421,6 +423,8 @@ def _sanitize_ui_settings_blob(raw: object) -> dict:
     """JSON-safe dict for PWA settings sync; size-capped."""
     if not isinstance(raw, dict):
         return {}
+    raw = dict(raw)
+    raw.pop("animus_chat_stt_openai_key", None)
     try:
         dumped = json.dumps(raw, ensure_ascii=False)
     except (TypeError, ValueError):
@@ -487,6 +491,77 @@ def _write_animus_client_config(cfg: dict) -> None:
     p.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
 
 
+def _animus_chat_stt_source_from_cfg(cfg: dict) -> str:
+    """``embedded`` | ``openai`` | ``\"\"`` (legacy: follow env only)."""
+    s = str(cfg.get("animus_chat_stt_source") or "").strip().lower()
+    if s in ("embedded", "openai"):
+        return s
+    return ""
+
+
+def _stt_use_embedded_from_prefs(cfg: Optional[dict] = None) -> bool:
+    """Use faster-whisper in-process when Settings / config requests ``embedded`` or legacy env flag."""
+    if cfg is None:
+        cfg = _read_animus_client_config()
+    src = _animus_chat_stt_source_from_cfg(cfg)
+    if src == "embedded":
+        return True
+    if src == "openai":
+        return False
+    return _stt_embedded_local_enabled()
+
+
+def _stt_openai_key_for_transcribe(cfg: Optional[dict] = None) -> str:
+    if cfg is None:
+        cfg = _read_animus_client_config()
+    if _animus_chat_stt_source_from_cfg(cfg) == "embedded":
+        return ""
+    k = str(cfg.get("animus_chat_stt_openai_key") or "").strip()
+    if k:
+        return k
+    return STT_OPENAI_KEY
+
+
+def _stt_openai_base_for_transcribe(cfg: Optional[dict] = None) -> str:
+    if cfg is None:
+        cfg = _read_animus_client_config()
+    b = str(cfg.get("animus_chat_stt_openai_base") or "").strip()
+    if b:
+        return b.rstrip("/")
+    return STT_OPENAI_BASE
+
+
+def _stt_openai_model_for_transcribe(cfg: Optional[dict] = None) -> str:
+    if cfg is None:
+        cfg = _read_animus_client_config()
+    m = str(cfg.get("animus_chat_stt_openai_model") or "").strip()
+    if m:
+        return m
+    return STT_MODEL
+
+
+def _stt_transcribe_configured(cfg: Optional[dict] = None) -> bool:
+    if cfg is None:
+        cfg = _read_animus_client_config()
+    if STT_LOCAL_URL:
+        return True
+    if _stt_use_embedded_from_prefs(cfg):
+        return True
+    return bool(_stt_openai_key_for_transcribe(cfg))
+
+
+def stt_backend_public() -> str:
+    """``local`` | ``openai`` | ``none`` — exposed in ``/api/hermes-chat-meta`` (no secrets)."""
+    cfg = _read_animus_client_config()
+    if STT_LOCAL_URL:
+        return "local"
+    if _stt_use_embedded_from_prefs(cfg):
+        return "local"
+    if _stt_openai_key_for_transcribe(cfg):
+        return "openai"
+    return "none"
+
+
 async def animus_client_config_get(_: Request) -> Response:
     cfg = _read_animus_client_config()
     wl = cfg.get("wake_lock", True)
@@ -506,6 +581,14 @@ async def animus_client_config_get(_: Request) -> Response:
         tb = "browser"
     ui_blob = cfg.get("animus_ui_settings")
     ui_out = ui_blob if isinstance(ui_blob, dict) else {}
+    stt_src = _animus_chat_stt_source_from_cfg(cfg)
+    stt_key = str(cfg.get("animus_chat_stt_openai_key") or "").strip()
+    stt_key_set = bool(stt_key)
+    stt_key_preview = ""
+    if stt_key_set:
+        stt_key_preview = f"…{stt_key[-4:]}" if len(stt_key) >= 4 else "••••"
+    stt_base = str(cfg.get("animus_chat_stt_openai_base") or "").strip()
+    stt_model = str(cfg.get("animus_chat_stt_openai_model") or "").strip()
     return JSONResponse(
         {
             "wake_lock": bool(wl),
@@ -521,6 +604,11 @@ async def animus_client_config_get(_: Request) -> Response:
             "cron_timezone": ctz,
             "cron_overseer_prompt": cop,
             "ui_settings": ui_out,
+            "animus_chat_stt_source": stt_src or None,
+            "animus_chat_stt_openai_key_set": stt_key_set,
+            "animus_chat_stt_openai_key_preview": stt_key_preview,
+            "animus_chat_stt_openai_base": stt_base,
+            "animus_chat_stt_openai_model": stt_model,
         },
     )
 
@@ -587,6 +675,36 @@ async def animus_client_config_post(req: Request) -> Response:
             uis = {}
         uis = {**uis, "tts_backend": str(cfg["tts_backend"])}
         cfg["animus_ui_settings"] = uis
+    if "animus_chat_stt_source" in body:
+        raw_src = str(body.get("animus_chat_stt_source") or "").strip().lower()
+        if raw_src in ("embedded", "openai"):
+            cfg["animus_chat_stt_source"] = raw_src
+        elif raw_src in ("", "legacy", "auto"):
+            cfg.pop("animus_chat_stt_source", None)
+    if "animus_chat_stt_openai_key" in body:
+        raw_k = body.get("animus_chat_stt_openai_key")
+        if isinstance(raw_k, str):
+            t = raw_k.strip()
+            if t:
+                cfg["animus_chat_stt_openai_key"] = t
+            else:
+                cfg.pop("animus_chat_stt_openai_key", None)
+    if "animus_chat_stt_openai_base" in body:
+        raw_b = body.get("animus_chat_stt_openai_base")
+        if isinstance(raw_b, str):
+            bt = raw_b.strip()
+            if bt:
+                cfg["animus_chat_stt_openai_base"] = bt
+            else:
+                cfg.pop("animus_chat_stt_openai_base", None)
+    if "animus_chat_stt_openai_model" in body:
+        raw_m = body.get("animus_chat_stt_openai_model")
+        if isinstance(raw_m, str):
+            mt = raw_m.strip()
+            if mt:
+                cfg["animus_chat_stt_openai_model"] = mt
+            else:
+                cfg.pop("animus_chat_stt_openai_model", None)
     _write_animus_client_config(cfg)
     if "projects_dir" in body and str(cfg.get("projects_dir") or "").strip():
         try:
@@ -1651,14 +1769,36 @@ async def plan_bootstrap(req: Request) -> Response:
 # ─── Speech-to-text (composer mic) ────────────────────────────────────────────
 
 
+def _stt_embedded_transcribe_file_sync(path: str) -> tuple[str, Optional[str]]:
+    """Run faster-whisper in a worker thread; returns ``(text, error_detail)``."""
+    try:
+        from tools.transcription_tools import transcribe_audio_force_local_faster_whisper
+
+        model = (os.environ.get("HERMES_CHAT_STT_LOCAL_MODEL") or "small").strip() or "small"
+        out = transcribe_audio_force_local_faster_whisper(path, model)
+        if out.get("success"):
+            return str(out.get("transcript") or "").strip(), None
+        return "", str(out.get("error") or "embedded_stt_failed")
+    except Exception as exc:
+        log.warning("embedded STT import/run failed: %s", exc)
+        return "", str(exc)
+
+
 async def stt_transcribe(req: Request) -> Response:
-    """POST multipart ``audio`` or ``file`` → ``{text}``. See ``stt_backend_public()``."""
-    backend = stt_backend_public()
-    if backend == "none":
+    """POST multipart ``audio`` or ``file`` → ``{text}``.
+
+    Resolution: ``HERMES_CHAT_STT_LOCAL_URL`` (HTTP) → Settings **Local** / env embedded (faster-whisper)
+    → OpenAI-compatible Whisper API (Settings **Online** key or ``animus.env`` keys).
+    """
+    _cfg = _read_animus_client_config()
+    if not _stt_transcribe_configured(_cfg):
         return JSONResponse(
             {
                 "error": "stt_not_configured",
-                "detail": "Set HERMES_CHAT_STT_LOCAL_URL or HERMES_CHAT_STT_OPENAI_KEY (or OPENAI_API_KEY).",
+                "detail": (
+                    "Settings → Read aloud → choose Local (on-device) or Online STT and save; "
+                    "or set HERMES_CHAT_STT_LOCAL_URL / keys in animus.env. See docs/tts.md."
+                ),
             },
             status_code=503,
         )
@@ -1685,8 +1825,22 @@ async def stt_transcribe(req: Request) -> Response:
     filename = getattr(upload, "filename", None) or "speech.webm"
     ctype = getattr(upload, "content_type", None) or "application/octet-stream"
     files = {"file": (filename, body, ctype)}
+    suffix = Path(str(filename)).suffix.lower() or ".webm"
+    if suffix not in (
+        ".webm",
+        ".mp4",
+        ".m4a",
+        ".wav",
+        ".mp3",
+        ".ogg",
+        ".aac",
+        ".mpeg",
+        ".mpga",
+        ".flac",
+    ):
+        suffix = ".webm"
     try:
-        if backend == "local":
+        if STT_LOCAL_URL:
             async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=20.0)) as client:
                 r = await client.post(STT_LOCAL_URL, files=files)
             if r.status_code >= 400:
@@ -1704,27 +1858,58 @@ async def stt_transcribe(req: Request) -> Response:
             else:
                 text = (r.text or "").strip()
             return JSONResponse({"text": text})
-        async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=25.0)) as client:
-            r = await client.post(
-                f"{STT_OPENAI_BASE}/audio/transcriptions",
-                headers={"Authorization": f"Bearer {STT_OPENAI_KEY}"},
-                data={"model": STT_MODEL},
-                files=files,
-            )
-        if r.status_code >= 400:
-            return JSONResponse(
-                {"error": "openai_stt_failed", "detail": (r.text or "")[:1200]},
-                status_code=502,
-            )
-        try:
-            j = r.json()
-        except Exception:
-            return JSONResponse(
-                {"error": "bad_openai_response", "detail": (r.text or "")[:500]},
-                status_code=502,
-            )
-        text = str(j.get("text", "") or "").strip()
-        return JSONResponse({"text": text})
+        elif _stt_use_embedded_from_prefs(_cfg):
+            tmp_path: Optional[str] = None
+            try:
+                fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix="animus-stt-")
+                os.close(fd)
+                Path(tmp_path).write_bytes(body)
+                text, err_detail = await asyncio.to_thread(_stt_embedded_transcribe_file_sync, tmp_path)
+                if err_detail:
+                    return JSONResponse(
+                        {"error": "embedded_stt_failed", "detail": err_detail[:1200]},
+                        status_code=502,
+                    )
+                return JSONResponse({"text": text})
+            finally:
+                if tmp_path:
+                    try:
+                        Path(tmp_path).unlink(missing_ok=True)
+                    except OSError:
+                        pass
+        else:
+            okey = _stt_openai_key_for_transcribe(_cfg)
+            if not okey:
+                return JSONResponse(
+                    {
+                        "error": "stt_not_configured",
+                        "detail": "Online STT selected but no API key: add one in Settings → Read aloud or set OPENAI_API_KEY in animus.env.",
+                    },
+                    status_code=503,
+                )
+            obase = _stt_openai_base_for_transcribe(_cfg)
+            omodel = _stt_openai_model_for_transcribe(_cfg)
+            async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=25.0)) as client:
+                r = await client.post(
+                    f"{obase}/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {okey}"},
+                    data={"model": omodel},
+                    files=files,
+                )
+            if r.status_code >= 400:
+                return JSONResponse(
+                    {"error": "openai_stt_failed", "detail": (r.text or "")[:1200]},
+                    status_code=502,
+                )
+            try:
+                j = r.json()
+            except Exception:
+                return JSONResponse(
+                    {"error": "bad_openai_response", "detail": (r.text or "")[:500]},
+                    status_code=502,
+                )
+            text = str(j.get("text", "") or "").strip()
+            return JSONResponse({"text": text})
     except httpx.RequestError as exc:
         log.warning("stt_transcribe upstream error: %s", exc)
         return JSONResponse({"error": "upstream_unreachable", "detail": str(exc)}, status_code=502)
@@ -2930,6 +3115,33 @@ app = Starlette(
     ],
 )
 
+
+def _prebound_socket_for_chathost(host: str, port: int, backlog: int = 2048) -> socket.socket | None:
+    """For CHAT_HOST=::, uvicorn/asyncio often bind IPv6-only (no 127.0.0.1). Clear IPV6_V6ONLY when possible."""
+    if host != "::":
+        return None
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    except OSError:
+        pass
+    try:
+        sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    except (AttributeError, OSError):
+        pass
+    try:
+        sock.bind(("::", port))
+    except OSError:
+        sock.close()
+        raise
+    sock.listen(backlog)
+    try:
+        sock.set_inheritable(True)
+    except OSError:
+        pass
+    return sock
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     use_tls = bool(SSL_CERTFILE or SSL_KEYFILE)
@@ -2973,6 +3185,20 @@ if __name__ == "__main__":
             PORT,
             PORT,
         )
+    if HOST in ("127.0.0.1", "localhost"):
+        log.info(
+            "Tip: open http://127.0.0.1:%d/ in the browser — if http://localhost:%d fails with "
+            "ERR_FAILED, the browser may be using IPv6 (::1) while this process is bound to IPv4 only.",
+            PORT,
+            PORT,
+        )
+    if HOST == "::":
+        log.warning(
+            "CHAT_HOST=:: — dual-stack bind (IPv6 any + IPv4-mapped when the OS allows). Port %d may be "
+            "reachable from other machines depending on the OS firewall. Use CHAT_HOST=127.0.0.1 "
+            "for IPv4 loopback only (e.g. Tailscale Serve to this port).",
+            PORT,
+        )
     if HOST == "0.0.0.0":
         log.warning(
             "CHAT_HOST=0.0.0.0 — port %d is reachable on all interfaces. Use 127.0.0.1 if only "
@@ -2989,4 +3215,17 @@ if __name__ == "__main__":
     if use_tls:
         kw["ssl_certfile"] = str(cert_path)
         kw["ssl_keyfile"] = str(key_path)
-    uvicorn.run(app, host=HOST, port=PORT, **kw)
+    pre_sock: socket.socket | None = None
+    if HOST == "::":
+        try:
+            pre_sock = _prebound_socket_for_chathost(HOST, PORT)
+        except OSError as exc:
+            log.warning("CHAT_HOST=:: pre-bind failed (%s); using uvicorn default bind.", exc)
+    if pre_sock is not None:
+        from uvicorn import Config as UvicornConfig
+        from uvicorn.server import Server as UvicornServer
+
+        cfg = UvicornConfig(app, host=HOST, port=PORT, **kw)
+        UvicornServer(cfg).run(sockets=[pre_sock])
+    else:
+        uvicorn.run(app, host=HOST, port=PORT, **kw)

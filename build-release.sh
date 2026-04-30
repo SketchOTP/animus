@@ -159,6 +159,7 @@ rm -f "${ZIP}"
 # - hermes-agent/scripts/whatsapp-bridge/node_modules: WhatsApp gateway bridge; reinstall with npm when needed.
 # - animus-update-server/: seller-only update manifest app; never ship to buyers.
 # - ./scripts/: repo-root dev/smoke checklists only (not hermes-agent/.../scripts/).
+# - seller-private/: seller-local tokens/notes; gitignored except README; never ship to buyers.
 # Internal monorepo continuity (not for buyers — clone the repo to develop ANIMUS):
 # - project_*.md, repo_map.md, AGENTS.md, CLAUDE.md, .cursorrules, .cursor/, setup_repo.md,
 #   animus-chat copies of repo_map / project_history / setup_repo; hermes-agent/AGENTS.md (upstream dev doc).
@@ -200,6 +201,7 @@ zip -qr "${ZIP}" . \
   -x"./hermes-agent/AGENTS.md" \
   -x"./animus-update-server/*" \
   -x"./scripts/*" \
+  -x"./seller-private/*" \
   -x"./animus-v*.zip"
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"
@@ -236,11 +238,16 @@ if unzip -l "${ZIP}" | grep -q '\.flock$'; then
   echo "FAIL: local .flock lock file present in zip" >&2
   exit 1
 fi
+if unzip -l "${ZIP}" | grep -q 'seller-private/'; then
+  echo "FAIL: seller-private/ present in zip — remove it" >&2
+  exit 1
+fi
 echo "  animus-update-server/ not in zip — OK"
 echo "  No raw env or animus-chat/data/ in zip — OK"
 
 cat <<EOF
 ANIMUS release checklist:
+[ ] seller-private/ is NOT in the zip (local tokens stay on your machine only)
 [ ] animus.env is NOT in the zip
 [ ] data/ directory is NOT in the zip
 [ ] START_HERE.txt and docs/GUMROAD.md are in the repo (included in zip for buyers/sellers)

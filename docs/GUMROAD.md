@@ -14,9 +14,11 @@ The zip is the **monorepo tree** with exclusions applied by `build-release.sh` (
 
 ## In-app updates (manifest + zip, no git)
 
-Buyers never need git. **`ANIMUS_UPDATE_URL`** in **`animus.env`** (copied from **`animus.env.example`**) must point at a **GET**-able JSON manifest (default example: **`https://animus-site.vercel.app/api/latest.json`**). Recommended: deploy the separate **`animus-site`** repo to **Vercel** (marketing site + Redis-backed API) — see that repo’s **`README.md`**. Self-hosted **Tailscale** or **`animus-update-server/`** (Python) remain valid alternatives. Before each **`./build-release.sh`**, set the production URL in **`animus.env.example`**. Publish flow: build zip → upload to Gumroad → **`POST …/api/admin/publish`** on your site (JSON + **`x-admin-token`**) → buyers see the banner on next launch.
+Buyers never need git. **`ANIMUS_UPDATE_URL`** in **`animus.env`** (copied from **`animus.env.example`**) must point at a **GET**-able JSON manifest (default example: **`https://animusai.vercel.app/api/latest.json`**). Recommended: deploy the separate **`animus-site`** repo to **Vercel** (marketing site + Redis-backed API) — see that repo’s **`README.md`**. Self-hosted **Tailscale** or **`animus-update-server/`** (Python) remain valid alternatives. Before each **`./build-release.sh`**, set the production URL in **`animus.env.example`**. Publish flow: build zip → upload to Gumroad → publish the manifest (**`POST …/api/admin/publish`** with JSON + **`x-admin-token`**, or the seller page **`/seller-publish.html`** on **`animus-site`** with Vercel Blob configured) → buyers see the banner on next launch. **`install.sh`** already creates **`animus.env`** from **`animus.env.example`** when missing; **`preflight.sh`** does the same.
 
 ## Before you upload (seller checklist)
+
+**Local admin token (optional):** keep Vercel **`ADMIN_TOKEN`** in **`seller-private/ADMIN_TOKEN`** (one line, file is gitignored and never in the buyer zip — see **`seller-private/README.md`**).
 
 1. Bump **`VERSION`** if this is a new release line.
 2. Run **`./build-release.sh`** on the exact commit you ship; confirm it exits **0**.

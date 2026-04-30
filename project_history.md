@@ -720,3 +720,87 @@ Files touched:
 Files touched:
 - (git commit 94241f9 — 24 files)
 - project_history.md
+
+0931 300426 - Seller Blob release UI (admin/release.html), release_upload API, release-and-publish script; preflight + Docker animus.env bootstrap; docs.
+Files touched:
+- /home/sketch/animus-site/admin/release.html
+- /home/sketch/animus-site/api/release_upload.js
+- /home/sketch/animus-site/js/release-admin.js
+- /home/sketch/animus-site/package.json
+- /home/sketch/animus-site/package-lock.json
+- /home/sketch/animus-site/vercel.json
+- /home/sketch/animus-site/README.md
+- /home/sketch/animus-site/releases/README.md
+- /home/sketch/animus-site/.gitignore
+- /home/sketch/animus/scripts/release-and-publish.sh
+- /home/sketch/animus/scripts/publish-animus-manifest.sh
+- /home/sketch/animus/installer/preflight.sh
+- /home/sketch/animus/docker/Dockerfile
+- /home/sketch/animus/START_HERE.txt
+- /home/sketch/animus/INSTALL.md
+- /home/sketch/animus/docs/GUMROAD.md
+- /home/sketch/animus/repo_map.md
+- /home/sketch/animus/project_status.md
+- /home/sketch/animus/project_knowledge.md
+- /home/sketch/animus/project_history.md
+
+1045 300426 - Seller publish page at /seller-publish.html (root static); docs link; redirect /admin/release.html; fix 404.
+Files touched:
+
+- /home/sketch/animus-site/seller-publish.html
+- /home/sketch/animus-site/vercel.json
+
+- /home/sketch/animus-site/docs.html
+- /home/sketch/animus-site/README.md
+
+- /home/sketch/animus-site/releases/README.md
+- /home/sketch/animus/docs/GUMROAD.md
+
+- /home/sketch/animus/scripts/publish-animus-manifest.sh
+- /home/sketch/animus/repo_map.md
+
+- /home/sketch/animus/project_status.md
+- /home/sketch/animus/project_knowledge.md
+
+- /home/sketch/animus/project_history.md
+- (deleted /home/sketch/animus-site/admin/release.html)
+
+1055 300426 - Redeployed animus-site Production (vercel --prod --yes); seller-publish 200 on deployment + animus-site-ruddy.
+Files touched:
+
+- project_history.md
+
+
+0940 300426 - Buyer hostname policy: docs/examples only https://animusai.vercel.app; vercel alias set animusai to latest Production; project_status/knowledge/repo_map + animus.env.example + GUMROAD + animus-site README/releases.
+Files touched:
+
+- animus.env.example
+- docs/GUMROAD.md
+
+- project_status.md
+- project_knowledge.md
+
+- repo_map.md
+- /home/sketch/animus-site/README.md
+
+- /home/sketch/animus-site/releases/README.md
+- project_history.md
+
+1110 300426 - seller-private/ for local seller secrets; gitignore + build-release exclude + leak check + README + GUMROAD/repo_map/knowledge.
+Files touched:
+
+- .gitignore
+- build-release.sh
+
+- seller-private/README.md
+- docs/GUMROAD.md
+
+- repo_map.md
+- project_knowledge.md
+
+- project_history.md
+
+1112 300426 - project_status: note seller-private/ folder.
+Files touched:
+- project_status.md
+- project_history.md

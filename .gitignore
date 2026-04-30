@@ -5,6 +5,10 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
+# Seller-only local secrets (entire tree ignored except README — see seller-private/README.md)
+seller-private/*
+!seller-private/README.md
+
 # Secrets and local env
 animus.env
 animus-chat/animus.env

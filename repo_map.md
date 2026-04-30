@@ -12,11 +12,13 @@ Quick navigation for agents. Update when layout, entrypoints, or roles change.
 | `docs/BUYER_UPDATES.md` | Buyer guide: manifest-based in-app updates + Gumroad re-download |
 | `INSTALL.md` | Manual install, systemd, troubleshooting |
 | `VERSION` | Semver exposed via `GET /api/version` |
-| `animus.env.example` | Environment template (copy to `animus.env`) |
+| `animus.env.example` | Environment template; **`install.sh`** / **`preflight.sh`** copy to **`animus.env`** when missing |
+| `seller-private/` | **Seller-only:** local secrets (e.g. Vercel **`ADMIN_TOKEN`**); **gitignored** except **`README.md`**; **excluded** from **`build-release.sh`** zip + leak check |
 | `Ghost3D/` | Optional GLB assets (not loaded by the PWA today); **excluded from release zip** |
 | `build-release.sh` | Sanitisation checks + release zip (**≤55MB** hard cap) + ship trims (size + **internal dev**: `project_*.md`, `repo_map.md`, `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.cursor/`, `setup_repo.md`, `animus-chat/{repo_map,project_history,setup_repo}.md`, `hermes-agent/AGENTS.md`, `Ghost3D/`, agent `tests/` / `website/` / WhatsApp `node_modules` / `hermes-agent/.cursor/`, **`hermes-agent/.env`**, **`hermes-agent/.envrc`**, **`*.flock`**, **`animus-update-server/`**, **repo-root `scripts/`**) + post-zip **leak check** (no raw env, lock files, runtime data, or `animus-update-server/` in zip) + `## Patch` count in `docs/hermes-agent-patches.md` |
 | `scripts/phase3-smoke-checklist.md` | Phase 3 manual smoke steps + **Practical tips** (keys, SSE usage, screenshots, `build-release.sh` shell hygiene); **`scripts/`** omitted from **buyer zip** — clone repo for these |
-| `scripts/publish-animus-manifest.sh` | Seller helper: `POST` JSON to **`animus-site`** **`/api/admin/publish`** (`ADMIN_TOKEN`, `DOWNLOAD_URL`, optional `ANIMUS_RELEASE_NOTES` / `ANIMUS_PUBLISH_URL`); upload **`animus-v$(VERSION).zip`** to a public HTTPS URL first |
+| `scripts/publish-animus-manifest.sh` | Seller helper: `POST` JSON to **`animus-site`** **`/api/admin/publish`** (`ADMIN_TOKEN`, `DOWNLOAD_URL`, optional `ANIMUS_RELEASE_NOTES` / `ANIMUS_PUBLISH_URL`); zip must be at **`download_url`** (Blob URL or **`/releases/…`**) |
+| `scripts/release-and-publish.sh` | Seller helper: copy **`animus-v$(VERSION).zip`** to sibling **`animus-site/releases/`** and run **`vercel --prod`** (optional **`ANIMUS_SITE_DIR`**) |
 | `project_goal.md` | North star / build directive |
 | `project_status.md` | Current snapshot |
 | `project_history.md` | Session log |
@@ -24,7 +26,7 @@ Quick navigation for agents. Update when layout, entrypoints, or roles change.
 | `repo_map.md` | This map |
 | `AGENTS.md` | Agent workflow rules |
 
-**Sibling repo (not inside this tree):** **`animus-site/`** — Vercel deployment: product-led marketing **`index.html`** (ghost header mark, centered hero logo, app shell, real ANIMUS feature copy, pricing/FAQ), **`updates.html`** (static v1.0.0 fallback + **`js/updates.js`** API enhancer), **`docs.html`**, **`css/main.css`**, **`js/main.js`**, PNG logos under **`assets/`**, stylized product preview SVGs under **`assets/screenshots/`**, plus **`/api/latest.json`** for **`ANIMUS_UPDATE_URL`**. Clone/deploy separately; see **`animus-site/README.md`** next to this repo (or your fork’s layout).
+**Sibling repo (not inside this tree):** **`animus-site/`** — Vercel deployment: product-led marketing **`index.html`** (ghost header mark, centered hero logo, app shell, real ANIMUS feature copy, pricing/FAQ), **`updates.html`** (static v1.0.0 fallback + **`js/updates.js`** API enhancer), **`docs.html`** (links sellers to **`seller-publish.html`**), **`seller-publish.html`** (Blob upload + publish UI), **`css/main.css`**, **`js/main.js`**, **`js/release-admin.js`**, **`api/release_upload.js`** (Node **`@vercel/blob`** **`handleUpload`** + HMAC challenge), PNG logos under **`assets/`**, stylized product preview SVGs under **`assets/screenshots/`**, plus **`/api/latest.json`** for **`ANIMUS_UPDATE_URL`**. **Buyer-facing hostname:** **`https://animusai.vercel.app`** only (alias after each **`vercel --prod`**). Clone/deploy separately; see **`animus-site/README.md`** next to this repo (or your fork’s layout).
 
 ## Application
 
@@ -56,8 +58,8 @@ Quick navigation for agents. Update when layout, entrypoints, or roles change.
 | `installer/install.sh` | End-user install (venv + editable agent); runs **`installer/create-desktop-launcher.sh`** on Linux/macOS GUI hosts; optional Piper voice bundle via **`installer/fetch-piper-voices.sh`** when `curl` present |
 | `installer/create-desktop-launcher.sh` | Post-`animus.env`: Linux `.desktop` (menu + Desktop) / macOS `.webloc`; honors `HERMES_CHAT_PUBLIC_URL`, `SKIP_ANIMUS_DESKTOP_LAUNCHER`, Docker/CI/headless skip |
 | `installer/fetch-piper-voices.sh` | Downloads six default Piper `.onnx` + `.json` models (EN US/GB + `de_DE-thorsten`) into `~/.local/share/piper` or **`PIPER_VOICES_DIR`** |
-| `installer/preflight.sh` | Environment checks |
-| `docker/` | Dockerfile + compose for container runs |
+| `installer/preflight.sh` | Environment checks; creates **`animus.env`** from **`animus.env.example`** when missing (same as **`install.sh`**) |
+| `docker/` | Dockerfile + compose for container runs; image includes **`/app/animus.env`** copied from **`animus.env.example`** at build time |
 | `systemd/` | `animus.service` / `animus-agent.service` templates |
 
 ## Docs

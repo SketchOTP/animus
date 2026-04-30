@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Marketing site (`animus-site/` sibling):** product-led marketing + update API; **`animusai.vercel.app`** is a Vercel **alias** to **`animus-site`** Production (same deployment as **`animus-site-ruddy.vercel.app`**) so **`/releases/*.zip`**, **`/api/latest.json`**, and **`POST /api/admin/publish`** all work on one hostname.
+**Marketing site (`animus-site/` sibling):** product-led marketing + update API. **Buyer-facing URL:** **`https://animusai.vercel.app`** only (Vercel alias to Production) so **`/releases/*.zip`**, **`/api/latest.json`**, **`/seller-publish.html`**, and **`POST /api/admin/publish`** share one hostname. Re-run **`vercel alias set <new-deployment> animusai.vercel.app`** from **`animus-site/`** after each **`vercel --prod`**.
 
 Phase **8** landed: **manifest + zip** in-app updates (**`ANIMUS_UPDATE_URL`**), no git in **`installer/install.sh`** or update APIs; launch banner + Settings flow; seller may use **`animus-site`** (Vercel + Redis, sibling repo) or self-hosted **`animus-update-server/`**. Phase **7** items remain underneath: **no Browse** on server path fields (hints + examples), **Slack** Settings + `integrations_slack.py` + `animus.env.example`, **SSH hosts** global (`ssh_routes.py`, `docs/ssh.md`, simplified remote project flow), **token tracker** server log + `by_source` UI + CSV `source`/`source_id`, **chat** + **cron** token recording, **`claude-code`** inference row + catalog (`auto` + Hermes anthropic list), **Copilot ACP** relabelled, **`tts_backend`** in client-config. Phase **6** items (model refresh, cron UI, Piper TTS, skills create, etc.) remain underneath.
 
@@ -17,6 +17,8 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 
 ## Recently completed work
 
+- **`seller-private/`:** repo-root folder for local seller secrets (e.g. Vercel **`ADMIN_TOKEN`**); gitignored except **`README.md`**; excluded from **`build-release.sh`** zip + leak check. See **`seller-private/README.md`** and **`docs/GUMROAD.md`**.
+- **Seller release UX:** sibling **`animus-site`**: **`seller-publish.html`** (root static; **`/admin/release.html`** 308 → same) + **`js/release-admin.js`** + **`api/release_upload.js`** (Vercel Blob + HMAC challenge); **`docs.html`** links sellers. **`scripts/release-and-publish.sh`** in **`animus/`** copies zip to **`animus-site/releases/`** and runs **`vercel --prod`**. Docs: **`animus-site/README.md`**, **`releases/README.md`**, **`docs/GUMROAD.md`**. **`animus.env`:** **`preflight.sh`** copies example when missing; Docker **`Dockerfile`** bakes **`/app/animus.env`** from example.
 - **Fresh install skills:** `animus-chat/server.py` runs `tools.skills_sync.sync_skills()` once at import so `HERMES_HOME/skills` is seeded from bundled `hermes-agent/skills/` (Hermes CLI did this only when `hermes` ran; ANIMUS-only starts skipped it → empty `/api/skills/list`).
 - **animus-site Gumroad launch link:** all shared buy/Gumroad CTAs now point to **`https://sketcher571.gumroad.com/l/cxueq`**; deployed with `vercel --prod --yes` and re-aliased **`animusai.vercel.app`**.
 - **animus-site product-led redesign:** replaced generic placeholder marketing with an ANIMUS-themed landing page using the PNG brand assets, mock app shell, actual feature copy, and stylized SVG previews for Chat, Wizard, Settings, and Cron; updated shared header/footer on docs + updates; deployed with `vercel --prod --yes` and re-aliased **`animusai.vercel.app`** to the redesigned deployment.
@@ -64,14 +66,14 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 - `node --check /home/sketch/animus-site/js/main.js` — **pass** (2026-04-29 Gumroad launch link).
 - `vercel --prod --yes` from `/home/sketch/animus-site` after Gumroad launch link — **pass** (2026-04-29); deployment **`animus-site-isulmyvgv-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**.
 - Live link smoke: `curl -L -sS https://animusai.vercel.app/js/main.js` and Chromium DOM check for **`https://sketcher571.gumroad.com/l/cxueq`** — **pass**; header, hero, pricing, and footer CTAs render the real Gumroad URL.
-- `vercel --prod --yes` from `/home/sketch/animus-site` — **pass** (2026-04-29); production alias **`https://animus-site-ruddy.vercel.app`**.
+- `vercel --prod --yes` from `/home/sketch/animus-site` — **pass** (2026-04-29); buyer checks use **`https://animusai.vercel.app`** only.
 - `./build-release.sh` — **pass** (2026-04-29 Gumroad readiness check); regenerated **`animus-v1.0.0.zip`** at **28MB**; `unzip -tq` pass; no raw env, runtime data, lock files, `animus-update-server/`, or internal project docs found.
 - `vercel --prod --yes` from `/home/sketch/animus-site` after brand layout change — **pass** (2026-04-29); deployment **`animus-site-dvolgn219-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**; live greps confirm header **`ghostonlyicon.png`** and **`hero__section-logo`**.
 - `vercel --prod --yes` from `/home/sketch/animus-site` after homepage copy cleanup — **pass** (2026-04-29); deployment **`animus-site-d0ylje2ua-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**; live greps confirm new copy and removed phrases absent.
 - `vercel --prod --yes` from `/home/sketch/animus-site` after release-notes fix — **pass** (2026-04-29); deployment **`animus-site-3d04sl1nv-sketchotp-3398s-projects.vercel.app`** re-aliased to **`animusai.vercel.app`**.
 - Release notes smoke: `curl -L https://animusai.vercel.app/updates.html` and Chromium DOM check — **pass**; both latest and past releases render **v1.0.0 / Initial release** and no **Loading...** text remains.
 - `vercel alias set animus-site-h1fn3n46l-sketchotp-3398s-projects.vercel.app animusai.vercel.app` — **pass** (2026-04-29); `curl https://animusai.vercel.app/` shows redesigned copy.
-- Remote smoke: `curl -L -sS https://animus-site-ruddy.vercel.app/` greps for redesigned homepage copy; docs + updates greps — **pass**.
+- Remote smoke: `curl -L -sS https://animusai.vercel.app/` greps for redesigned homepage copy; docs + updates greps — **pass**.
 - Local smoke: `python3 -m py_compile /home/sketch/animus-site/api/*.py /home/sketch/animus-site/lib_redis.py`; HTML parser for `index.html`, `updates.html`, `docs.html`; Chromium screenshots at 1440px + 390px — **pass**.
 - `./build-release.sh` — **pass** (2026-04-29 Phase 8); zip **~28MB**; adds **`ANIMUS_UPDATE_URL`** / no-git / **`httpx`** checks.
 - `cd animus-chat && .venv/bin/python -c "import server"` — **pass**.

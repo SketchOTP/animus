@@ -13,6 +13,8 @@
 ./installer/install.sh
 ```
 
+**`animus.env`:** If the file is missing, **`preflight.sh`** and **`install.sh`** both copy **`animus.env.example`** → **`animus.env`** at the repo root. You still need to set keys (for example **`HERMES_API_KEY`**) via the wizard or by editing **`animus.env`**.
+
 **In-app updates:** Set **`ANIMUS_UPDATE_URL`** in **`animus.env`** to your update manifest URL (see **`animus.env.example`**). The app fetches that JSON and can download the release zip when you use **Check for updates** / **Apply update**. Sellers typically deploy the separate **`animus-site`** repo on **Vercel** (or self-host); see **`docs/GUMROAD.md`**. Buyer-facing help: **`docs/BUYER_UPDATES.md`**.
 
 The installer can **pre-download** the same Piper voice bundle as the server (`installer/fetch-piper-voices.sh` when `curl` exists; six models, ~380 MB). The running ANIMUS server also **downloads those models automatically** when Piper is installed but no voices are on disk — see `docs/tts.md`. Skip both with `SKIP_ANIMUS_PIPER_VOICES=1`.
@@ -30,7 +32,7 @@ After the in-app wizard finishes on a **desktop** browser, ANIMUS may offer a on
 1. Clone or unpack this repository.
 2. `python3 -m venv animus-chat/.venv && animus-chat/.venv/bin/pip install -r animus-chat/requirements.txt`
 3. `animus-chat/.venv/bin/pip install -e ./hermes-agent` (from repo root).
-4. Copy `animus.env.example` → `animus.env` and set variables.
+4. Copy `animus.env.example` → `animus.env` and set variables (skipped automatically if you already ran **`install.sh`**, which creates **`animus.env`** when missing).
 5. `cd animus-chat && ../animus-chat/.venv/bin/python server.py`
 
 ## systemd
@@ -69,7 +71,7 @@ curl -sS http://127.0.0.1:3001/api/setup/hermes-check | python3 -m json.tool
 docker compose down
 ```
 
-The compose file should expose **3001** for ANIMUS chat (`CHAT_PORT`). If `curl` fails, verify `animus.env` is mounted and the gateway is reachable from the container.
+The compose file should expose **3001** for ANIMUS chat (`CHAT_PORT`). The Docker image includes **`/app/animus.env`** copied from **`animus.env.example`** at build time so the app always has a starter env file; override with a bind mount or **`docker/.env`** (compose **`env_file`**) as needed. If `curl` fails, verify the gateway is reachable from the container and env vars match your setup.
 
 ## Troubleshooting
 

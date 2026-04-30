@@ -3,7 +3,8 @@
 #
 # Prerequisites:
 #   1. ./build-release.sh already produced animus-v$(cat VERSION | tr -d '[:space:]').zip
-#   2. Upload that zip to a public HTTPS URL (same host/path pattern you used before).
+#   2. That zip is reachable at DOWNLOAD_URL (default: animus-site /releases/… after
+#      ./scripts/release-and-publish.sh + vercel, or use /seller-publish.html Blob flow).
 #
 # Usage:
 #   export ADMIN_TOKEN='…'   # Vercel project → Settings → ADMIN_TOKEN

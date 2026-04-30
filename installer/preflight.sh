@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ ! -f "${ROOT}/animus.env" ]] && [[ -f "${ROOT}/animus.env.example" ]]; then
+  cp "${ROOT}/animus.env.example" "${ROOT}/animus.env"
+  echo "Created ${ROOT}/animus.env from animus.env.example (same as install.sh — edit keys/paths before relying on it)."
+fi
 echo "ANIMUS preflight"
 ok=0
 fail=0

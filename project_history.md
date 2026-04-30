@@ -715,3 +715,8 @@ Files touched:
 - project_knowledge.md
 - project_status.md
 - project_history.md
+
+1005 300426 - Git: committed and pushed main to GitHub (94241f9) — v1.0.1 prep, skills seed, buyer docs, ghostonlyicon, build-release, publish script; excluded stray animus-chat/whoami.
+Files touched:
+- (git commit 94241f9 — 24 files)
+- project_history.md

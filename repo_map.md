@@ -59,11 +59,12 @@ Root: `/home/sketch/animus`
 - `animus-v1.0.7.zip` — large file (31690107 bytes)
 - `animus-v1.0.8.zip` — large file (31696295 bytes)
 - `animus-v1.0.9.zip` — large file (28887236 bytes)
+- `animus-v1.1.0.zip` — large file (28915617 bytes)
 - `animus.env` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
 - `animus.env.example` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
 - `ANIMUSLOGO.png` — large file (664372 bytes)
 - `ANIMUSLOGOICON.png` — large file (478545 bytes)
-- `build-release.sh` — #!/usr/bin/env bash set -euo pipefail ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+- `build-release.sh` — Buyer zip from `VERSION`; excludes dev trees (e.g. `hermes-agent/.venv`, `hermes-agent/.e2e-venv`, `artifacts/`, internal `project_*.md`); fails if zip exceeds 55MB cap.
 - `CLAUDE.md` — --- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true
 - `docker/.env.example` — # Docker-specific copy of animus env — paths differ inside the container. HERMES_API_URL=http://host.docker.internal:8642 HERMES_API_KEY=
 - `docker/docker-compose.yml` — services: animus: build:

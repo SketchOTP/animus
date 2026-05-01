@@ -4,6 +4,10 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 
 ---
 
+## Release zip size (010526)
+
+- **`hermes-agent/.e2e-venv/`** is gitignored but still lives on disk; **`build-release.sh`** must **`zip -x`** it or the buyer zip balloons past the **55MB** cap (symptom: ~77MB). **`artifacts/`** is gitignored and excluded from zip so internal QA markdown does not ship to buyers.
+
 ## Tokens tab (300426)
 
 - **`animus-chat/token_usage.py`:** **`read_usage_all(source)`** reads the whole **`token_usage.jsonl`** (no date cutoff). **`GET /api/tokens/usage?full=1`** (also **`full=true`**) returns all rows + summary; optional Hermes analytics uses **366** days when dashboard token is set.

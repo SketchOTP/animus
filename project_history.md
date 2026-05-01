@@ -2041,3 +2041,18 @@ Files touched:
 - project_history.md
 0836 050126 — Chat: test → Ack. (hermes-chat)
 0836 050126 — Chat: test2 → Ack. (hermes-chat)
+0839 010526 - v1.1.0: Help user guide Tokens tab (charts, auto-refresh, ANIMUS client vs logging); VERSION 1.1.0; build-release excludes .e2e-venv and artifacts/; git push main; animus-v1.1.0.zip + Vercel deploy + manifest publish.
+Files touched:
+- docs/animus-user-guide.md
+- VERSION
+- build-release.sh
+- .gitignore
+- (commit dad6d95: animus-chat, hermes-agent, scripts, project docs, project_memory, notes.md, etc.)
+
+0842 010526 - Post v1.1.0 docs: repo_map zip + build-release excludes; project_status v1.1.0 ship line; project_knowledge .e2e-venv zip cap lesson.
+Files touched:
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+

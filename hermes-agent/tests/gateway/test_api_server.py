@@ -314,6 +314,7 @@ def _create_app(adapter: APIServerAdapter) -> web.Application:
     app.router.add_get("/health/detailed", adapter._handle_health_detailed)
     app.router.add_get("/v1/health", adapter._handle_health)
     app.router.add_get("/v1/models", adapter._handle_models)
+    app.router.add_get("/v1/chat/session-prompt-status", adapter._handle_chat_session_prompt_status)
     app.router.add_post("/v1/chat/completions", adapter._handle_chat_completions)
     app.router.add_post("/v1/responses", adapter._handle_responses)
     app.router.add_get("/v1/responses/{response_id}", adapter._handle_get_response)
@@ -491,6 +492,91 @@ class TestModelsEndpoint:
                 headers={"Authorization": "Bearer sk-secret"},
             )
             assert resp.status == 200
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/chat/session-prompt-status
+# ---------------------------------------------------------------------------
+
+
+class TestChatSessionPromptStatus:
+    @pytest.mark.asyncio
+    async def test_empty_session_id_returns_false_flags(self, adapter):
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.get("/v1/chat/session-prompt-status")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["has_stored_system_prompt"] is False
+            assert data["session_known"] is False
+
+    @pytest.mark.asyncio
+    async def test_session_known_but_empty_prompt(self, adapter):
+        """Stale client ``hermes_has_stored_system_prompt`` must not trust empty SQLite prompt."""
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = {"id": "sess-a", "system_prompt": ""}
+
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            with patch.object(adapter, "_ensure_session_db", return_value=mock_db):
+                with patch.object(adapter, "_session_has_nonempty_stored_system_prompt", return_value=False):
+                    resp = await cli.get(
+                        "/v1/chat/session-prompt-status",
+                        headers={"X-Hermes-Session-Id": "sess-a"},
+                    )
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["session_known"] is True
+            assert data["has_stored_system_prompt"] is False
+            assert data["session_id"] == "sess-a"
+
+    @pytest.mark.asyncio
+    async def test_session_unknown_matches_cleared_db(self, adapter):
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = None
+
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            with patch.object(adapter, "_ensure_session_db", return_value=mock_db):
+                with patch.object(adapter, "_session_has_nonempty_stored_system_prompt", return_value=False):
+                    resp = await cli.get(
+                        "/v1/chat/session-prompt-status",
+                        headers={"X-Hermes-Session-Id": "missing-row"},
+                    )
+            data = await resp.json()
+            assert data["session_known"] is False
+            assert data["has_stored_system_prompt"] is False
+
+    @pytest.mark.asyncio
+    async def test_requires_auth_when_api_key_configured(self, auth_adapter):
+        app = _create_app(auth_adapter)
+        async with TestClient(TestServer(app)) as cli:
+            resp = await cli.get(
+                "/v1/chat/session-prompt-status",
+                headers={"X-Hermes-Session-Id": "sess-x"},
+            )
+            assert resp.status == 401
+
+    @pytest.mark.asyncio
+    async def test_ok_with_bearer_when_api_key_configured(self, auth_adapter):
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = {"id": "sess-b", "system_prompt": "core\n\nproject block"}
+
+        app = _create_app(auth_adapter)
+        async with TestClient(TestServer(app)) as cli:
+            with patch.object(auth_adapter, "_ensure_session_db", return_value=mock_db):
+                with patch.object(auth_adapter, "_session_has_nonempty_stored_system_prompt", return_value=True):
+                    resp = await cli.get(
+                        "/v1/chat/session-prompt-status",
+                        headers={
+                            "X-Hermes-Session-Id": "sess-b",
+                            "Authorization": "Bearer sk-secret",
+                        },
+                    )
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["has_stored_system_prompt"] is True
+            assert data["session_known"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -741,6 +827,108 @@ class TestChatCompletionsEndpoint:
                 assert "event: hermes.tool.progress" in body
                 assert '"tool": "web_search"' in body
                 assert '"label": "Python docs"' in body
+
+    @pytest.mark.asyncio
+    async def test_stream_emits_hermes_session_after_finish_chunk(self, adapter):
+        """ANIMUS relies on ``event: hermes.session`` for server-truth stored system state."""
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            async def _mock_run_agent(**kwargs):
+                cb = kwargs.get("stream_delta_callback")
+                if cb:
+                    cb("ok")
+                return (
+                    {"final_response": "ok", "messages": [], "api_calls": 1},
+                    {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
+                )
+
+            with (
+                patch.object(adapter, "_run_agent", side_effect=_mock_run_agent),
+                patch.object(
+                    adapter,
+                    "_session_has_nonempty_stored_system_prompt",
+                    return_value=True,
+                ),
+            ):
+                resp = await cli.post(
+                    "/v1/chat/completions",
+                    json={
+                        "model": "test",
+                        "messages": [{"role": "user", "content": "hi"}],
+                        "stream": True,
+                    },
+                )
+                assert resp.status == 200
+                body = await resp.text()
+                assert "event: hermes.session" in body
+                assert '"hasStoredSystemPrompt": true' in body
+                assert '"sessionPrimed": true' in body
+                # Must appear after usage finish chunk and before [DONE]
+                assert body.index("event: hermes.session") < body.index("data: [DONE]")
+
+    @pytest.mark.asyncio
+    async def test_stream_hermes_session_reports_false_when_db_empty(self, adapter):
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            async def _mock_run_agent(**kwargs):
+                cb = kwargs.get("stream_delta_callback")
+                if cb:
+                    cb("nope")
+                return (
+                    {"final_response": "nope", "messages": [], "api_calls": 1},
+                    {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
+                )
+
+            with (
+                patch.object(adapter, "_run_agent", side_effect=_mock_run_agent),
+                patch.object(
+                    adapter,
+                    "_session_has_nonempty_stored_system_prompt",
+                    return_value=False,
+                ),
+            ):
+                resp = await cli.post(
+                    "/v1/chat/completions",
+                    json={
+                        "model": "test",
+                        "messages": [{"role": "user", "content": "x"}],
+                        "stream": True,
+                    },
+                )
+                assert resp.status == 200
+                body = await resp.text()
+                assert "event: hermes.session" in body
+                assert '"hasStoredSystemPrompt": false' in body
+                assert '"sessionPrimed": false' in body
+
+    @pytest.mark.asyncio
+    async def test_non_stream_sets_x_hermes_stored_system_headers(self, adapter):
+        mock_result = {
+            "final_response": "done",
+            "messages": [],
+            "api_calls": 1,
+        }
+        app = _create_app(adapter)
+        async with TestClient(TestServer(app)) as cli:
+            with (
+                patch.object(adapter, "_run_agent", new_callable=AsyncMock) as mock_run,
+                patch.object(
+                    adapter,
+                    "_session_has_nonempty_stored_system_prompt",
+                    return_value=True,
+                ),
+            ):
+                mock_run.return_value = (mock_result, {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2})
+                resp = await cli.post(
+                    "/v1/chat/completions",
+                    json={
+                        "model": "hermes-agent",
+                        "messages": [{"role": "user", "content": "ping"}],
+                    },
+                )
+            assert resp.status == 200
+            assert resp.headers.get("X-Hermes-Has-Stored-System-Prompt") == "1"
+            assert resp.headers.get("X-Hermes-Session-Primed") == "1"
 
     @pytest.mark.asyncio
     async def test_no_user_message_returns_400(self, adapter):

@@ -21,7 +21,7 @@ Root: `/home/sketch/animus`
 - `animus-chat/app/icon.svg` — <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"> <rect width="100" height="100" rx="22" fill="#7c3aed"/> <g transform="translate(10 10) scale(3.3…
 - `animus-chat/app/index.html` — large file (605116 bytes)
 - `animus-chat/app/manifest.json` — { "name": "ANIMUS", "short_name": "ANIMUS",
-- `animus-chat/app/sw.js` — // Bump when shell HTML or critical assets change — activate() evicts older caches. const CACHE = 'animus-v35';
+- `animus-chat/app/sw.js` — // Bump when shell HTML or critical assets change — activate() evicts older caches. const CACHE = 'animus-v57';
 - `animus-chat/cron_routes.py` — """Cron API — proxies Hermes gateway ``/api/jobs`` (OpenAI server) with in-process fallback on transport errors.""" from __future__ import annotations
 - `animus-chat/generate-icons.py` — #!/usr/bin/env python3 """Generate PNG icons for Android PWA install. Run once.""" from pathlib import Path
 - `animus-chat/help_routes.py` — """ANIMUS Help bot — answers from ``docs/animus-user-guide.md`` only (no tools, no mutations).""" from __future__ import annotations
@@ -46,9 +46,9 @@ Root: `/home/sketch/animus`
 - `animus-chat/sync-from-release-zip.sh` — #!/usr/bin/env bash # Patch THIS animus-chat/ directory from animus-vX.Y.Z.zip (official release layout). # Use when you only have animus-chat/ (no installer/ …
 - `animus-chat/systemd/hermes-chat.service` — # Legacy filename — use ../../systemd/animus.service in the ANIMUS monorepo. # Copy to ~/.config/systemd/user/animus.service and edit paths.
 - `animus-chat/TAILSCALE-SERVE.md` — # Tailscale Serve This file is kept for backwards compatibility. **Authoritative guidance** for ANIMUS is in the monorepo:
-- `animus-chat/token_usage.py` — """Append-only token usage log + read API (Phase 7).""" from __future__ import annotations
+- `animus-chat/token_usage.py` — Append-only `token_usage.jsonl` + `GET /api/tokens/usage` (`days` window or `full=1` for entire log via `read_usage_all`) + `POST /api/tokens/record`; allowlisted **`animus_client`** slugs.
+- `animus-chat/tests/test_token_usage_animus_client.py` — Unittest regression for **`ANIMUS_CLIENT_SLUGS`** + token JSONL stamping (run from **`animus-chat/`** with **`.venv/bin/python -m unittest …`**).
 - `animus-chat/tts_routes.py` — """TTS helpers — browser vs local Piper (optional binary).""" from __future__ import annotations
-- `animus-chat/whoami` — empty file
 - `animus-v1.0.0.zip` — large file (28817354 bytes)
 - `animus-v1.0.1.zip` — large file (28818481 bytes)
 - `animus-v1.0.2.zip` — large file (28818481 bytes)
@@ -58,6 +58,7 @@ Root: `/home/sketch/animus`
 - `animus-v1.0.6.zip` — large file (31645591 bytes)
 - `animus-v1.0.7.zip` — large file (31690107 bytes)
 - `animus-v1.0.8.zip` — large file (31696295 bytes)
+- `animus-v1.0.9.zip` — large file (28887236 bytes)
 - `animus.env` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
 - `animus.env.example` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
 - `ANIMUSLOGO.png` — large file (664372 bytes)
@@ -157,7 +158,7 @@ Root: `/home/sketch/animus`
 - `hermes-agent/agent/transports/chat_completions.py` — """OpenAI Chat Completions transport. Handles the default api_mode ('chat_completions') used by ~16 OpenAI-compatible
 - `hermes-agent/agent/transports/codex.py` — """OpenAI Responses API (Codex) transport. Delegates to the existing adapter functions in agent/codex_responses_adapter.py.
 - `hermes-agent/agent/transports/types.py` — """Shared types for normalized provider responses. These dataclasses define the canonical shape that all provider adapters
-- `hermes-agent/agent/usage_pricing.py` — from __future__ import annotations from dataclasses import dataclass
+- `hermes-agent/agent/usage_pricing.py` — `normalize_usage()` maps provider usage → `CanonicalUsage`; reads dict or object fields (gateway/token tracker depend on this).
 - `hermes-agent/AGENTS.md` — # Hermes Agent - Development Guide Instructions for AI coding assistants and developers working on the hermes-agent codebase.
 - `hermes-agent/assets/banner.png` — binary (.png)
 - `hermes-agent/batch_runner.py` — large file (55631 bytes)
@@ -234,7 +235,7 @@ Root: `/home/sketch/animus`
 - `hermes-agent/gateway/pairing.py` — """ DM Pairing System
 - `hermes-agent/gateway/platforms/__init__.py` — """ Platform adapters for messaging integrations.
 - `hermes-agent/gateway/platforms/ADDING_A_PLATFORM.md` — # Adding a New Messaging Platform Checklist for integrating a new messaging platform into the Hermes gateway.
-- `hermes-agent/gateway/platforms/api_server.py` — large file (121390 bytes)
+- `hermes-agent/gateway/platforms/api_server.py` — OpenAI-compatible HTTP adapter; **`GET /v1/chat/session-prompt-status`** (SQLite truth for ANIMUS preflight); streaming chat completions emit **`event: hermes.session`**; non-stream **`X-Hermes-Has-Stored-System-Prompt`** (large file)
 - `hermes-agent/gateway/platforms/base.py` — large file (106884 bytes)
 - `hermes-agent/gateway/platforms/bluebubbles.py` — """BlueBubbles iMessage platform adapter. Uses the local BlueBubbles macOS server for outbound REST sends and inbound
 - `hermes-agent/gateway/platforms/dingtalk.py` — large file (55909 bytes)
@@ -648,14 +649,19 @@ Root: `/home/sketch/animus`
 - `LICENSE` — MIT License Copyright (c) ANIMUS contributors
 - `notes.md` — # Notes Operator notes for this project (Markdown). Edited in Hermes Chat under **Project workspace → Notes**.
 - `project_goal.md` — large file (140753 bytes)
-- `project_history.md` — large file (58983 bytes)
+- `project_history.md` — large file (61431 bytes)
 - `project_history.md.flock` — empty file
-- `project_knowledge.md` — large file (64342 bytes)
+- `project_knowledge.md` — large file (73364 bytes)
 - `project_status.md` — # Project status (animus) ## Current state
 - `README.md` — # ANIMUS ANIMUS is a distributable bundle: the **animus-chat** web app (Starlette + PWA) and a full **hermes-agent** checkout, so local customisations (gateway…
-- `repo_map.md` — # Repo map (animus) Quick navigation for agents. Update when layout, entrypoints, or roles change.
+- `repo_map.md` — large file (94898 bytes)
 - `setup_repo.md` — # Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo…
 - `START_HERE.txt` — ANIMUS — START HERE ===================
-- `VERSION` — 1.0.8
+- `VERSION` — 1.0.9
 
 *Listed 650 files (cap 650).*
+
+## Validation artifacts (hand-maintained)
+
+- `artifacts/hermes_project_session_priming_e2e.md` — Hermes gateway **`hermes.session`** SSE + ANIMUS project-system priming: commands run, pytest evidence, static UI proof, pass/fail table (includes known session-loss gap).
+- `artifacts/token_tracker_tab_explained.md` — Token Tracker capture → JSONL → read API → UI → CSV; **`animus_client`** vs **`source`**; **ANIMUS client breakdown** in **`app/index.html`**; PASS/PARTIAL framing; **`tests.test_token_usage_animus_client`** (14 tests).

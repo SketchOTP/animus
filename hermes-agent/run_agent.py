@@ -99,7 +99,7 @@ from agent.context_compressor import ContextCompressor
 from agent.subdirectory_hints import SubdirectoryHintTracker
 from agent.prompt_caching import apply_anthropic_cache_control
 from agent.prompt_builder import build_skills_system_prompt, build_context_files_prompt, build_environment_hints, load_soul_md, TOOL_USE_ENFORCEMENT_GUIDANCE, TOOL_USE_ENFORCEMENT_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE, OPENAI_MODEL_EXECUTION_GUIDANCE
-from agent.usage_pricing import estimate_usage_cost, normalize_usage
+from agent.usage_pricing import CanonicalUsage, estimate_usage_cost, normalize_usage
 from agent.codex_responses_adapter import (
     _derive_responses_function_call_id as _codex_derive_responses_function_call_id,
     _deterministic_call_id as _codex_deterministic_call_id,
@@ -3618,6 +3618,67 @@ class AIAgent:
         summary["total_tokens"] = cu.total_tokens
         return summary
 
+    def _rough_token_pair_when_usage_absent(
+        self, response: Any, api_messages: Optional[list]
+    ) -> tuple[int, int]:
+        """Approximate (input, output) tokens when the provider omits ``usage`` or reports all zeros.
+
+        Subscription / Codex backends often omit billable counters; ANIMUS and
+        session ledgers still need scale-relative numbers. Uses the same rough
+        message estimate as compression hints (~4 chars per token for output).
+        """
+        from agent.model_metadata import estimate_messages_tokens_rough, estimate_tokens_rough
+        from agent.codex_responses_adapter import _extract_responses_message_text
+
+        full = estimate_messages_tokens_rough(api_messages or [])
+        prev = getattr(self, "_rough_usage_msg_token_snapshot", None)
+        if prev is None:
+            # First LLM call of this user turn — one snapshot of request size (not
+            # repeated on every tool-iteration refetch). Use a high ceiling, not
+            # ~16k: subscription Codex often omits usage on later HTTP turns while
+            # the first turn still reports real counts; a 16k cap made ANIMUS
+            # token_usage.jsonl look like tiny per-message "deltas" vs the first
+            # turn. Marginal deltas below still cap growth between internal calls.
+            inp = min(full, 262144)
+        else:
+            inp = max(0, min(full - prev, 64000))
+        self._rough_usage_msg_token_snapshot = full
+
+        out_chunks: list[str] = []
+        try:
+            if response is None:
+                return inp, 0
+            if self.api_mode == "codex_responses":
+                ot = getattr(response, "output_text", None)
+                if isinstance(ot, str) and ot.strip():
+                    out_chunks.append(ot.strip())
+                else:
+                    out_list = getattr(response, "output", None)
+                    if isinstance(out_list, list):
+                        for it in out_list:
+                            txt = _extract_responses_message_text(it)
+                            if txt:
+                                out_chunks.append(txt)
+            elif hasattr(response, "choices") and response.choices:
+                ch0 = response.choices[0]
+                msg = getattr(ch0, "message", None)
+                if msg is not None:
+                    c = getattr(msg, "content", None)
+                    if isinstance(c, str) and c.strip():
+                        out_chunks.append(c.strip())
+        except Exception:
+            pass
+        out_s = "\n".join(out_chunks).strip()
+        if not out_s:
+            parts = getattr(self, "_codex_streamed_text_parts", None) or []
+            if parts:
+                try:
+                    out_s = "".join(parts)
+                except Exception:
+                    out_s = ""
+        out_toks = estimate_tokens_rough(out_s)
+        return inp, out_toks
+
     def _dump_api_request_debug(
         self,
         api_kwargs: Dict[str, Any],
@@ -5043,9 +5104,14 @@ class AIAgent:
             if u is None:
                 return 0
             try:
-                it = int(getattr(u, "input_tokens", 0) or getattr(u, "prompt_tokens", 0) or 0)
-                ot = int(getattr(u, "output_tokens", 0) or getattr(u, "completion_tokens", 0) or 0)
-                tt = int(getattr(u, "total_tokens", 0) or 0)
+                if isinstance(u, dict):
+                    it = int(u.get("input_tokens") or u.get("prompt_tokens") or 0)
+                    ot = int(u.get("output_tokens") or u.get("completion_tokens") or 0)
+                    tt = int(u.get("total_tokens") or 0)
+                else:
+                    it = int(getattr(u, "input_tokens", 0) or getattr(u, "prompt_tokens", 0) or 0)
+                    ot = int(getattr(u, "output_tokens", 0) or getattr(u, "completion_tokens", 0) or 0)
+                    tt = int(getattr(u, "total_tokens", 0) or 0)
                 return tt if tt > 0 else it + ot
             except Exception:
                 return 0
@@ -9212,6 +9278,9 @@ class AIAgent:
         self._last_content_tools_all_housekeeping = False
         self._mute_post_response = False
         self._unicode_sanitization_passes = 0
+        # Rough token fallback: snapshot of ``estimate_messages_tokens_rough`` so
+        # each internal API call logs marginal growth, not full history every time.
+        self._rough_usage_msg_token_snapshot = None
 
         # Pre-turn connection health check: detect and clean up dead TCP
         # connections left over from provider outages or dropped streams.
@@ -9333,10 +9402,20 @@ class AIAgent:
                 except Exception as exc:
                     logger.warning("on_session_start hook failed: %s", exc)
 
-                # Store the system prompt snapshot in SQLite
+                # Store the system prompt snapshot in SQLite (include gateway
+                # ``ephemeral_system_prompt`` — e.g. ANIMUS project block — so
+                # continuing HTTP turns can omit resending it without losing
+                # workspace context).
                 if self._session_db:
                     try:
-                        self._session_db.update_system_prompt(self.session_id, self._cached_system_prompt)
+                        _persist_sys = (self._cached_system_prompt or "").strip()
+                        if self.ephemeral_system_prompt:
+                            _ep = str(self.ephemeral_system_prompt).strip()
+                            if _ep:
+                                _persist_sys = (
+                                    (_persist_sys + "\n\n" + _ep).strip() if _persist_sys else _ep
+                                )
+                        self._session_db.update_system_prompt(self.session_id, _persist_sys)
                     except Exception as e:
                         logger.debug("Session DB update_system_prompt failed: %s", e)
 
@@ -10368,13 +10447,45 @@ class AIAgent:
                                 "error": "First response truncated due to output length limit"
                             })
                     
-                    # Track actual token usage from response for context management
-                    if hasattr(response, 'usage') and response.usage:
+                    # Track actual token usage from response for context management.
+                    # ``if response.usage`` skipped accounting when ``usage`` was
+                    # ``None`` or ``{}`` (falsy). Subscription Codex often omits
+                    # billable fields. When normalised totals are zero, fall back to
+                    # rough estimates so gateway SSE + ANIMUS token logs stay useful.
+                    raw_usage = getattr(response, "usage", None)
+                    if raw_usage is not None:
                         canonical_usage = normalize_usage(
-                            response.usage,
+                            raw_usage,
                             provider=self.provider,
                             api_mode=self.api_mode,
                         )
+                    else:
+                        canonical_usage = CanonicalUsage()
+
+                    if (
+                        canonical_usage.prompt_tokens == 0
+                        and canonical_usage.output_tokens == 0
+                    ):
+                        ri, ro = self._rough_token_pair_when_usage_absent(response, api_messages)
+                        if ri > 0 or ro > 0:
+                            canonical_usage = CanonicalUsage(
+                                input_tokens=max(0, int(ri)),
+                                output_tokens=max(0, int(ro)),
+                            )
+                            logger.info(
+                                "%sProvider ``usage`` missing or all-zero — "
+                                "rough token estimates in≈%d out≈%d for session/analytics.",
+                                self.log_prefix,
+                                canonical_usage.prompt_tokens,
+                                canonical_usage.output_tokens,
+                            )
+
+                    _record_token_ledger = (
+                        raw_usage is not None
+                        or canonical_usage.prompt_tokens > 0
+                        or canonical_usage.output_tokens > 0
+                    )
+                    if _record_token_ledger:
                         prompt_tokens = canonical_usage.prompt_tokens
                         completion_tokens = canonical_usage.output_tokens
                         total_tokens = canonical_usage.total_tokens

@@ -378,6 +378,58 @@ def _to_int(value: Any) -> int:
         return 0
 
 
+def _usage_pick_int(usage: Any, *keys: str) -> int:
+    """Read a numeric usage field from an SDK object, SimpleNamespace, or plain dict.
+
+    Several providers and the Codex stream merge path surface ``usage`` as a
+    JSON-shaped dict. ``getattr(dict, "input_tokens", 0)`` is always 0, which
+    made session/gateway token accounting silently drop real counts.
+    """
+    if usage is None:
+        return 0
+    if isinstance(usage, dict):
+        for k in keys:
+            if k in usage and usage[k] is not None:
+                return _to_int(usage[k])
+        return 0
+    for k in keys:
+        if hasattr(usage, k):
+            v = getattr(usage, k, None)
+            if v is not None:
+                return _to_int(v)
+    return 0
+
+
+def _usage_pick_nested(usage: Any, *keys: str) -> Any:
+    if usage is None:
+        return None
+    if isinstance(usage, dict):
+        for k in keys:
+            if k in usage:
+                return usage.get(k)
+        return None
+    for k in keys:
+        if hasattr(usage, k):
+            return getattr(usage, k, None)
+    return None
+
+
+def _nested_pick_int(container: Any, *keys: str) -> int:
+    if not container:
+        return 0
+    if isinstance(container, dict):
+        for k in keys:
+            if k in container and container[k] is not None:
+                return _to_int(container[k])
+        return 0
+    for k in keys:
+        if hasattr(container, k):
+            v = getattr(container, k, None)
+            if v is not None:
+                return _to_int(v)
+    return 0
+
+
 def resolve_billing_route(
     model_name: str,
     provider: Optional[str] = None,
@@ -508,6 +560,9 @@ def normalize_usage(
     In both Codex and OpenAI modes, input_tokens is derived by subtracting cache
     tokens from the total — the API contract is that input/prompt totals include
     cached tokens and the details object breaks them out.
+
+    ``response_usage`` may be an SDK model, a SimpleNamespace, or a dict (e.g.
+    JSON usage embedded in streamed terminal events).
     """
     if not response_usage:
         return CanonicalUsage()
@@ -516,45 +571,39 @@ def normalize_usage(
     mode = (api_mode or "").strip().lower()
 
     if mode == "anthropic_messages" or provider_name == "anthropic":
-        input_tokens = _to_int(getattr(response_usage, "input_tokens", 0))
-        output_tokens = _to_int(getattr(response_usage, "output_tokens", 0))
-        cache_read_tokens = _to_int(getattr(response_usage, "cache_read_input_tokens", 0))
-        cache_write_tokens = _to_int(getattr(response_usage, "cache_creation_input_tokens", 0))
+        input_tokens = _usage_pick_int(response_usage, "input_tokens")
+        output_tokens = _usage_pick_int(response_usage, "output_tokens")
+        cache_read_tokens = _usage_pick_int(response_usage, "cache_read_input_tokens")
+        cache_write_tokens = _usage_pick_int(response_usage, "cache_creation_input_tokens")
     elif mode == "codex_responses":
-        input_total = _to_int(getattr(response_usage, "input_tokens", 0))
-        output_tokens = _to_int(getattr(response_usage, "output_tokens", 0))
-        details = getattr(response_usage, "input_tokens_details", None)
-        cache_read_tokens = _to_int(getattr(details, "cached_tokens", 0) if details else 0)
-        cache_write_tokens = _to_int(
-            getattr(details, "cache_creation_tokens", 0) if details else 0
-        )
+        input_total = _usage_pick_int(response_usage, "input_tokens")
+        output_tokens = _usage_pick_int(response_usage, "output_tokens")
+        details = _usage_pick_nested(response_usage, "input_tokens_details")
+        cache_read_tokens = _nested_pick_int(details, "cached_tokens")
+        cache_write_tokens = _nested_pick_int(details, "cache_creation_tokens")
         input_tokens = max(0, input_total - cache_read_tokens - cache_write_tokens)
     else:
-        prompt_total = _to_int(getattr(response_usage, "prompt_tokens", 0))
-        output_tokens = _to_int(getattr(response_usage, "completion_tokens", 0))
-        details = getattr(response_usage, "prompt_tokens_details", None)
+        prompt_total = _usage_pick_int(response_usage, "prompt_tokens")
+        output_tokens = _usage_pick_int(response_usage, "completion_tokens")
+        details = _usage_pick_nested(response_usage, "prompt_tokens_details")
         # Primary: OpenAI-style prompt_tokens_details. Fallback: Anthropic-style
         # top-level fields that some OpenAI-compatible proxies (OpenRouter, Vercel
         # AI Gateway, Cline) expose when routing Claude models — without this
         # fallback, cache writes are undercounted as 0 and cache reads can be
         # missed when the proxy only surfaces them at the top level.
         # Port of cline/cline#10266.
-        cache_read_tokens = _to_int(getattr(details, "cached_tokens", 0) if details else 0)
+        cache_read_tokens = _nested_pick_int(details, "cached_tokens")
         if not cache_read_tokens:
-            cache_read_tokens = _to_int(getattr(response_usage, "cache_read_input_tokens", 0))
-        cache_write_tokens = _to_int(
-            getattr(details, "cache_write_tokens", 0) if details else 0
-        )
+            cache_read_tokens = _usage_pick_int(response_usage, "cache_read_input_tokens")
+        cache_write_tokens = _nested_pick_int(details, "cache_write_tokens")
         if not cache_write_tokens:
-            cache_write_tokens = _to_int(
-                getattr(response_usage, "cache_creation_input_tokens", 0)
-            )
+            cache_write_tokens = _usage_pick_int(response_usage, "cache_creation_input_tokens")
         input_tokens = max(0, prompt_total - cache_read_tokens - cache_write_tokens)
 
     reasoning_tokens = 0
-    output_details = getattr(response_usage, "output_tokens_details", None)
+    output_details = _usage_pick_nested(response_usage, "output_tokens_details")
     if output_details:
-        reasoning_tokens = _to_int(getattr(output_details, "reasoning_tokens", 0))
+        reasoning_tokens = _nested_pick_int(output_details, "reasoning_tokens")
 
     return CanonicalUsage(
         input_tokens=input_tokens,

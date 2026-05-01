@@ -9,7 +9,7 @@
 # Usage:
 #   export ADMIN_TOKEN='…'   # Vercel project → Settings → ADMIN_TOKEN
 #   optional: export DOWNLOAD_URL (defaults to Vercel static URL below)
-#   optional: export ANIMUS_RELEASE_NOTES='Bugfix: skills list seeds on first launch'
+#   required: export ANIMUS_RELEASE_NOTES='Bugfix: skills list seeds on first launch' (≥24 chars, not version-only)
 #   optional: export ANIMUS_PUBLISH_URL='https://animusai.vercel.app/api/admin/publish'
 #   ./scripts/publish-animus-manifest.sh
 set -euo pipefail
@@ -19,7 +19,12 @@ V="$(tr -d '[:space:]' < "$ROOT/VERSION")"
 PUBLISH_URL="${ANIMUS_PUBLISH_URL:-https://animusai.vercel.app/api/admin/publish}"
 BASE="${ANIMUS_SITE_BASE:-https://animusai.vercel.app}"
 DOWNLOAD_URL="${DOWNLOAD_URL:-${BASE}/releases/animus-v${V}.zip}"
-NOTES="${ANIMUS_RELEASE_NOTES:-ANIMUS v${V}}"
+NOTES="${ANIMUS_RELEASE_NOTES:-}"
+if [[ ${#NOTES} -lt 24 ]]; then
+  echo "error: set ANIMUS_RELEASE_NOTES to a buyer-facing summary (at least 24 characters)." >&2
+  echo "  Example: export ANIMUS_RELEASE_NOTES='Fixes STT multipart, PWA project order, and zip excludes .venv.'" >&2
+  exit 1
+fi
 if [[ -z "${ADMIN_TOKEN:-}" ]]; then
   echo "error: set ADMIN_TOKEN (Vercel → animus-site → Settings → Environment variables → Production)" >&2
   echo "  Or pull Production secrets: cd sibling animus-site/ && vercel env pull .env.production.local --environment production --yes" >&2

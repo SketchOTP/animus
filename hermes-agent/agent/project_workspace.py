@@ -22,6 +22,8 @@ NOTES_FILENAME = "notes.md"
 GOAL_FILENAME = "project_goal.md"
 STATUS_FILENAME = "project_status.md"
 KNOWLEDGE_FILENAME = "project_knowledge.md"
+PROJECT_MEMORY_DIRNAME = "project_memory"
+PROJECT_MEMORY_INDEX_FILENAME = "index.json"
 SETUP_REPO_FILENAME = "setup_repo.md"
 AGENTS_MD_FILENAME = "AGENTS.md"
 CLAUDE_MD_FILENAME = "CLAUDE.md"
@@ -32,6 +34,7 @@ HERMES_CHAT_SETUP_REPO_MD_ENV = "HERMES_CHAT_SETUP_REPO_MD"
 HERMES_CHAT_POLICY_TEMPLATE_ENV = "HERMES_CHAT_POLICY_TEMPLATE"
 
 _AGENT_BOOTSTRAP_SENTINEL = "<!-- hermes-chat-setup-repo-bootstrap -->"
+_COMPACT_MEMORY_POLICY_SENTINEL = "<!-- hermes-project-memory-v1 -->"
 
 HISTORY_HEADER = """# Project history
 
@@ -96,6 +99,13 @@ After meaningful work, update:
 - `repo_map.md` (when structure/ownership changes)
 
 Keep changes minimal, avoid unrelated edits, and do not run destructive commands without explicit approval.
+
+<!-- hermes-project-memory-v1 -->
+Compact project memory workflow:
+- Read `project_memory/index.json` first for token-light navigation.
+- Use `repo_map.md` as human-readable backup, not the primary full context payload.
+- Do not load full `project_history.md` by default; only recent tail entries when needed.
+- Keep `project_memory/index.json` current after structural changes.
 """
 
 _SKIP_DIR_NAMES = frozenset(
@@ -444,6 +454,17 @@ def _guess_summary(path: Path) -> str:
     return one
 
 
+def _safe_iso_now() -> str:
+    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+def _normalize_memory_text(text: str) -> str:
+    t = (text or "").strip()
+    if len(t) > 160:
+        return t[:157] + "..."
+    return t
+
+
 def _walk_files(root: Path) -> Iterable[Path]:
     n = 0
     root = root.resolve()
@@ -464,6 +485,121 @@ def _walk_files(root: Path) -> Iterable[Path]:
             if n > _MAX_REPO_FILES:
                 return
             yield p
+
+
+def _walk_files_for_memory(root: Path, cap: int = 220) -> list[tuple[str, str]]:
+    rows: list[tuple[str, str]] = []
+    for p in _walk_files(root):
+        try:
+            rel = p.relative_to(root).as_posix()
+        except ValueError:
+            continue
+        rows.append((rel, _normalize_memory_text(_guess_summary(p))))
+        if len(rows) >= cap:
+            break
+    rows.sort(key=lambda x: x[0].lower())
+    return rows
+
+
+def _discover_entrypoints(rows: list[tuple[str, str]]) -> list[dict[str, str]]:
+    wanted = (
+        "readme.md",
+        "server.py",
+        "main.py",
+        "app.py",
+        "index.html",
+        "cli.py",
+        "run.py",
+    )
+    out: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for rel, summary in rows:
+        low = rel.lower()
+        if low in seen:
+            continue
+        if any(low.endswith(name) for name in wanted):
+            out.append({"path": rel, "summary": summary})
+            seen.add(low)
+        if len(out) >= 16:
+            break
+    if out:
+        return out
+    # Fallback: first small set of files so index is never empty.
+    return [{"path": rel, "summary": summary} for rel, summary in rows[:12]]
+
+
+def _discover_areas(rows: list[tuple[str, str]]) -> list[dict[str, Any]]:
+    by_top: dict[str, int] = {}
+    for rel, _summary in rows:
+        top = rel.split("/", 1)[0]
+        by_top[top] = by_top.get(top, 0) + 1
+    ranked = sorted(by_top.items(), key=lambda x: (-x[1], x[0].lower()))
+    return [{"name": name, "file_count": count} for name, count in ranked[:24]]
+
+
+def generate_project_memory_index(root: Path) -> dict[str, Any]:
+    root = normalize_project_root(root)
+    rows = _walk_files_for_memory(root)
+    index = {
+        "schema_version": 1,
+        "generated_at": _safe_iso_now(),
+        "project_root": str(root),
+        "entrypoints": _discover_entrypoints(rows),
+        "areas": _discover_areas(rows),
+        "files": [{"path": rel, "summary": summary} for rel, summary in rows],
+        "commands": [
+            "Read project_memory/index.json first",
+            "Read repo_map.md only for human-oriented backup detail",
+            "Read only recent project_history.md lines when needed",
+        ],
+    }
+    return index
+
+
+def write_project_memory_index(root: Path, body: dict[str, Any]) -> Path:
+    root = normalize_project_root(root)
+    mem_dir = root / PROJECT_MEMORY_DIRNAME
+    mem_dir.mkdir(parents=True, exist_ok=True)
+    target = mem_dir / PROJECT_MEMORY_INDEX_FILENAME
+    content = json.dumps(body, ensure_ascii=True, indent=2) + "\n"
+    _write_text_atomic(target, content)
+    return target
+
+
+def refresh_project_memory_index(root: Path) -> dict[str, Any]:
+    root = normalize_project_root(root)
+    body = generate_project_memory_index(root)
+    target = write_project_memory_index(root, body)
+    return {
+        "path": str(root),
+        "file": str(target),
+        "entries": len(body.get("files") or []),
+    }
+
+
+def _project_memory_index_needs_refresh(path: Path, *, max_age_seconds: int = 6 * 60 * 60) -> bool:
+    """True when ``project_memory/index.json`` is missing, stale, or malformed."""
+    if not path.is_file():
+        return True
+    try:
+        age = max(0.0, datetime.now().timestamp() - path.stat().st_mtime)
+    except OSError:
+        return True
+    if age > max_age_seconds:
+        return True
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return True
+    if not isinstance(data, dict):
+        return True
+    if int(data.get("schema_version") or 0) != 1:
+        return True
+    if not isinstance(data.get("files"), list):
+        return True
+    if not isinstance(data.get("entrypoints"), list):
+        return True
+    return False
 
 
 def generate_repo_map_markdown(root: Path) -> str:
@@ -504,6 +640,7 @@ def refresh_repo_map(
     ensured: dict[str, Any] = {"created": [], "updated": []}
     if ensure_workspace:
         ensured = ensure_workspace_files(root, generate_repo_map_if_missing=False)
+    refresh_project_memory_index(root)
     body = generate_repo_map_markdown(root)
     write_repo_map(root, body)
     return {
@@ -547,8 +684,12 @@ def refresh_all_hermes_chat_repo_maps(
         row: dict[str, Any] = {
             "path": str(root),
             "created": ensured.get("created", []),
+            "project_memory_refreshed": False,
             "repo_map_refreshed": False,
         }
+        memory_info = refresh_project_memory_index(root)
+        row["project_memory_refreshed"] = True
+        row["project_memory_entries"] = int(memory_info.get("entries") or 0)
         if not missing_only:
             map_info = refresh_repo_map(root, ensure_workspace=False)
             row["repo_map_refreshed"] = True
@@ -619,7 +760,7 @@ def _project_policy_template(root: Path) -> str:
     for name in (AGENTS_MD_FILENAME, CLAUDE_MD_FILENAME, CURSOR_RULES_FILENAME):
         text = _read_text_if_file(root / name)
         if text and text.strip():
-            return text
+            return _ensure_compact_memory_policy(text)
     env_raw = (os.environ.get(HERMES_CHAT_POLICY_TEMPLATE_ENV) or "").strip()
     if env_raw:
         try:
@@ -627,13 +768,29 @@ def _project_policy_template(root: Path) -> str:
         except OSError:
             text = None
         if text and text.strip():
-            return text
+            return _ensure_compact_memory_policy(text)
     module_path = Path(__file__).resolve()
     for parent in module_path.parents:
         text = _read_text_if_file(parent / AGENTS_MD_FILENAME)
         if text and text.strip():
-            return text
-    return _DEFAULT_POLICY_TEMPLATE
+            return _ensure_compact_memory_policy(text)
+    return _ensure_compact_memory_policy(_DEFAULT_POLICY_TEMPLATE)
+
+
+def _ensure_compact_memory_policy(text: str) -> str:
+    src = text or ""
+    if _COMPACT_MEMORY_POLICY_SENTINEL in src:
+        return src
+    block = (
+        "\n\n"
+        f"{_COMPACT_MEMORY_POLICY_SENTINEL}\n"
+        "Compact project memory workflow:\n"
+        "- Read `project_memory/index.json` first for token-light navigation.\n"
+        "- Use `repo_map.md` as human-readable backup, not the primary full context payload.\n"
+        "- Do not load full `project_history.md` by default; only recent tail entries when needed.\n"
+        "- Keep `project_memory/index.json` current after structural changes.\n"
+    )
+    return src.rstrip() + block + "\n"
 
 
 def _sync_project_policy_files(
@@ -688,6 +845,19 @@ def ensure_workspace_files(
     if not knowledge.exists():
         knowledge.write_text(KNOWLEDGE_HEADER, encoding="utf-8")
         created.append(str(knowledge))
+    mem_dir = root / PROJECT_MEMORY_DIRNAME
+    if not mem_dir.exists():
+        mem_dir.mkdir(parents=True, exist_ok=True)
+        created.append(str(mem_dir))
+    memory_index = mem_dir / PROJECT_MEMORY_INDEX_FILENAME
+    if not memory_index.exists():
+        info = refresh_project_memory_index(root)
+        created.append(str(memory_index))
+        if info.get("entries", 0) == 0:
+            logger.debug("project memory index created empty for %s", root)
+    elif _project_memory_index_needs_refresh(memory_index):
+        refresh_project_memory_index(root)
+        updated.append(str(memory_index))
     _sync_project_policy_files(root, created=created, updated=updated)
     _maybe_install_setup_repo_and_agent_bootstrap_note(root, created)
     return {"path": str(root), "created": created, "updated": updated}

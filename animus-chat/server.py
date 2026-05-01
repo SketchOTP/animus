@@ -2,6 +2,7 @@
 ANIMUS chat server (Starlette)
 - Serves the static PWA frontend from ./app/
 - Proxies /api/chat       → Hermes API /v1/chat/completions (streaming SSE)
+- ``GET /api/hermes/session-prompt-status`` → Hermes ``GET /v1/chat/session-prompt-status`` (server-side gateway auth; ANIMUS preflight before omitting project system)
 - Proxies /api/models     → Hermes API /v1/models
 - /api/models              → UI model catalog (JSON array) + optional ``?gateway=1`` for raw gateway JSON
 - /api/fs/validate        → check a server path exists and is a directory
@@ -230,7 +231,7 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260430-projects-order-sync-v37"
+CHAT_SERVER_REV = "20260501-token-charts-collapsible-v59"
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
 # Filled in lifespan: GET /v1/models against HERMES_API with gateway_upstream_headers().
@@ -1572,6 +1573,22 @@ def _usage_counts_for_log(usage: dict) -> tuple[Optional[int], Optional[int]]:
     return inp_i, out_i
 
 
+def _infer_proxy_chat_provider_slug(model: str, user_agent: str) -> str:
+    """Best-effort bucket when ``POST /api/chat`` omits ``hermes_provider`` / ``provider``.
+
+    External tools (notably Cursor) often hit ANIMUS as an OpenAI-shaped proxy without
+    Hermes extensions. We still log real token usage; this maps common fingerprints to
+    a stable JSONL ``provider`` slug for the Tokens tab.
+    """
+    m = (model or "").strip().lower()
+    ua = (user_agent or "").strip().lower()
+    if "composer-" in m or m.startswith("composer"):
+        return "cursor-coding"
+    if "cursor" in ua:
+        return "cursor-coding"
+    return ""
+
+
 _ANIMUS_SKILLS_GUIDANCE = (
     "ANIMUS capability note: skill tools are available in this chat session. "
     "Reuse existing skills with skills_list/skill_view when relevant, and when a "
@@ -1626,13 +1643,16 @@ async def chat(req: Request) -> Response:
     if sid := req.headers.get("X-Hermes-Session-Id"):
         upstream_headers["X-Hermes-Session-Id"] = sid
 
+    client_ua = str(req.headers.get("user-agent") or "")
+
     _timeout = httpx.Timeout(connect=10, read=None, write=30, pool=5)
 
     async def stream():
-        from token_usage import record_token_usage
+        from token_usage import animus_client_from_request, record_token_usage
 
         dec = codecs.getincrementaldecoder("utf-8")("replace")
         acc_chunks: list[str] = []
+        animus_client_marker = animus_client_from_request(req)
 
         def _record_usage_from_sse(full_text: str) -> None:
             usage, stream_model = _sse_last_usage_and_model(full_text)
@@ -1647,7 +1667,17 @@ async def chat(req: Request) -> Response:
             inp_i, out_i = _usage_counts_for_log(usage)
             if inp_i is None and out_i is None:
                 return
-            record_token_usage(pr or "unknown", md or "unknown", inp_i, out_i, "chat", conv)
+            inferred = "" if animus_client_marker else _infer_proxy_chat_provider_slug(md, client_ua)
+            slug = (pr or inferred or "unknown").strip() or "unknown"
+            record_token_usage(
+                slug,
+                md or "unknown",
+                inp_i,
+                out_i,
+                "chat",
+                conv,
+                animus_client=animus_client_marker,
+            )
 
         try:
             async with httpx.AsyncClient(timeout=_timeout) as c:
@@ -1702,6 +1732,41 @@ async def chat(req: Request) -> Response:
         stream_headers["X-Hermes-Codex-Auto-Model"] = codex_auto_resolved_model
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers=stream_headers)
+
+
+async def hermes_session_prompt_status(req: Request) -> Response:
+    """GET — proxy Hermes session SQLite state for ANIMUS project-system omit preflight."""
+    sid = (req.query_params.get("session_id") or "").strip()
+    if not sid:
+        return JSONResponse({"has_stored_system_prompt": False, "session_known": False})
+    _timeout = httpx.Timeout(connect=10, read=30, write=10, pool=5)
+    try:
+        headers = gateway_upstream_headers(content_type_json=False)
+        headers["X-Hermes-Session-Id"] = sid
+        async with httpx.AsyncClient(timeout=_timeout) as c:
+            r = await c.get(
+                f"{HERMES_API.rstrip('/')}/v1/chat/session-prompt-status",
+                params={"session_id": sid},
+                headers=headers,
+                timeout=_timeout,
+            )
+        if r.status_code == 404:
+            return Response(status_code=404)
+        if r.status_code >= 400:
+            return JSONResponse(
+                {"has_stored_system_prompt": False, "session_known": False, "upstream_status": r.status_code},
+                status_code=502,
+            )
+        try:
+            data = r.json()
+        except Exception:
+            return JSONResponse({"has_stored_system_prompt": False, "session_known": False})
+        if not isinstance(data, dict):
+            return JSONResponse({"has_stored_system_prompt": False, "session_known": False})
+        return JSONResponse(data)
+    except Exception as exc:
+        log.warning("hermes session-prompt-status proxy failed: %s", exc)
+        return JSONResponse({"has_stored_system_prompt": False, "session_known": False}, status_code=502)
 
 
 # ─── Filesystem helpers ───────────────────────────────────────────────────────
@@ -3135,6 +3200,7 @@ app = Starlette(
         Route("/api/hermes/restart-cron",  restart_cron_daemon, methods=["POST"]),
         Route("/api/models",               models),
         Route("/api/models/refresh",       models_refresh, methods=["POST"]),
+        Route("/api/hermes/session-prompt-status", hermes_session_prompt_status, methods=["GET"]),
         Route("/api/chat",                 chat,         methods=["POST"]),
         Route("/api/chat/attachments/text", attachment_text_extract, methods=["POST"]),
         Route("/api/fs/validate",          fs_validate),

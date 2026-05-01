@@ -1681,3 +1681,363 @@ Files touched:
 Files touched:
 - /home/sketch/animus-site/releases/animus-v1.0.9.zip (sibling deploy)
 - project_history.md
+2125 300426 - animus-site: dedupe release history API + Redis compact on publish; require publish notes (≥24 chars); ANIMUS_RELEASE_NOTES required in publish-animus-manifest.sh; seller UI + README.
+Files touched:
+- /home/sketch/animus-site/lib_release.py
+- /home/sketch/animus-site/api/publish.py
+- /home/sketch/animus-site/api/history.py
+- /home/sketch/animus-site/js/release-admin.js
+- /home/sketch/animus-site/seller-publish.html
+- /home/sketch/animus-site/README.md
+- /home/sketch/animus/scripts/publish-animus-manifest.sh
+- /home/sketch/animus/scripts/release-and-publish.sh
+- /home/sketch/animus/project_status.md
+- /home/sketch/animus/project_knowledge.md
+- /home/sketch/animus/project_history.md
+- seller-private/README.md
+2128 300426 - Deployed animus-site to Vercel Production; aliased animusai.vercel.app; verified GET /api/history (Redis dedupe live). Redis compact POST skipped (no seller-private/ADMIN_TOKEN on host).
+Files touched:
+- project_history.md
+- project_status.md
+- project_knowledge.md
+2132 043026 — Chat: Was this the idea behoind the memory/map system that was supposed to cut down token use signiigatly? → You’re not missing anything — your read is correct. What you described **was intended** to reduce tokens, but it only wo (hermes-chat)
+2139 300426 - Auto-refresh project_memory index for existing projects during ensure pass, and added regression test for stale/invalid index repair.
+Files touched:
+- hermes-agent/agent/project_workspace.py
+- hermes-agent/tests/agent/test_project_workspace.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+2139 043026 — Chat: yes and make sure thats applied to our automated system for new and exsisitng projects → Code and tests are in: existing projects now get automatic compact-index refresh during normal ensure runs, and I added (hermes-chat)
+
+2219 300426 - Plan tab: removed header Clear button and dead planDiscardOnNextPipelineEnd path (draft delete + listing delete + Stop); bumped sw.js animus-v36 and CHAT_SERVER_REV v38.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+2340 300426 - Token tracker: normalize_usage reads dict-shaped usage; Codex _tok_sum dict support; regression tests.
+
+Files touched:
+- hermes-agent/agent/usage_pricing.py
+- hermes-agent/run_agent.py
+- hermes-agent/tests/agent/test_usage_pricing.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+
+2228 300426 - Restarted user hermes-gateway.service so ANIMUS gateway on 127.0.0.1:8642 loads bundled hermes-agent (token usage dict fix).
+
+Files touched:
+- project_history.md
+
+2228 043026 — Chat: this is just a test just ack → Ack. (hermes-chat)
+0235 010526 - Token tracker: run_conversation always normalises usage; rough in/out estimates when provider omits or all-zero; restart hermes-gateway.
+
+Files touched:
+- hermes-agent/run_agent.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2235 043026 — Chat: this is jus a test. just ack → Ack. (hermes-chat)
+0315 010526 - Token rough fallback: marginal message-token snapshot per user turn + estimate_tokens_rough for output (fix inflated input sums).
+
+Files touched:
+- hermes-agent/run_agent.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2238 043026 — Chat: test → Ack. (hermes-chat)
+0345 010526 - Token tracker chart: calendar day buckets + sqrt bar heights + chart overflow; sw animus-v37; CHAT_SERVER_REV v39.
+
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_history.md
+
+
+2243 300426 - Tokens tab: dedupe chat in mergeServerTokenEntries (server JSONL vs local msg.usage); summary note on input = full prompt; sw animus-v38; CHAT_SERVER_REV v40.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+2246 043026 — Chat: test → Ack. (hermes-chat)
+
+2246 300426 - Tokens chart: stretch chart columns so bar stack % heights resolve (fix invisible bars); sw animus-v39; CHAT_SERVER_REV v41.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_knowledge.md
+- project_status.md
+- project_history.md
+- repo_map.md
+
+2249 300426 - Token rough fallback: first LLM-call input cap 16k -> 262144 (subscription Codex later turns vs real first turn).
+Files touched:
+- hermes-agent/run_agent.py
+- project_knowledge.md
+- project_status.md
+- project_history.md
+
+2256 300426 - Chat: per-conv Hermes session (ensureHermesSessionIds, conversation_id body); api_server derive + bogus header strip; slimmer project buildMessages; token summary + Codex usage fields; sw v40 CHAT_SERVER_REV v42.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- hermes-agent/gateway/platforms/api_server.py
+- project_knowledge.md
+- project_status.md
+- project_history.md
+- repo_map.md
+
+2259 300426 - Project chat: persist merged ephemeral system in session DB (run_agent); ANIMUS buildMessages omits duplicate project system after hermes_project_session_primed; sw v41 CHAT_SERVER_REV v43.
+Files touched:
+- hermes-agent/run_agent.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_knowledge.md
+- project_status.md
+- project_history.md
+- repo_map.md
+
+0634 010526 - Tokens chart: pixel-height bars, linear-gradient in/out split, fixed column width + day labels; tab chart min-height 180px; sw v42 CHAT_SERVER_REV v44.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_knowledge.md
+- project_status.md
+- project_history.md
+- repo_map.md
+1245 010526 - Chat: gateway hermes.session SSE + headers for stored system_prompt; ANIMUS buildMessages omits project block only when hermes_has_stored_system_prompt; SSE event parser + session_id reset clears flags; CHAT_SERVER_REV + sw cache bump.
+Files touched:
+- hermes-agent/gateway/platforms/api_server.py
+- animus-chat/app/index.html
+- animus-chat/server.py
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- project_history.md
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+
+2200 300426 - Tokens tab: current month day bars (color cycle), yearly chart, full log API (?full=1), Records CSV; sw v44 + CHAT_SERVER_REV v46.
+Files touched:
+- animus-chat/token_usage.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1530 010526 - Hermes project session priming E2E: artifact artifacts/hermes_project_session_priming_e2e.md; gateway tests for hermes.session SSE + headers (test_api_server); .e2e-venv gitignore; repo_map + status + knowledge updates.
+Files touched:
+- artifacts/hermes_project_session_priming_e2e.md
+- hermes-agent/tests/gateway/test_api_server.py
+- hermes-agent/.gitignore
+- animus-chat/repo_map.md
+- repo_map.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+
+2235 300426 - Tokens: recent server log in collapsible details (default closed, open state resets by local day via sessionStorage); Records CSV appends server_recent_snapshot from serverRecentFull; sw v45 + rev v47.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2310 300426 - Tokens header: summary only; daily chart sqrt scale cap 3M; all-time monthly chart + yearly below; sw v46 + rev v48.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2345 300426 - Tokens breakdown: Day/Week/Month/Year total columns for provider, model, source; sw v47 + rev v49.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+2355 300426 - Tokens: local 12h server log + time context line; CSV ts_local_12h + local date + # metadata; single nowMs for period math; sw v48 rev v50.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1615 010526 - Session priming stale-state fix: GET /v1/chat/session-prompt-status + ANIMUS preflight proxy; buildMessages binds hermes_stored_prompt_confirmed_session_id; reconcile before send; TestChatSessionPromptStatus; CHAT_SERVER_REV v51 sw v49; artifact updated PARTIAL.
+Files touched:
+- hermes-agent/gateway/platforms/api_server.py
+- hermes-agent/tests/gateway/test_api_server.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- artifacts/hermes_project_session_priming_e2e.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+- animus-chat/repo_map.md
+
+1645 010526 - Hermes session priming artifact: added live E2E proof checklist (§1–§2), PASS gate, status table; project_status priority #3 for operator capture.
+Files touched:
+- artifacts/hermes_project_session_priming_e2e.md
+- project_status.md
+- project_history.md
+
+0045 010526 - Re-applied Tokens tab UI: server log details/summary flex+chevron inside box; chart blocks + spread bars + surface3 track; sw v50 + CHAT_SERVER_REV v52 (prior layout commit lost).
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_history.md
+
+0715 050126 — Chat: Say the ANIMUS project workspace path in one line. → `/home/sketch/animus/hermes-agent` (hermes-chat)
+0716 050126 — Chat: What is the exact project name string from the project block (not the folder leaf)? Reply one phrase → home-sketch-animus (hermes-chat)
+0115 010526 - Tokens: displayProviderLabel maps JSONL provider slug unknown to human-readable note; sw v51 + CHAT_SERVER_REV v53.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_history.md
+
+0718 050126 — Chat: Say the ANIMUS project workspace path in one line. → `/home/sketch/animus/` (hermes-chat)
+0718 050126 — Chat: What is the exact project name string from the project block (not the folder leaf)? Reply one phrase → animus (hermes-chat)
+0720 050126 — Chat: After a DB reset, acknowledge in one word: RESEND → RESEND (hermes-chat)
+0721 050126 — Chat: After a DB reset, acknowledge in one word: RESEND → RESEND (hermes-chat)
+0723 050126 — Chat: After a DB reset, acknowledge in one word: RESEND → RESEND (hermes-chat)
+0724 050126 — Chat: After a DB reset, acknowledge in one word: RESEND → RESEND (hermes-chat)
+
+0727 010526 - Hermes project session priming: live-stack E2E evidence pasted in artifacts/hermes_project_session_priming_e2e.md §2 (PASS); project_status priority #3 cleared; project_knowledge gateway/SQLite path note.
+Files touched:
+- artifacts/hermes_project_session_priming_e2e.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+0731 010526 - Inferred cursor-coding token bucket for /api/chat without hermes_provider (composer model + Cursor UA); Tokens UI label; user guide; v54 rev + sw v52.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- docs/animus-user-guide.md
+- project_status.md
+- project_knowledge.md
+- animus-chat/repo_map.md
+- project_history.md
+0735 010526 - PWA X-Animus-Client web marker + token_usage animus_client field; Cursor inference only without marker; CSV + server log tag.
+Files touched:
+- animus-chat/token_usage.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- docs/animus-user-guide.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+0739 010526 - Expanded animus_client slugs (chat/plan/skills/wizard/help/cron/prompt-optimizer/web); server stamps help+cron+optimizer; CSV/log tags; wizard token source.
+Files touched:
+- animus-chat/token_usage.py
+- animus-chat/server.py
+- animus-chat/cron_routes.py
+- animus-chat/help_routes.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/repo_map.md
+- docs/animus-user-guide.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+0912 300426 - Added unittest suite for allowlisted animus_client token JSONL (tokens/record, help, cron, prompt-optimizer).
+Files touched:
+- animus-chat/tests/__init__.py
+- animus-chat/tests/test_token_usage_animus_client.py
+- animus-chat/repo_map.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+- repo_map.md
+
+0945 300426 - Recorded animus_client verification scope: PASS server-side contract; out of scope chat SSE / CSV / UI E2E.
+Files touched:
+- project_status.md
+- project_knowledge.md
+- project_history.md
+0801 010526 - Documented Token Tracker end-to-end in artifacts/token_tracker_tab_explained.md; extended token usage unittest (GET full=1 + static CSV/UI checks).
+Files touched:
+- artifacts/token_tracker_tab_explained.md
+- animus-chat/tests/test_token_usage_animus_client.py
+- project_history.md
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+0817 010526 - Tokens tab: ANIMUS client breakdown (aggregateAnimusClientTotals + renderAnimusClientBreakdown), source tab labeled logging; sw animus-v55; CHAT_SERVER_REV v57; tests + artifact doc.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/tests/test_token_usage_animus_client.py
+- animus-chat/repo_map.md
+- artifacts/token_tracker_tab_explained.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+0824 010526 - Token tracker artifact: aligned PASS/PARTIAL framing + optional browser E2E checklist (§10); project_knowledge browser E2E note.
+Files touched:
+- artifacts/token_tracker_tab_explained.md
+- project_knowledge.md
+- project_history.md
+0832 010526 - Tokens tab: auto-refresh renderTokenUsageModal every 10 min while tab active and visible; sw animus-v56; CHAT_SERVER_REV v58.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/tests/test_token_usage_animus_client.py
+- animus-chat/repo_map.md
+- artifacts/token_tracker_tab_explained.md
+- project_knowledge.md
+- project_status.md
+- project_history.md
+0834 010526 - Tokens tab: collapsible chart sections (details/summary); This month + By year default collapsed, All months default open; chart reflow on expand; sw animus-v57; CHAT_SERVER_REV v59.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- animus-chat/tests/test_token_usage_animus_client.py
+- animus-chat/repo_map.md
+- artifacts/token_tracker_tab_explained.md
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+- project_history.md
+0836 050126 — Chat: test → Ack. (hermes-chat)
+0836 050126 — Chat: test2 → Ack. (hermes-chat)

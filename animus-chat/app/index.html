@@ -369,7 +369,6 @@
       padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.15)}
     .plan-tab-title{font-size:18px;font-weight:700;letter-spacing:-.02em;color:var(--text);line-height:1.2}
     .plan-tab-sub{font-size:12px;color:var(--muted2);line-height:1.45;margin-top:4px;max-width:52ch}
-    .plan-tab-clear{flex-shrink:0;border-radius:10px;font-size:12px;font-weight:600;padding:8px 14px;min-height:40px}
     .plan-draft-banner{display:none;margin:12px 16px 0;padding:0;border:none;background:transparent}
     .plan-draft-banner.visible{display:block}
     .plan-draft-banner-inner{display:flex;flex-direction:column;gap:12px;padding:14px 16px;border-radius:var(--r);
@@ -700,19 +699,36 @@
 
     /* Token usage modal */
     .token-modal{max-width:720px}
-    .token-usage-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .token-usage-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:2px}
     .token-usage-actions{display:flex;gap:8px;flex-wrap:wrap}
     .token-usage-summary{font-size:13px;color:var(--muted);line-height:1.45}
     .token-usage-legend{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--muted2)}
     .token-usage-dot{width:10px;height:10px;border-radius:999px;display:inline-block}
     .token-usage-dot.input{background:#3b82f6}
     .token-usage-dot.output{background:#22c55e}
-    .token-usage-chart{display:flex;align-items:flex-end;gap:6px;height:200px;margin-top:14px}
-    .token-bar{flex:1;min-width:6px;display:flex;align-items:flex-end}
-    .token-bar-stack{width:100%;display:flex;flex-direction:column;justify-content:flex-end;border-radius:6px;overflow:hidden}
+    /* Fixed-width day columns + pixel bar heights; avoids nested-% flex collapse in tabs. */
+    .token-usage-chart{display:flex;align-items:stretch;gap:5px;height:200px;min-height:180px;margin-top:0;padding:6px 4px 4px;overflow-x:auto;overflow-y:visible;flex-wrap:nowrap;border-radius:8px;background:var(--surface3)}
+    .token-usage-chart--spread{justify-content:center}
+    .token-usage-chart--spread .token-bar{flex:1 1 44px;width:auto;min-width:44px;max-width:140px}
+    .token-bar{flex:0 0 26px;width:26px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-height:0;box-sizing:border-box}
+    .token-bar-stack{width:100%;border-radius:6px;overflow:hidden;box-sizing:border-box;flex-shrink:0;min-width:4px}
+    .token-bar-label{font-size:9px;line-height:1.15;color:var(--muted2);margin-top:5px;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .token-bar-input{background:#3b82f6}
     .token-bar-output{background:#22c55e}
-    .token-usage-list{margin-top:16px;border-top:1px solid var(--border);padding-top:12px;font-size:13px;color:var(--muted2)}
+    .token-usage-chart-block{margin-top:12px;padding:12px 12px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+    .token-usage-chart-block:first-of-type{margin-top:6px}
+    .token-usage-chart-block .token-usage-chart-caption{margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--muted)}
+    .token-usage-chart-block .token-usage-chart{margin-top:0}
+    .token-usage-chart-details{margin-top:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);overflow:hidden}
+    .token-usage-chart-details:first-of-type{margin-top:6px}
+    .token-usage-chart-summary{display:flex;align-items:center;gap:10px;margin:0;padding:12px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);user-select:none;list-style:none}
+    .token-usage-chart-summary::-webkit-details-marker{display:none}
+    .token-usage-chart-summary::marker{content:'';font-size:0}
+    .token-usage-chart-summary::before{content:'';flex-shrink:0;width:0;height:0;border-style:solid;border-width:5px 0 5px 7px;border-color:transparent transparent transparent var(--muted2);transition:transform .15s ease}
+    .token-usage-chart-details[open] .token-usage-chart-summary::before{transform:rotate(90deg)}
+    .token-usage-chart-details-body{padding:4px 12px 12px;border-top:1px solid var(--border);background:var(--surface2)}
+    .token-usage-chart-details-body .token-usage-chart{margin-top:0}
+    .token-usage-list{margin-top:14px;border-top:1px solid var(--border);padding-top:12px;font-size:13px;color:var(--muted2)}
     .token-usage-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
     .token-usage-row span:last-child{color:var(--text)}
     .token-usage-empty{font-size:13px;color:var(--muted);line-height:1.45}
@@ -721,6 +737,24 @@
     .token-usage-section-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
     .token-usage-table{border-top:1px solid var(--border);padding-top:10px;font-size:12px;color:var(--muted2)}
     .token-usage-table .token-usage-row{font-size:12px}
+    .token-usage-period-head,.token-usage-period-row{display:grid;grid-template-columns:minmax(72px,1.1fr) repeat(4,minmax(56px,1fr));gap:6px 8px;align-items:center;padding:5px 0;font-size:11px;line-height:1.2}
+    .token-usage-period-head{color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:2px}
+    .token-usage-period-head span:nth-child(n+2),.token-usage-period-num{text-align:right;font-variant-numeric:tabular-nums}
+    .token-usage-period-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-weight:500}
+    .token-usage-period-row{border-bottom:1px solid var(--border);color:var(--muted2)}
+    .token-usage-period-row:last-child{border-bottom:none}
+    #tab-tokens .token-usage-table{overflow-x:auto;-webkit-overflow-scrolling:touch;min-width:0}
+    #tab-tokens .token-usage-period-head,#tab-tokens .token-usage-period-row{min-width:min(100%,340px)}
+    .token-usage-period-num{color:var(--text)}
+    .token-usage-client-block{margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+    .token-usage-client-head,.token-usage-client-row{display:grid;grid-template-columns:minmax(108px,1.35fr) repeat(5,minmax(48px,0.95fr));gap:6px 8px;align-items:center;padding:5px 0;font-size:11px;line-height:1.2}
+    .token-usage-client-head{color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:2px}
+    .token-usage-client-head span:nth-child(n+2),.token-usage-client-num{text-align:right;font-variant-numeric:tabular-nums}
+    .token-usage-client-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-weight:500}
+    .token-usage-client-row{border-bottom:1px solid var(--border);color:var(--muted2)}
+    .token-usage-client-row:last-child{border-bottom:none}
+    .token-usage-client-num{color:var(--text)}
+    #tab-tokens .token-usage-client-head,#tab-tokens .token-usage-client-row{min-width:min(100%,380px)}
     .help-guide-modal{max-width:min(960px,98vw);max-height:94dvh}
     .help-center-shell{display:flex;flex-direction:column;flex:1;min-height:0;gap:0;padding-top:4px}
     .help-center-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 12px 0;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -909,7 +943,17 @@
     .messaging-plat-settings-inner{overflow:hidden;min-height:0}
     #tab-tokens.token-tab-panel{padding:8px 10px 12px;overflow-y:auto;min-width:0;flex:1}
     #tab-tokens .token-usage-header{margin-top:0}
-    #tab-tokens .token-usage-chart{height:160px}
+    #tab-tokens .token-usage-chart{height:196px;min-height:172px}
+    #tab-tokens .token-usage-chart-year,
+    #tab-tokens .token-usage-chart-allmonths{height:136px;min-height:118px}
+    .token-usage-chart-caption{font-size:11px;font-weight:600;color:var(--muted);margin-top:6px}
+    .token-server-log-details{margin-top:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);overflow:hidden}
+    .token-server-log-summary{display:flex;align-items:center;gap:10px;margin:0;padding:12px 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);user-select:none;list-style:none}
+    .token-server-log-summary::-webkit-details-marker{display:none}
+    .token-server-log-summary::marker{content:'';font-size:0}
+    .token-server-log-summary::before{content:'';flex-shrink:0;width:0;height:0;border-style:solid;border-width:5px 0 5px 7px;border-color:transparent transparent transparent var(--muted2);transition:transform .15s ease}
+    .token-server-log-details[open] .token-server-log-summary::before{transform:rotate(90deg)}
+    .token-server-log-body{padding:8px 14px 14px;border-top:1px solid var(--border);background:var(--surface3)}
     #tab-help.tab-panel{flex:1;min-height:0;overflow:hidden}
     #tab-help .help-tab-root{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:6px 8px 8px}
     #tab-help .help-center-shell{flex:1;min-height:0;padding-top:2px}
@@ -1304,7 +1348,6 @@
           <h2 class="plan-tab-title">Plan</h2>
           <p class="plan-tab-sub">Multi-agent pipeline from idea to handoff. Runs only while this tab is open.</p>
         </div>
-        <button type="button" class="btn btn-ghost plan-tab-clear" id="planClearBtn" title="Clear idea, output, and draft">Clear</button>
       </header>
       <div id="planDraftBanner" class="plan-draft-banner" role="status">
         <div class="plan-draft-banner-inner">
@@ -1367,23 +1410,43 @@
       <div class="token-usage-header">
         <div>
           <div id="tokenUsageSummary" class="token-usage-summary"></div>
-          <div class="token-usage-legend" style="margin-top:4px">
-            <span><span class="token-usage-dot input"></span> Input</span>
-            <span><span class="token-usage-dot output"></span> Output</span>
-          </div>
+          <div id="tokenUsageTimeContext" class="token-usage-empty" style="font-size:11px;margin-top:5px;color:var(--muted);line-height:1.4"></div>
         </div>
         <div class="token-usage-actions">
           <button type="button" class="btn btn-ghost" id="tokenUsageRefreshBtn">Refresh</button>
-          <button type="button" class="btn btn-ghost" id="tokenUsageExportBtn">Export CSV</button>
+          <button type="button" class="btn btn-ghost" id="tokenUsageRecordsBtn" title="Download all token usage rows as CSV">Records</button>
         </div>
       </div>
-      <div id="tokenUsageChart" class="token-usage-chart"></div>
+      <details class="token-usage-chart-details" id="tokenUsageChartDetailsThisMonth">
+        <summary class="token-usage-chart-summary">This month (by day)</summary>
+        <div class="token-usage-chart-details-body">
+          <div id="tokenUsageMonthChart" class="token-usage-chart token-usage-chart-month"></div>
+        </div>
+      </details>
+      <details class="token-usage-chart-details" id="tokenUsageChartDetailsAllMonths" open>
+        <summary class="token-usage-chart-summary">By calendar month (all-time)</summary>
+        <div class="token-usage-chart-details-body">
+          <div id="tokenUsageAllMonthsChart" class="token-usage-chart token-usage-chart-allmonths"></div>
+        </div>
+      </details>
+      <details class="token-usage-chart-details" id="tokenUsageChartDetailsYear">
+        <summary class="token-usage-chart-summary">By calendar year (all-time)</summary>
+        <div class="token-usage-chart-details-body">
+          <div id="tokenUsageYearChart" class="token-usage-chart token-usage-chart-year"></div>
+        </div>
+      </details>
       <div id="tokenUsageList" class="token-usage-list"></div>
+      <div id="tokenUsageAnimusClientBlock" class="token-usage-client-block">
+        <div class="token-usage-section-title">ANIMUS client (product surface)</div>
+        <p id="tokenUsageAnimusClientHint" class="token-usage-empty" style="font-size:11px;margin:4px 0 8px;color:var(--muted);line-height:1.45"></p>
+        <div id="tokenUsageAnimusClientList" class="token-usage-table token-usage-table--client" aria-label="Token usage by ANIMUS client slug"></div>
+      </div>
       <div class="token-usage-view-tabs" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
         <button type="button" class="btn btn-ghost token-usage-tab-btn active" data-toktab="provider">By provider</button>
         <button type="button" class="btn btn-ghost token-usage-tab-btn" data-toktab="model">By model</button>
-        <button type="button" class="btn btn-ghost token-usage-tab-btn" data-toktab="source">By source</button>
+        <button type="button" class="btn btn-ghost token-usage-tab-btn" data-toktab="source">By source (logging)</button>
       </div>
+      <div id="tokenUsageBreakdownPeriodHint" class="token-usage-empty" style="font-size:11px;margin-top:6px;color:var(--muted)"></div>
       <div class="token-usage-breakdowns" style="margin-top:8px">
         <div id="tokenUsagePanelProvider" class="tok-tab-panel">
           <div class="token-usage-section-title">By provider</div>
@@ -1394,7 +1457,10 @@
           <div id="tokenUsageModelList" class="token-usage-table"></div>
         </div>
         <div id="tokenUsagePanelSource" class="tok-tab-panel" style="display:none">
-          <div class="token-usage-section-title">By source</div>
+          <div class="token-usage-section-title">By source (logging)</div>
+          <p id="tokenUsageSourceAxisHint" class="token-usage-empty" style="font-size:11px;margin:-2px 0 8px;color:var(--muted);line-height:1.45">
+            JSONL <code>source</code> / <code>source_id</code> — technical route (e.g. chat, help, cron). For which ANIMUS tab or flow, use <strong>ANIMUS client</strong> above.
+          </p>
           <div id="tokenUsageSourceList" class="token-usage-table"></div>
         </div>
       </div>
@@ -2290,6 +2356,21 @@
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const API_CHAT  = '/api/chat';
+/** PWA marker: ``X-Animus-Client`` slug must match ``token_usage.ANIMUS_CLIENT_SLUGS`` on the server. */
+const ANIMUS_CLIENT_HEADER = 'X-Animus-Client';
+function animusClientFetchHeaders(base, slug) {
+  const h = Object.assign({}, base || {});
+  h[ANIMUS_CLIENT_HEADER] = String(slug || 'web').trim().toLowerCase();
+  return h;
+}
+
+function animusClientSlugFromTokenMeta(meta) {
+  const src = String((meta && meta.source) || '').trim().toLowerCase();
+  if (src === 'plan') return 'plan';
+  if (src === 'skill') return 'skills';
+  if (src === 'wizard') return 'wizard';
+  return 'chat';
+}
 const MODEL     = 'hermes-agent';
 const CONVS_KEY = 'hermes_convs_v2';
 const ACTIVE_KEY= 'hermes_active_v2';
@@ -2412,6 +2493,14 @@ marked.setOptions({ gfm: true, breaks: true });
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let convs         = JSON.parse(localStorage.getItem(CONVS_KEY)  || '[]');
+if (ensureHermesSessionIds(convs)) {
+  localStorage.setItem(CONVS_KEY, JSON.stringify(convs));
+  queueMicrotask(() => {
+    try {
+      _scheduleServerSync();
+    } catch (_) {}
+  });
+}
 let projects      = JSON.parse(localStorage.getItem(PROJS_KEY)  || '[]');
 let settings      = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
 let activeId      = localStorage.getItem(ACTIVE_KEY) || null;
@@ -2444,6 +2533,24 @@ const uid     = () => crypto.randomUUID ? crypto.randomUUID()
       const r = Math.random() * 16 | 0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
     });
 const trunc   = (s, n=42) => s.replace(/\s+/g,' ').trim().slice(0,n) + (s.length>n?'…':'');
+
+/** Every chat must carry a unique ``session_id`` for ``X-Hermes-Session-Id``; legacy data omitted it and unrelated threads could share a gateway session. */
+function ensureHermesSessionIds(list) {
+  if (!Array.isArray(list)) return false;
+  let changed = false;
+  for (const c of list) {
+    if (!c || typeof c !== 'object') continue;
+    const s = c.session_id;
+    if (typeof s !== 'string' || !String(s).trim() || String(s).trim().toLowerCase() === 'undefined') {
+      c.session_id = uid();
+      delete c.hermes_has_stored_system_prompt;
+      delete c.hermes_stored_prompt_confirmed_session_id;
+      delete c.hermes_project_session_primed;
+      changed = true;
+    }
+  }
+  return changed;
+}
 
 const ATTACH_TEXT_EXT = /\.(txt|md|mdx|csv|json|yaml|yml|xml|html?|py|js|mjs|cjs|ts|tsx|jsx|css|scss|less|vue|c|h|cpp|hpp|cc|go|rs|java|kt|swift|rb|php|sql|r|sh|bash|zsh|fish|ps1|bat|ini|toml|cfg|conf|properties|dockerfile|gitignore|env|log|graphql|svelte|astro)$/i;
 
@@ -3098,7 +3205,9 @@ const save = () => {
 function applyServerConversationsList(serverConvs) {
   if (!Array.isArray(serverConvs)) return false;
   convs = serverConvs;
+  const patched = ensureHermesSessionIds(convs);
   localStorage.setItem(CONVS_KEY, JSON.stringify(convs));
+  if (patched) _scheduleServerSync();
   if (activeId && !convs.find((c) => c.id === activeId)) activeId = convs[0]?.id ?? null;
   if (activeId) localStorage.setItem(ACTIVE_KEY, activeId);
   else localStorage.removeItem(ACTIVE_KEY);
@@ -5041,6 +5150,27 @@ async function showRunFinishedNotification(title, body) {
   }
 }
 
+// ─── Token usage tab auto-refresh (10 min while tab active, tab visible) ─────
+let _tokenUsageAutoRefreshTimer = null;
+const TOKEN_USAGE_AUTO_REFRESH_MS = 10 * 60 * 1000;
+
+function stopTokenUsageAutoRefresh() {
+  if (_tokenUsageAutoRefreshTimer) {
+    clearInterval(_tokenUsageAutoRefreshTimer);
+    _tokenUsageAutoRefreshTimer = null;
+  }
+}
+
+function startTokenUsageAutoRefresh() {
+  stopTokenUsageAutoRefresh();
+  _tokenUsageAutoRefreshTimer = setInterval(() => {
+    const panel = $('tab-tokens');
+    if (!panel || !panel.classList.contains('active')) return;
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    void renderTokenUsageModal();
+  }, TOKEN_USAGE_AUTO_REFRESH_MS);
+}
+
 // ─── Tab switching ────────────────────────────────────────────────────────────
 let _lastSidebarTabKey = 'chats';
 document.querySelectorAll('.stab').forEach(btn => {
@@ -5052,6 +5182,7 @@ document.querySelectorAll('.stab').forEach(btn => {
     btn.classList.add('active');
     $('tab-' + nextTab).classList.add('active');
     _lastSidebarTabKey = nextTab;
+    if (prevTab === 'tokens' && nextTab !== 'tokens') stopTokenUsageAutoRefresh();
     if (prevTab === 'help' && nextTab !== 'help') resetHelpGuideTabState();
     if (btn.dataset.tab === 'skills') loadSkills();
     if (btn.dataset.tab === 'cron') {
@@ -5065,6 +5196,7 @@ document.querySelectorAll('.stab').forEach(btn => {
     if (btn.dataset.tab === 'tokens') {
       setTokenUsageTab('provider');
       void renderTokenUsageModal();
+      startTokenUsageAutoRefresh();
     }
     if (btn.dataset.tab === 'help') {
       wireHelpCenterTabsOnce();
@@ -5309,8 +5441,6 @@ function planTouchClarifyDraft() {
 
 let planAbortController = null;
 let planStopRequested = false;
-/** When true, next AbortError from the pipeline skips draft checkpoint and full UI reset runs. */
-let planDiscardOnNextPipelineEnd = false;
 /** Full cold-start doc (markdown + JSON state) after last successful run; used for save. */
 let planLastFullDoc = '';
 let planLastState = null;
@@ -5573,7 +5703,7 @@ async function planHermesChat(messages) {
   const ctrl = planAbortController;
   const resp = await fetch(API_CHAT, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: animusClientFetchHeaders({ 'Content-Type': 'application/json' }, 'plan'),
     body: JSON.stringify(body),
     signal: ctrl ? ctrl.signal : undefined,
   });
@@ -6314,27 +6444,22 @@ async function runPlanPipeline(opts) {
       planLastState = null;
     }
     if (e && e.name === 'AbortError') {
-      if (planDiscardOnNextPipelineEnd) {
-        planDiscardOnNextPipelineEnd = false;
-        planResetUiFresh();
-      } else {
-        stEl.textContent = 'Stopped. Draft preserved — open Plan and tap ▶ on the saved row to continue.';
-        const cur = planReadDraft();
-        const midWait = cur && (cur.clarifyAwaiting || cur.gapClarifyAwaiting);
-        if (!midWait) {
-          planSaveDraftProgress({
-            next: lastSavedNext,
-            state: planDeepClone(state),
-            phaseHint: 'stopped',
-            clarifyAwaiting: false,
-            clarifyPrompt: '',
-            gapClarifyAwaiting: false,
-            gapClarifyPrompt: '',
-            gapLoop: cur && typeof cur.gapLoop === 'number' ? cur.gapLoop : 0,
-            clarifyRound: cur && typeof cur.clarifyRound === 'number' ? cur.clarifyRound : undefined,
-            control: cur && cur.control ? planDeepClone(cur.control) : undefined,
-          });
-        }
+      stEl.textContent = 'Stopped. Draft preserved — open Plan and tap ▶ on the saved row to continue.';
+      const cur = planReadDraft();
+      const midWait = cur && (cur.clarifyAwaiting || cur.gapClarifyAwaiting);
+      if (!midWait) {
+        planSaveDraftProgress({
+          next: lastSavedNext,
+          state: planDeepClone(state),
+          phaseHint: 'stopped',
+          clarifyAwaiting: false,
+          clarifyPrompt: '',
+          gapClarifyAwaiting: false,
+          gapClarifyPrompt: '',
+          gapLoop: cur && typeof cur.gapLoop === 'number' ? cur.gapLoop : 0,
+          clarifyRound: cur && typeof cur.clarifyRound === 'number' ? cur.clarifyRound : undefined,
+          control: cur && cur.control ? planDeepClone(cur.control) : undefined,
+        });
       }
     } else {
       stEl.textContent = 'Error: ' + (e && e.message ? e.message : String(e));
@@ -6502,28 +6627,6 @@ function wirePlanTab() {
   if (bootBtn && !bootBtn.dataset.wired) {
     bootBtn.dataset.wired = '1';
     bootBtn.addEventListener('click', () => void planBootstrapApprove());
-  }
-  const clearBtn = $('planClearBtn');
-  if (clearBtn && !clearBtn.dataset.wired) {
-    clearBtn.dataset.wired = '1';
-    clearBtn.addEventListener('click', () => {
-      const runBtn = $('planRunBtn');
-      const busy = runBtn && runBtn.disabled;
-      if (busy) {
-        if (
-          !confirm(
-            'Stop the running pipeline and discard this plan (including any saved draft checkpoint)?'
-          )
-        ) {
-          return;
-        }
-        planDiscardOnNextPipelineEnd = true;
-        requestPlanPipelineStop();
-        return;
-      }
-      if (!confirm('Clear the idea, output, and saved plan draft in this browser?')) return;
-      planResetUiFresh();
-    });
   }
 }
 wirePlanTab();
@@ -6908,6 +7011,14 @@ function startOfLocalDay(ms) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
+/** Local calendar midnight ``n`` days before the local calendar day of ``fromMs``. */
+function startOfLocalDayMinusCalendarDays(fromMs, n) {
+  const t = startOfLocalDay(fromMs);
+  const d = new Date(t);
+  d.setDate(d.getDate() - n);
+  return startOfLocalDay(d.getTime());
+}
+
 function formatTokenCount(n) {
   const num = Number(n || 0);
   if (!Number.isFinite(num)) return '0';
@@ -6918,15 +7029,75 @@ function formatTokenTriplet(prompt, completion, total) {
   return `${formatTokenCount(total)} total · ${formatTokenCount(prompt)} in · ${formatTokenCount(completion)} out`;
 }
 
+/** IANA time zone from the browser (e.g. America/Chicago). */
+function tokenUsageResolvedTimeZoneId() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+/** Format epoch ms in the user’s local zone, 12-hour clock. */
+function formatTokenUsageLocal12h(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return new Date(n).toLocaleString(undefined, {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  });
+}
+
+function formatTokenUsageTimeZoneOffsetForInstant(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n)) return '';
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'longOffset' }).formatToParts(new Date(n));
+    return parts.find((p) => p.type === 'timeZoneName')?.value || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+/** Calendar YYYY-MM-DD in the browser’s local time zone for an instant. */
+function formatTokenUsageLocalDateYMD(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n)) return '';
+  const d = new Date(n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** One line: resolved zone + offset (for “now”) + refresh instant in 12h local. */
+function buildTokenUsageTimeContextLine(nowMs) {
+  const t = Number(nowMs);
+  const now = Number.isFinite(t) && t > 0 ? t : Date.now();
+  const tzId = tokenUsageResolvedTimeZoneId();
+  const off = formatTokenUsageTimeZoneOffsetForInstant(now);
+  const parts = [];
+  if (tzId) parts.push(`Time zone: ${tzId}`);
+  if (off) parts.push(off);
+  const head = parts.length ? `${parts.join(' · ')}.` : '';
+  const tail = `Refreshed ${formatTokenUsageLocal12h(now)}`;
+  return head ? `${head} ${tail}` : tail;
+}
+
 function displayProviderLabel(provider) {
   const key = String(provider || '').trim();
   if (!key) return 'Unknown provider';
+  if (key.toLowerCase() === 'unknown') return 'Provider not reported';
+  if (key.toLowerCase() === 'cursor-coding') return 'Cursor coding';
   return (CHAT_BACKEND_PRESETS[key] && CHAT_BACKEND_PRESETS[key].label) || key;
 }
 
 function normalizeUsageTokens(usage) {
-  const prompt = Number(usage?.prompt_tokens || 0);
-  const completion = Number(usage?.completion_tokens || 0);
+  const prompt = Number(usage?.prompt_tokens ?? usage?.input_tokens ?? 0);
+  const completion = Number(usage?.completion_tokens ?? usage?.output_tokens ?? 0);
   const totalRaw = Number(usage?.total_tokens);
   const total = Number.isFinite(totalRaw) ? totalRaw : prompt + completion;
   return { prompt, completion, total };
@@ -6958,7 +7129,7 @@ function recordTokenUsageManualIfPresent(usage, meta) {
   const sid = (meta && meta.source_id != null) ? String(meta.source_id) : '';
   void fetch('/api/tokens/record', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: animusClientFetchHeaders({ 'Content-Type': 'application/json' }, animusClientSlugFromTokenMeta(meta)),
     body: JSON.stringify({
       provider: String(be.hermes_provider || 'unknown').trim() || 'unknown',
       model: String(model || 'unknown').trim() || 'unknown',
@@ -6970,10 +7141,11 @@ function recordTokenUsageManualIfPresent(usage, meta) {
   }).catch(() => {});
 }
 
-function collectTokenUsageEntries(days = 30) {
-  const today = startOfLocalDay(Date.now());
-  const start = today - (days - 1) * 86400000;
+/** All chat messages with usage in loaded conversations (no rolling window). */
+function collectTokenUsageEntriesAll() {
   const entries = [];
+  const today = startOfLocalDay(Date.now());
+  let start = today;
   for (const conv of convs || []) {
     for (const msg of (conv.messages || [])) {
       const usage = msg && msg.usage;
@@ -6982,10 +7154,11 @@ function collectTokenUsageEntries(days = 30) {
       const ts = new Date(rawTs).getTime();
       if (!Number.isFinite(ts) || ts <= 0) continue;
       const day = startOfLocalDay(ts);
-      if (day < start || day > today) continue;
+      if (day < start) start = day;
       const tokens = normalizeUsageTokens(usage);
       entries.push({
         day,
+        record_ts: ts,
         prompt: tokens.prompt,
         completion: tokens.completion,
         total: tokens.total,
@@ -6999,47 +7172,40 @@ function collectTokenUsageEntries(days = 30) {
   return { entries, start, today };
 }
 
-function collectTokenUsageByDay(days = 30, entries = null, start = null) {
-  if (!entries || start == null) {
-    const meta = collectTokenUsageEntries(days);
-    entries = meta.entries;
-    start = meta.start;
-  }
-  const buckets = new Map();
-  for (const entry of entries) {
-    const prev = buckets.get(entry.day) || { prompt: 0, completion: 0, total: 0 };
-    prev.prompt += entry.prompt;
-    prev.completion += entry.completion;
-    prev.total += entry.total;
-    buckets.set(entry.day, prev);
-  }
-  const out = [];
-  for (let i = 0; i < days; i++) {
-    const day = start + i * 86400000;
-    const row = buckets.get(day) || { prompt: 0, completion: 0, total: 0 };
-    out.push({
-      day,
-      label: new Date(day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      prompt: row.prompt,
-      completion: row.completion,
-      total: row.total,
-    });
-  }
-  return out;
+/** Local calendar anchors: today, rolling 7 days, current month, current year. */
+function tokenUsageBreakdownPeriodBounds(nowMs) {
+  const raw = nowMs != null ? Number(nowMs) : Date.now();
+  const now = Number.isFinite(raw) && raw > 0 ? raw : Date.now();
+  const today = startOfLocalDay(now);
+  const weekStart = startOfLocalDayMinusCalendarDays(now, 6);
+  const d = new Date(today);
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const monthStart = startOfLocalDay(new Date(y, m, 1).getTime());
+  const lastDom = new Date(y, m + 1, 0).getDate();
+  const monthEnd = startOfLocalDay(new Date(y, m, lastDom).getTime());
+  const yearStart = startOfLocalDay(new Date(y, 0, 1).getTime());
+  const yearEnd = startOfLocalDay(new Date(y, 11, 31).getTime());
+  return { today, weekStart, monthStart, monthEnd, yearStart, yearEnd };
 }
 
-function collectTokenUsageBreakdown(entries, labelForEntry) {
+function collectTokenUsageBreakdownByPeriods(entries, labelForEntry, nowMs) {
+  const { today, weekStart, monthStart, monthEnd, yearStart, yearEnd } = tokenUsageBreakdownPeriodBounds(nowMs);
   const buckets = new Map();
   for (const entry of entries) {
     const label = labelForEntry(entry) || 'Unknown';
-    const prev = buckets.get(label) || { label, prompt: 0, completion: 0, total: 0, count: 0 };
-    prev.prompt += entry.prompt;
-    prev.completion += entry.completion;
-    prev.total += entry.total;
+    const day = startOfLocalDay(entry.day);
+    const t = Number(entry.total || 0) || 0;
+    const prev = buckets.get(label) || { label, day: 0, week: 0, month: 0, year: 0, all: 0, count: 0 };
+    prev.all += t;
     prev.count += 1;
+    if (day === today) prev.day += t;
+    if (day >= weekStart && day <= today) prev.week += t;
+    if (day >= monthStart && day <= monthEnd) prev.month += t;
+    if (day >= yearStart && day <= yearEnd) prev.year += t;
     buckets.set(label, prev);
   }
-  return Array.from(buckets.values()).sort((a, b) => (b.total || 0) - (a.total || 0));
+  return Array.from(buckets.values()).sort((a, b) => (b.all || 0) - (a.all || 0));
 }
 
 function renderTokenUsageBreakdown(listEl, rows, emptyText) {
@@ -7049,28 +7215,32 @@ function renderTokenUsageBreakdown(listEl, rows, emptyText) {
     listEl.innerHTML = `<div class="token-usage-empty">${emptyText}</div>`;
     return;
   }
+  const head = document.createElement('div');
+  head.className = 'token-usage-period-head';
+  head.innerHTML =
+    '<span>Name</span>' +
+    '<span title="Current local calendar day">Day</span>' +
+    '<span title="Last 7 local days including today">Week</span>' +
+    '<span title="Current local calendar month">Month</span>' +
+    '<span title="Current local calendar year">Year</span>';
+  listEl.appendChild(head);
   for (const row of rows) {
     const el = document.createElement('div');
-    el.className = 'token-usage-row';
-    el.innerHTML = `<span>${esc(row.label)}</span><span>${formatTokenTriplet(row.prompt, row.completion, row.total)}</span>`;
+    el.className = 'token-usage-period-row';
+    el.innerHTML =
+      `<span class="token-usage-period-label" title="${esc(row.label)}">${esc(row.label)}</span>` +
+      `<span class="token-usage-period-num">${formatTokenCount(row.day)}</span>` +
+      `<span class="token-usage-period-num">${formatTokenCount(row.week)}</span>` +
+      `<span class="token-usage-period-num">${formatTokenCount(row.month)}</span>` +
+      `<span class="token-usage-period-num">${formatTokenCount(row.year)}</span>`;
     listEl.appendChild(el);
   }
 }
 
-function collectTokenUsageData(days = 30) {
-  const meta = collectTokenUsageEntries(days);
-  return {
-    days: collectTokenUsageByDay(days, meta.entries, meta.start),
-    entries: meta.entries,
-    start: meta.start,
-    today: meta.today,
-  };
-}
-
-async function mergeServerTokenEntries(days, baseEntries, start, today) {
+async function mergeServerTokenEntriesFull(baseEntries) {
   const extra = [];
   try {
-    const r = await fetch(`/api/tokens/usage?days=${days}&source=all`, { cache: 'no-store' });
+    const r = await fetch('/api/tokens/usage?full=1&source=all', { cache: 'no-store' });
     if (!r.ok) {
       return {
         entries: baseEntries,
@@ -7078,6 +7248,7 @@ async function mergeServerTokenEntries(days, baseEntries, start, today) {
         serverMergedCount: 0,
         serverTokenSum: 0,
         serverRecent: [],
+        serverRecentFull: [],
         hermesAnalytics: null,
       };
     }
@@ -7090,13 +7261,13 @@ async function mergeServerTokenEntries(days, baseEntries, start, today) {
       if (String(rec.ts || '').endsWith('Z')) ts = Date.parse(String(rec.ts));
       if (!Number.isFinite(ts)) continue;
       const day = startOfLocalDay(ts);
-      if (day < start || day > today) continue;
       const pi = Number(rec.input_tokens ?? 0) || 0;
       const po = Number(rec.output_tokens ?? 0) || 0;
       serverTokenSum += pi + po;
       serverRecent.push({ ...rec, _day: day, _ts: ts });
       extra.push({
         day,
+        record_ts: ts,
         prompt: pi,
         completion: po,
         total: pi + po,
@@ -7104,19 +7275,181 @@ async function mergeServerTokenEntries(days, baseEntries, start, today) {
         model: String(rec.model || '').trim(),
         source: String(rec.source || 'other').trim() || 'other',
         source_id: String(rec.source_id || '').trim(),
+        animus_client: String(rec.animus_client || '').trim(),
       });
     }
     serverRecent.sort((a, b) => (Number(b._ts) || 0) - (Number(a._ts) || 0));
+    const serverRecentFull = serverRecent.slice();
+    const hasServerChat = extra.some((e) => String(e.source || '').trim() === 'chat');
+    const mergedEntries = hasServerChat
+      ? extra.concat(baseEntries.filter((e) => String(e.source || 'chat').trim() !== 'chat'))
+      : baseEntries.concat(extra);
     return {
-      entries: baseEntries.concat(extra),
+      entries: mergedEntries,
       serverRawCount: recs.length,
       serverMergedCount: extra.length,
       serverTokenSum,
       serverRecent: serverRecent.slice(0, 20),
+      serverRecentFull,
       hermesAnalytics: j.hermes_analytics && typeof j.hermes_analytics === 'object' ? j.hermes_analytics : null,
     };
   } catch (_) {}
-  return { entries: baseEntries, serverRawCount: 0, serverMergedCount: 0, serverTokenSum: 0, serverRecent: [], hermesAnalytics: null };
+  return {
+    entries: baseEntries,
+    serverRawCount: 0,
+    serverMergedCount: 0,
+    serverTokenSum: 0,
+    serverRecent: [],
+    serverRecentFull: [],
+    hermesAnalytics: null,
+  };
+}
+
+const TOKEN_BAR_PALETTE = ['#3b82f6', '#22c55e', '#a855f7'];
+
+function currentMonthDayBounds(nowMs) {
+  const raw = nowMs != null ? Number(nowMs) : Date.now();
+  const anchor = Number.isFinite(raw) && raw > 0 ? raw : Date.now();
+  const now = new Date(anchor);
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const start = startOfLocalDay(new Date(y, m, 1).getTime());
+  const lastDom = new Date(y, m + 1, 0).getDate();
+  const end = startOfLocalDay(new Date(y, m, lastDom).getTime());
+  return { start, end, year: y, monthIndex: m, lastDom };
+}
+
+function aggregateMonthDaySeries(entries, nowMs) {
+  const { start, end, lastDom } = currentMonthDayBounds(nowMs);
+  const buckets = new Map();
+  for (const entry of entries) {
+    const dk = startOfLocalDay(entry.day);
+    if (dk < start || dk > end) continue;
+    const prev = buckets.get(dk) || { prompt: 0, completion: 0, total: 0 };
+    prev.prompt += entry.prompt;
+    prev.completion += entry.completion;
+    prev.total += entry.total;
+    buckets.set(dk, prev);
+  }
+  const series = [];
+  for (let dom = 1; dom <= lastDom; dom++) {
+    const t = startOfLocalDay(new Date(new Date(start).getFullYear(), new Date(start).getMonth(), dom).getTime());
+    const row = buckets.get(t) || { prompt: 0, completion: 0, total: 0 };
+    const label = new Date(t).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: '2-digit' });
+    series.push({
+      day: t,
+      label,
+      prompt: row.prompt,
+      completion: row.completion,
+      total: row.total,
+      color: TOKEN_BAR_PALETTE[(dom - 1) % 3],
+    });
+  }
+  return series;
+}
+
+function aggregateAllCalendarMonthsSeries(entries) {
+  const buckets = new Map();
+  for (const entry of entries) {
+    const d = new Date(startOfLocalDay(entry.day));
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const monthStart = startOfLocalDay(new Date(y, m, 1).getTime());
+    const prev = buckets.get(monthStart) || { prompt: 0, completion: 0, total: 0 };
+    prev.prompt += entry.prompt;
+    prev.completion += entry.completion;
+    prev.total += entry.total;
+    buckets.set(monthStart, prev);
+  }
+  const keys = Array.from(buckets.keys()).sort((a, b) => a - b);
+  return keys.map((monthStart, idx) => {
+    const row = buckets.get(monthStart);
+    const label = new Date(monthStart).toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+    return {
+      day: monthStart,
+      label,
+      prompt: row.prompt,
+      completion: row.completion,
+      total: row.total,
+      color: TOKEN_BAR_PALETTE[idx % 3],
+    };
+  });
+}
+
+function aggregateYearTotalsSeries(entries) {
+  const buckets = new Map();
+  for (const entry of entries) {
+    const y = new Date(startOfLocalDay(entry.day)).getFullYear();
+    const prev = buckets.get(y) || { prompt: 0, completion: 0, total: 0 };
+    prev.prompt += entry.prompt;
+    prev.completion += entry.completion;
+    prev.total += entry.total;
+    buckets.set(y, prev);
+  }
+  const years = Array.from(buckets.keys()).sort((a, b) => a - b);
+  return years.map((y, idx) => {
+    const row = buckets.get(y);
+    return {
+      day: startOfLocalDay(new Date(y, 0, 1).getTime()),
+      label: String(y),
+      prompt: row.prompt,
+      completion: row.completion,
+      total: row.total,
+      color: TOKEN_BAR_PALETTE[idx % 3],
+    };
+  });
+}
+
+/** Max token count used as the sqrt scale ceiling for the “this month by day” chart (taller days cap here). */
+const TOKEN_DAILY_CHART_SCALE_CAP = 3000000;
+
+function tokenChartInnerHeightFallback(chartEl) {
+  if (chartEl.classList.contains('token-usage-chart-year') || chartEl.classList.contains('token-usage-chart-allmonths')) {
+    return 100;
+  }
+  return 180;
+}
+
+function renderSolidTokenBarChart(chartEl, series, opts) {
+  if (!chartEl) return;
+  chartEl.innerHTML = '';
+  chartEl.classList.toggle('token-usage-chart--spread', Boolean(series && series.length > 0 && series.length <= 20));
+  if (!series.length) {
+    chartEl.innerHTML = '<div class="token-usage-empty">No data.</div>';
+    return;
+  }
+  const o = opts && typeof opts === 'object' ? opts : {};
+  const capTok = o.sqrtScaleCapTokens;
+  const capSqrt = capTok != null && Number.isFinite(capTok) && capTok > 0 ? Math.sqrt(capTok) : null;
+  const sqrtVals = series.map((d) => Math.sqrt(Math.max(0, d.total || 0)));
+  const dataMaxSqrt = Math.max(1e-9, ...sqrtVals);
+  const maxSqrt = capSqrt != null ? Math.min(dataMaxSqrt, capSqrt) : dataMaxSqrt;
+  let chartInnerH = chartEl.clientHeight;
+  if (!Number.isFinite(chartInnerH) || chartInnerH < 48) {
+    chartInnerH = tokenChartInnerHeightFallback(chartEl);
+  }
+  for (const day of series) {
+    const col = document.createElement('div');
+    col.className = 'token-bar';
+    const stack = document.createElement('div');
+    stack.className = 'token-bar-stack';
+    const s = Math.sqrt(Math.max(0, day.total || 0));
+    const pct = Math.max(0, Math.min(100, Math.round((s / maxSqrt) * 100)));
+    const total = day.total || 0;
+    const stackPx = Math.max(total > 0 ? 8 : 5, Math.round((pct / 100) * chartInnerH));
+    stack.style.height = `${stackPx}px`;
+    stack.style.background = day.color || TOKEN_BAR_PALETTE[0];
+    stack.style.opacity = total > 0 ? '1' : '0.32';
+    const tip = `${day.label}: ${formatTokenCount(total)} total (${formatTokenCount(day.prompt)} in, ${formatTokenCount(day.completion)} out)`;
+    stack.title = tip;
+    const lab = document.createElement('div');
+    lab.className = 'token-bar-label';
+    lab.textContent = day.label;
+    lab.title = tip;
+    col.appendChild(stack);
+    col.appendChild(lab);
+    chartEl.appendChild(col);
+  }
 }
 
 function sourceLabelForTokenEntry(e) {
@@ -7126,7 +7459,75 @@ function sourceLabelForTokenEntry(e) {
   if (s === 'plan') return 'Plan';
   if (s === 'skill') return 'Skills';
   if (s === 'wizard') return 'Wizard';
+  if (s === 'help') return 'Help';
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Must match ``token_usage.ANIMUS_CLIENT_SLUGS`` order for stable UI rows (plus uncategorized). */
+const ANIMUS_CLIENT_SLUGS_ORDER = ['web', 'chat', 'plan', 'skills', 'wizard', 'help', 'cron', 'prompt-optimizer'];
+const ANIMUS_CLIENT_UNCATEGORIZED_KEY = '__uncategorized__';
+
+function animusClientBreakdownLabel(slug) {
+  if (slug === ANIMUS_CLIENT_UNCATEGORIZED_KEY) return 'Uncategorized / missing';
+  return String(slug || '');
+}
+
+function aggregateAnimusClientTotals(entries) {
+  const list = entries || [];
+  const grand = list.reduce((s, e) => s + (Number(e.total) || 0), 0);
+  const byKey = {};
+  for (const s of ANIMUS_CLIENT_SLUGS_ORDER) {
+    byKey[s] = { slug: s, input: 0, output: 0, total: 0, rows: 0 };
+  }
+  byKey[ANIMUS_CLIENT_UNCATEGORIZED_KEY] = {
+    slug: ANIMUS_CLIENT_UNCATEGORIZED_KEY,
+    input: 0,
+    output: 0,
+    total: 0,
+    rows: 0,
+  };
+  for (const e of list) {
+    const raw = String(e.animus_client || '').trim().toLowerCase();
+    const key = ANIMUS_CLIENT_SLUGS_ORDER.includes(raw) ? raw : ANIMUS_CLIENT_UNCATEGORIZED_KEY;
+    const b = byKey[key];
+    b.input += Number(e.prompt) || 0;
+    b.output += Number(e.completion) || 0;
+    b.total += Number(e.total) || 0;
+    b.rows += 1;
+  }
+  const rows = ANIMUS_CLIENT_SLUGS_ORDER.map((s) => byKey[s]).concat([byKey[ANIMUS_CLIENT_UNCATEGORIZED_KEY]]);
+  return { grand, rows };
+}
+
+function renderAnimusClientBreakdown(listEl, hintEl, entries) {
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  if (hintEl) {
+    hintEl.innerHTML =
+      'Groups merged usage by <strong>animus_client</strong> (allowlisted <code>X-Animus-Client</code> or server stamp). ' +
+      '<strong>Uncategorized / missing</strong> = no <code>animus_client</code> on the row (legacy chat, external clients, or local-only <code>msg.usage</code>). ' +
+      'Percent = share of all merged token total (input+output).';
+  }
+  const { grand, rows } = aggregateAnimusClientTotals(entries);
+  const head = document.createElement('div');
+  head.className = 'token-usage-client-head';
+  head.innerHTML =
+    '<span>Client</span><span>In</span><span>Out</span><span>Total</span><span>Rows</span><span>% of total</span>';
+  listEl.appendChild(head);
+  for (const r of rows) {
+    const pct = grand > 0 ? ((100 * r.total) / grand).toFixed(1) : '0.0';
+    const lab = animusClientBreakdownLabel(r.slug);
+    const div = document.createElement('div');
+    div.className = 'token-usage-client-row';
+    div.innerHTML =
+      `<span class="token-usage-client-label" title="${esc(lab)}">${esc(lab)}</span>` +
+      `<span class="token-usage-client-num">${formatTokenCount(r.input)}</span>` +
+      `<span class="token-usage-client-num">${formatTokenCount(r.output)}</span>` +
+      `<span class="token-usage-client-num">${formatTokenCount(r.total)}</span>` +
+      `<span class="token-usage-client-num">${formatTokenCount(r.rows)}</span>` +
+      `<span class="token-usage-client-num">${esc(pct)}%</span>`;
+    listEl.appendChild(div);
+  }
 }
 
 function setTokenUsageTab(which) {
@@ -7143,116 +7544,134 @@ function setTokenUsageTab(which) {
 
 async function renderTokenUsageModal() {
   const summary = $('tokenUsageSummary');
-  const chart = $('tokenUsageChart');
+  const monthChart = $('tokenUsageMonthChart');
+  const allMonthsChart = $('tokenUsageAllMonthsChart');
+  const yearChart = $('tokenUsageYearChart');
   const list = $('tokenUsageList');
   const providerList = $('tokenUsageProviderList');
   const modelList = $('tokenUsageModelList');
   const sourceList = $('tokenUsageSourceList');
-  if (!summary || !chart || !list || !providerList || !modelList) return;
-  const meta = collectTokenUsageEntries(30);
-  const merged = await mergeServerTokenEntries(30, meta.entries, meta.start, meta.today);
+  const clientList = $('tokenUsageAnimusClientList');
+  const clientHint = $('tokenUsageAnimusClientHint');
+  if (!summary || !monthChart || !allMonthsChart || !yearChart || !list || !providerList || !modelList) return;
+  const nowMs = Date.now();
+  const meta = collectTokenUsageEntriesAll();
+  const merged = await mergeServerTokenEntriesFull(meta.entries);
   const entries = merged.entries;
   const serverMergedCount = merged.serverMergedCount || 0;
   const serverTokenSum = merged.serverTokenSum || 0;
   const serverRecent = merged.serverRecent || [];
-  const hermesA = merged.hermesAnalytics;
-  const days = collectTokenUsageByDay(30, entries, meta.start);
-  const totalPrompt = days.reduce((sum, d) => sum + d.prompt, 0);
-  const totalCompletion = days.reduce((sum, d) => sum + d.completion, 0);
-  const totalAll = days.reduce((sum, d) => sum + d.total, 0);
-  if (!totalAll) {
+  const timeCtx = $('tokenUsageTimeContext');
+  if (timeCtx) timeCtx.textContent = buildTokenUsageTimeContextLine(nowMs);
+  const monthSeries = aggregateMonthDaySeries(entries, nowMs);
+  const allMonthsSeries = aggregateAllCalendarMonthsSeries(entries);
+  const yearSeries = aggregateYearTotalsSeries(entries);
+  const monthTotal = monthSeries.reduce((sum, d) => sum + (d.total || 0), 0);
+  const monthPrompt = monthSeries.reduce((sum, d) => sum + (d.prompt || 0), 0);
+  const monthComp = monthSeries.reduce((sum, d) => sum + (d.completion || 0), 0);
+  const allTotal = entries.reduce((sum, e) => sum + (e.total || 0), 0);
+  const allPrompt = entries.reduce((sum, e) => sum + (e.prompt || 0), 0);
+  const allComp = entries.reduce((sum, e) => sum + (e.completion || 0), 0);
+  if (!allTotal) {
     if (serverMergedCount > 0 && serverTokenSum === 0) {
       summary.textContent =
-        `Last 30 days: ${serverMergedCount} usage row${serverMergedCount === 1 ? '' : 's'} in this view, all with 0 reported tokens ` +
+        `${serverMergedCount} usage row${serverMergedCount === 1 ? '' : 's'} on file, all with 0 reported tokens ` +
         '(the gateway recorded the turn but the model reported no billable usage). ' +
         'Longer replies or another provider usually produce non-zero counts.';
     } else {
-      summary.textContent = 'No token usage recorded yet. New messages will record provider usage when available.';
+      summary.textContent =
+        'No token usage recorded yet. New messages will record provider usage when available. ' +
+        'Charts show this month by day, all-time by month, and by year.';
     }
   } else {
     summary.textContent =
-      `Last 30 days: ${formatTokenCount(totalAll)} total ` +
-      `(${formatTokenCount(totalPrompt)} input, ${formatTokenCount(totalCompletion)} output).`;
+      `This month: ${formatTokenCount(monthTotal)} total (${formatTokenCount(monthPrompt)} in, ${formatTokenCount(monthComp)} out). ` +
+      `All-time: ${formatTokenCount(allTotal)} (${formatTokenCount(allPrompt)} in, ${formatTokenCount(allComp)} out).`;
   }
-  if (hermesA && hermesA.totals) {
-    const t = hermesA.totals;
-    const tin = Number(t.total_input || 0) || 0;
-    const tout = Number(t.total_output || 0) || 0;
-    if (tin + tout > 0) {
-      summary.textContent +=
-        ` · Hermes session DB: ${formatTokenCount(tin + tout)} (${formatTokenCount(tin)} in, ${formatTokenCount(tout)} out).`;
-    }
-  }
-  chart.innerHTML = '';
   list.innerHTML = '';
-  if (!days.some(d => d.total > 0)) {
-    chart.innerHTML = '<div class="token-usage-empty">No token usage data found for the last 30 days.</div>';
-    list.innerHTML = '';
-    if (serverRecent.length) {
-      const note = document.createElement('div');
-      note.className = 'token-usage-empty';
-      note.style.marginTop = '8px';
-      note.textContent = 'Recent server log (including 0-token rows):';
-      list.appendChild(note);
-      for (const rec of serverRecent) {
-        const row = document.createElement('div');
-        row.className = 'token-usage-row';
-        const ts = String(rec.ts || '').replace('T', ' ').replace('Z', ' UTC');
-        const pr = displayProviderLabel(String(rec.provider || ''));
-        const md = String(rec.model || '').trim() || '—';
-        const pi = Number(rec.input_tokens ?? 0) || 0;
-        const po = Number(rec.output_tokens ?? 0) || 0;
-        const src = sourceLabelForTokenEntry({ source: String(rec.source || '') });
-        row.innerHTML = `<span>${esc(ts)} · ${esc(src)} · ${esc(pr)} · ${esc(md)}</span><span>${formatTokenTriplet(pi, po, pi + po)}</span>`;
-        list.appendChild(row);
-      }
+  renderSolidTokenBarChart(monthChart, monthSeries, { sqrtScaleCapTokens: TOKEN_DAILY_CHART_SCALE_CAP });
+  if (!allMonthsSeries.length) {
+    allMonthsChart.innerHTML = '<div class="token-usage-empty">No monthly totals yet.</div>';
+  } else {
+    renderSolidTokenBarChart(allMonthsChart, allMonthsSeries);
+  }
+  if (!yearSeries.length) {
+    yearChart.innerHTML = '<div class="token-usage-empty">No yearly totals yet.</div>';
+  } else {
+    renderSolidTokenBarChart(yearChart, yearSeries);
+  }
+  if (!monthTotal && serverRecent.length) {
+    const details = document.createElement('details');
+    details.className = 'token-server-log-details';
+    const sum = document.createElement('summary');
+    sum.className = 'token-server-log-summary';
+    const tz = tokenUsageResolvedTimeZoneId();
+    sum.textContent = tz
+      ? `Recent server log (including 0-token rows) — ${tz}, 12-hour local times`
+      : 'Recent server log (including 0-token rows) — 12-hour local times';
+    details.appendChild(sum);
+    const body = document.createElement('div');
+    body.className = 'token-server-log-body';
+    for (const rec of serverRecent) {
+      const row = document.createElement('div');
+      row.className = 'token-usage-row';
+      const ts = formatTokenUsageLocal12h(rec._ts);
+      const pr = displayProviderLabel(String(rec.provider || ''));
+      const md = String(rec.model || '').trim() || '—';
+      const pi = Number(rec.input_tokens ?? 0) || 0;
+      const po = Number(rec.output_tokens ?? 0) || 0;
+      const src = sourceLabelForTokenEntry({ source: String(rec.source || '') });
+      const ac = String(rec.animus_client || '').trim();
+      const acTag = ac ? ` · ANIMUS:${esc(ac)}` : '';
+      row.innerHTML = `<span>${esc(ts)} · ${esc(src)} · ${esc(pr)} · ${esc(md)}${acTag}</span><span>${formatTokenTriplet(pi, po, pi + po)}</span>`;
+      body.appendChild(row);
     }
-    renderTokenUsageBreakdown(providerList, [], 'No provider usage recorded yet.');
-    renderTokenUsageBreakdown(modelList, [], 'No model usage recorded yet.');
-    if (sourceList) renderTokenUsageBreakdown(sourceList, [], 'No usage by source yet.');
-    return;
+    details.appendChild(body);
+    list.appendChild(details);
+    const todayKey = new Date().toLocaleDateString('en-CA');
+    try {
+      const openDay = sessionStorage.getItem('animus_token_server_log_open_day');
+      if (openDay === todayKey && sessionStorage.getItem('animus_token_server_log_open') === '1') {
+        details.open = true;
+      }
+      details.addEventListener('toggle', () => {
+        sessionStorage.setItem('animus_token_server_log_open_day', todayKey);
+        sessionStorage.setItem('animus_token_server_log_open', details.open ? '1' : '0');
+      });
+    } catch (_) {}
+  } else {
+    const rows = monthSeries.filter((d) => d.total > 0).sort((a, b) => (b.total || 0) - (a.total || 0)).slice(0, 10);
+    for (const day of rows) {
+      const row = document.createElement('div');
+      row.className = 'token-usage-row';
+      row.innerHTML = `<span>${day.label}</span><span>${formatTokenCount(day.total)} total</span>`;
+      list.appendChild(row);
+    }
+    if (!rows.length && allTotal > 0) {
+      const row = document.createElement('div');
+      row.className = 'token-usage-empty';
+      row.textContent = 'No usage in the current calendar month yet; see the year chart for prior totals.';
+      list.appendChild(row);
+    }
   }
-  const maxTotal = Math.max(1, ...days.map(d => d.total || 0));
-  for (const day of days) {
-    const col = document.createElement('div');
-    col.className = 'token-bar';
-    const stack = document.createElement('div');
-    stack.className = 'token-bar-stack';
-    const pct = Math.max(0, Math.min(100, Math.round((day.total / maxTotal) * 100)));
-    stack.style.height = pct + '%';
-    const out = document.createElement('div');
-    out.className = 'token-bar-output';
-    const inp = document.createElement('div');
-    inp.className = 'token-bar-input';
-    const total = day.total || 0;
-    const outPct = total ? Math.round((day.completion / total) * 100) : 0;
-    const inPct = total ? Math.max(0, 100 - outPct) : 0;
-    out.style.height = outPct + '%';
-    inp.style.height = inPct + '%';
-    stack.appendChild(out);
-    stack.appendChild(inp);
-    col.title = `${day.label}: ${formatTokenCount(day.total)} total (${formatTokenCount(day.prompt)} in, ${formatTokenCount(day.completion)} out)`;
-    col.appendChild(stack);
-    chart.appendChild(col);
-  }
-  const rows = days.slice().reverse().filter(d => d.total > 0).slice(0, 10);
-  for (const day of rows) {
-    const row = document.createElement('div');
-    row.className = 'token-usage-row';
-    row.innerHTML = `<span>${day.label}</span><span>${formatTokenCount(day.total)} total</span>`;
-    list.appendChild(row);
-  }
-
-  const providerRows = collectTokenUsageBreakdown(entries, (entry) => displayProviderLabel(entry.provider));
-  const modelRows = collectTokenUsageBreakdown(entries, (entry) => {
+  renderAnimusClientBreakdown(clientList, clientHint, entries);
+  const providerRows = collectTokenUsageBreakdownByPeriods(entries, (entry) => displayProviderLabel(entry.provider), nowMs);
+  const modelRows = collectTokenUsageBreakdownByPeriods(entries, (entry) => {
     const provider = displayProviderLabel(entry.provider);
     const model = entry.model ? entry.model : 'Unknown model';
     return `${provider} · ${model}`;
-  });
-  const sourceRows = collectTokenUsageBreakdown(entries, (entry) => sourceLabelForTokenEntry(entry));
+  }, nowMs);
+  const sourceRows = collectTokenUsageBreakdownByPeriods(entries, (entry) => sourceLabelForTokenEntry(entry), nowMs);
   renderTokenUsageBreakdown(providerList, providerRows, 'No provider usage recorded yet.');
   renderTokenUsageBreakdown(modelList, modelRows, 'No model usage recorded yet.');
   if (sourceList) renderTokenUsageBreakdown(sourceList, sourceRows, 'No usage by source yet.');
+  const periodHint = $('tokenUsageBreakdownPeriodHint');
+  if (periodHint) {
+    periodHint.textContent =
+      providerRows.length + modelRows.length + sourceRows.length > 0
+        ? 'Total tokens (input+output) per cell. Day = today · Week = last 7 local days · Month / Year = current local calendar period. Rows sorted by all-time total.'
+        : '';
+  }
 }
 
 function csvEscape(value) {
@@ -7263,133 +7682,91 @@ function csvEscape(value) {
   return raw;
 }
 
-function buildTokenUsageCsv(days = 30, dataOverride = null) {
-  const data = dataOverride || collectTokenUsageData(days);
+function buildFullTokenRecordsCsv(entries, serverRecentFull, reportMeta) {
+  const hdr =
+    'ts_iso,ts_local_12h,date_local,provider,model,input_tokens,output_tokens,total_tokens,source,source_id,animus_client';
+  const rm = reportMeta && typeof reportMeta === 'object' ? reportMeta : {};
+  const refMs = Number(rm.refreshedMs);
+  const refreshedAt = Number.isFinite(refMs) && refMs > 0 ? refMs : Date.now();
   const lines = [];
-  lines.push('date,provider,model,input_tokens,output_tokens,source,source_id');
-  for (const entry of data.entries) {
-    const date = new Date(entry.day).toISOString().slice(0, 10);
+  lines.push(`# refreshed_at_local,${csvEscape(formatTokenUsageLocal12h(refreshedAt))}`);
+  lines.push(`# time_zone,${csvEscape(tokenUsageResolvedTimeZoneId() || '')}`);
+  lines.push(hdr);
+  const sorted = [...entries].sort((a, b) => {
+    const ta = Number(a.record_ts) || startOfLocalDay(a.day);
+    const tb = Number(b.record_ts) || startOfLocalDay(b.day);
+    return ta - tb;
+  });
+  for (const entry of sorted) {
+    const dayMs = startOfLocalDay(entry.day);
+    const tsMs = Number(entry.record_ts);
+    const tsIso = Number.isFinite(tsMs) && tsMs > 0 ? new Date(tsMs).toISOString() : new Date(dayMs).toISOString();
+    const tsLocal = formatTokenUsageLocal12h(Number.isFinite(tsMs) && tsMs > 0 ? tsMs : dayMs);
+    const dateLocal = formatTokenUsageLocalDateYMD(dayMs);
+    const pi = Math.round(entry.prompt || 0);
+    const po = Math.round(entry.completion || 0);
+    const tot = Math.round(entry.total != null ? entry.total : pi + po);
     lines.push(
       [
-        date,
+        tsIso,
+        tsLocal,
+        dateLocal,
         displayProviderLabel(entry.provider),
         entry.model || 'Unknown model',
-        Math.round(entry.prompt || 0),
-        Math.round(entry.completion || 0),
+        pi,
+        po,
+        tot,
         entry.source || 'chat',
         entry.source_id || '',
+        entry.animus_client || '',
       ].map(csvEscape).join(','),
     );
   }
-  lines.push('');
-  lines.push('section,date,provider,model,prompt_tokens,completion_tokens,total_tokens,messages');
-  for (const day of data.days) {
-    const date = new Date(day.day).toISOString().slice(0, 10);
-    lines.push([
-      'daily_totals',
-      date,
-      '',
-      '',
-      Math.round(day.prompt || 0),
-      Math.round(day.completion || 0),
-      Math.round(day.total || 0),
-      '',
-    ].map(csvEscape).join(','));
-  }
-  const dailyBuckets = new Map();
-  for (const entry of data.entries) {
-    const date = new Date(entry.day).toISOString().slice(0, 10);
-    const provider = displayProviderLabel(entry.provider);
-    const model = entry.model ? entry.model : 'Unknown model';
-    const key = `${date}||${provider}||${model}`;
-    const prev = dailyBuckets.get(key) || {
-      date,
-      provider,
-      model,
-      prompt: 0,
-      completion: 0,
-      total: 0,
-      count: 0,
-    };
-    prev.prompt += entry.prompt;
-    prev.completion += entry.completion;
-    prev.total += entry.total;
-    prev.count += 1;
-    dailyBuckets.set(key, prev);
-  }
-  const dailyRows = Array.from(dailyBuckets.values()).sort((a, b) => {
-    const dateCmp = String(a.date).localeCompare(String(b.date));
-    if (dateCmp) return dateCmp;
-    const totalCmp = (b.total || 0) - (a.total || 0);
-    if (totalCmp) return totalCmp;
-    const providerCmp = String(a.provider).localeCompare(String(b.provider));
-    if (providerCmp) return providerCmp;
-    return String(a.model).localeCompare(String(b.model));
-  });
-  for (const row of dailyRows) {
-    lines.push([
-      'by_provider_model_daily',
-      row.date,
-      row.provider,
-      row.model,
-      Math.round(row.prompt || 0),
-      Math.round(row.completion || 0),
-      Math.round(row.total || 0),
-      row.count || 0,
-    ].map(csvEscape).join(','));
-  }
-  const providerRows = collectTokenUsageBreakdown(data.entries, (entry) => displayProviderLabel(entry.provider));
-  for (const row of providerRows) {
-    lines.push([
-      'by_provider',
-      '',
-      row.label,
-      '',
-      Math.round(row.prompt || 0),
-      Math.round(row.completion || 0),
-      Math.round(row.total || 0),
-      row.count || 0,
-    ].map(csvEscape).join(','));
-  }
-  const modelRows = collectTokenUsageBreakdown(data.entries, (entry) => {
-    const provider = displayProviderLabel(entry.provider);
-    const model = entry.model ? entry.model : 'Unknown model';
-    return `${provider} · ${model}`;
-  });
-  for (const row of modelRows) {
-    const parts = row.label.split(' · ');
-    const provider = parts.shift() || 'Unknown provider';
-    const model = parts.join(' · ') || 'Unknown model';
-    lines.push([
-      'by_model',
-      '',
-      provider,
-      model,
-      Math.round(row.prompt || 0),
-      Math.round(row.completion || 0),
-      Math.round(row.total || 0),
-      row.count || 0,
-    ].map(csvEscape).join(','));
+  const snap = Array.isArray(serverRecentFull) ? serverRecentFull : [];
+  if (snap.length) {
+    lines.push('');
+    lines.push(
+      '# server_recent_snapshot (rows from last /api/tokens/usage?full=1 response, newest first; may duplicate merged rows above)',
+    );
+    lines.push(hdr);
+    for (const rec of snap) {
+      const tsMs = Number(rec._ts);
+      const dayMs = startOfLocalDay(rec._day != null ? rec._day : tsMs);
+      const tsIso = Number.isFinite(tsMs) && tsMs > 0 ? new Date(tsMs).toISOString() : new Date(dayMs).toISOString();
+      const tsLocal = formatTokenUsageLocal12h(Number.isFinite(tsMs) && tsMs > 0 ? tsMs : dayMs);
+      const dateLocal = formatTokenUsageLocalDateYMD(dayMs);
+      const pi = Math.round(Number(rec.input_tokens ?? 0) || 0);
+      const po = Math.round(Number(rec.output_tokens ?? 0) || 0);
+      lines.push(
+        [
+          tsIso,
+          tsLocal,
+          dateLocal,
+          displayProviderLabel(String(rec.provider || '')),
+          String(rec.model || '').trim() || 'Unknown model',
+          pi,
+          po,
+          pi + po,
+          String(rec.source || 'other').trim() || 'other',
+          String(rec.source_id || '').trim(),
+          String(rec.animus_client || '').trim(),
+        ].map(csvEscape).join(','),
+      );
+    }
   }
   return lines.join('\n') + '\n';
 }
 
-async function downloadTokenUsageCsv() {
-  const meta = collectTokenUsageEntries(30);
-  const merged = await mergeServerTokenEntries(30, meta.entries, meta.start, meta.today);
-  const entries = merged.entries;
-  const data = {
-    days: collectTokenUsageByDay(30, entries, meta.start),
-    entries,
-    start: meta.start,
-    today: meta.today,
-  };
-  const csv = buildTokenUsageCsv(30, data);
+async function downloadFullTokenRecordsCsv() {
+  const exportMs = Date.now();
+  const meta = collectTokenUsageEntriesAll();
+  const merged = await mergeServerTokenEntriesFull(meta.entries);
+  const csv = buildFullTokenRecordsCsv(merged.entries, merged.serverRecentFull, { refreshedMs: exportMs });
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `token-usage-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `token-records-${new Date(exportMs).toLocaleDateString('en-CA')}.csv`;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {
@@ -8139,17 +8516,25 @@ const scrollBottom = () => { $msgs.scrollTop = $msgs.scrollHeight; };
 function buildMessages(conv) {
   const p = convProj(conv);
   if (!p) return conv.messages;
+  const msgs = conv.messages || [];
+  const hasAssistant = msgs.some((m) => m && m.role === 'assistant');
+  const sid = String(conv.session_id || '').trim();
+  /** Omit project block only when server confirmed stored prompt for **this** ``session_id`` (preflight + SSE + legacy infer). */
+  if (
+    hasAssistant
+    && conv.hermes_has_stored_system_prompt === true
+    && sid
+    && String(conv.hermes_stored_prompt_confirmed_session_id || '').trim() === sid
+  ) {
+    return msgs;
+  }
   const root = projectWorkspaceFilesPath(p) || p.path;
   const entry = (p.path || '').trim();
   const parts = [
-    `You are working on the project "${p.name}".`,
-    `Project folder (tools & files): ${root}`,
-    '',
-    `When performing file operations, reading code, or making edits, use ${root} as the working directory.`,
-    `When the user refers to "the project", "this codebase", or files without an absolute path, they mean files within ${root}.`,
+    `Project "${p.name}" · workspace: ${root} — use it as cwd for all file tools; unqualified paths mean files under this tree.`,
   ];
   if (entry && root !== entry) {
-    parts.push(`(ANIMUS project card path, if different: ${entry})`);
+    parts.push(`Project card path (may differ): ${entry}`);
   }
   if (p.overview && p.overview.trim()) {
     parts.push('', '## Project goal', p.overview.trim());
@@ -8170,7 +8555,86 @@ function buildMessages(conv) {
     if (key) bits.push(`Recorded identity file hint: ${key}`);
     parts.push(bits.join('\n'));
   }
-  return [{ role: 'system', content: parts.join('\n') }, ...conv.messages];
+  return [{ role: 'system', content: parts.join('\n') }, ...msgs];
+}
+
+function markHermesProjectSessionPrimed(conv) {
+  if (convProj(conv) && !conv.hermes_project_session_primed) conv.hermes_project_session_primed = true;
+}
+
+/** After an assistant message, sync local primed flag; infer stored prompt when gateway omits ``hermes.session`` (older builds). */
+function finalizeHermesProjectSessionState(conv) {
+  if (!convProj(conv)) return;
+  markHermesProjectSessionPrimed(conv);
+  const sid = String(conv.session_id || '').trim();
+  if (conv.hermes_has_stored_system_prompt === undefined) {
+    conv.hermes_has_stored_system_prompt = true;
+    if (sid) conv.hermes_stored_prompt_confirmed_session_id = sid;
+  }
+}
+
+function applyHermesSessionSseMeta(conv, dataLine) {
+  if (!conv || typeof dataLine !== 'string') return;
+  const d = dataLine.trim();
+  if (!d || d === '[DONE]') return;
+  try {
+    const o = JSON.parse(d);
+    if (!o || typeof o !== 'object') return;
+    const sid = String(conv.session_id || '').trim();
+    if (typeof o.hasStoredSystemPrompt === 'boolean') {
+      conv.hermes_has_stored_system_prompt = o.hasStoredSystemPrompt;
+      if (o.hasStoredSystemPrompt && sid) {
+        conv.hermes_stored_prompt_confirmed_session_id = sid;
+      } else {
+        delete conv.hermes_stored_prompt_confirmed_session_id;
+      }
+    }
+  } catch (_) { /* ignore */ }
+}
+
+/**
+ * Reconcile local omit flags with gateway SQLite before ``buildMessages``.
+ * 404/405 = legacy gateway without this route — leave local state unchanged.
+ */
+async function reconcileHermesStoredPromptFromServer(conv) {
+  if (!convProj(conv)) return false;
+  const msgs = conv.messages || [];
+  const hasAssistant = msgs.some((m) => m && m.role === 'assistant');
+  if (!hasAssistant) return false;
+  const sid = String(conv.session_id || '').trim();
+  if (!sid) return false;
+  const prevHas = conv.hermes_has_stored_system_prompt;
+  const prevSid = String(conv.hermes_stored_prompt_confirmed_session_id || '').trim();
+  try {
+    const url = '/api/hermes/session-prompt-status?session_id=' + encodeURIComponent(sid);
+    const r = await fetch(url, { method: 'GET', cache: 'no-store', headers: { 'X-Hermes-Session-Id': sid } });
+    if (r.status === 404 || r.status === 405) {
+      return false;
+    }
+    if (!r.ok) {
+      conv.hermes_has_stored_system_prompt = false;
+      delete conv.hermes_stored_prompt_confirmed_session_id;
+      return prevHas !== false || prevSid !== '';
+    }
+    const j = await r.json().catch(() => null);
+    if (!j || typeof j !== 'object') {
+      conv.hermes_has_stored_system_prompt = false;
+      delete conv.hermes_stored_prompt_confirmed_session_id;
+      return true;
+    }
+    if (j.has_stored_system_prompt === true && j.session_known === true) {
+      conv.hermes_has_stored_system_prompt = true;
+      conv.hermes_stored_prompt_confirmed_session_id = sid;
+    } else {
+      conv.hermes_has_stored_system_prompt = false;
+      delete conv.hermes_stored_prompt_confirmed_session_id;
+    }
+    return prevHas !== conv.hermes_has_stored_system_prompt || prevSid !== String(conv.hermes_stored_prompt_confirmed_session_id || '').trim();
+  } catch (_) {
+    conv.hermes_has_stored_system_prompt = false;
+    delete conv.hermes_stored_prompt_confirmed_session_id;
+    return true;
+  }
 }
 
 // ─── Reconnect banner ─────────────────────────────────────────────────────────
@@ -8257,12 +8721,15 @@ async function send(retryConvId, opts = {}) {
   let conversationReplyText = '';
 
   try {
+    if (ensureHermesSessionIds([conv])) save();
+    if (await reconcileHermesStoredPromptFromServer(conv)) save();
     const chatBody = {
       model: MODEL,
       messages: buildMessages(conv),
       stream: true,
       stream_options: { include_usage: true },
       animus_skill_mode: true,
+      conversation_id: String(conv.id || ''),
     };
     const proj = convProj(conv);
     if (proj) {
@@ -8278,7 +8745,13 @@ async function send(retryConvId, opts = {}) {
     requestedModel = chatBody.model || '';
     const resp = await fetch(API_CHAT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Hermes-Session-Id': conv.session_id },
+      headers: animusClientFetchHeaders(
+        {
+          'Content-Type': 'application/json',
+          'X-Hermes-Session-Id': String(conv.session_id || '').trim(),
+        },
+        'chat',
+      ),
       body: JSON.stringify(chatBody),
       signal: controller.signal,
     });
@@ -8296,6 +8769,7 @@ async function send(retryConvId, opts = {}) {
     const dec = new TextDecoder();
     let buf = '';
     let sseFatal = null;
+    let ssePendingEvent = '';
     const consumeSseDataLine = (line) => {
       const t = line.trimStart();
       if (!t.startsWith('data:')) return;
@@ -8315,17 +8789,40 @@ async function send(retryConvId, opts = {}) {
         if (delta) pushChunk(delta);
       } catch (_) { /* ignore malformed SSE JSON */ }
     };
+    const dispatchSseLine = (rawLine) => {
+      const line = typeof rawLine === 'string' ? rawLine : '';
+      if (!line.trim()) {
+        ssePendingEvent = '';
+        return;
+      }
+      const t = line.trimStart();
+      if (t.startsWith(':')) return;
+      if (t.toLowerCase().startsWith('event:')) {
+        ssePendingEvent = t.slice(6).trim();
+        return;
+      }
+      if (t.startsWith('data:')) {
+        const payload = t.slice(5).trimStart().trim();
+        if (ssePendingEvent === 'hermes.session') {
+          applyHermesSessionSseMeta(conv, payload);
+          ssePendingEvent = '';
+          return;
+        }
+        consumeSseDataLine(line);
+        ssePendingEvent = '';
+      }
+    };
     while (true) {
       const { done, value } = await reader.read(); if (done) break;
       buf += dec.decode(value, { stream: true });
       const lines = buf.split('\n'); buf = lines.pop();
       for (const line of lines) {
-        consumeSseDataLine(line);
+        dispatchSseLine(line);
       }
     }
     buf += dec.decode(new Uint8Array(), { stream: false });
     for (const line of buf.split('\n')) {
-      consumeSseDataLine(line);
+      dispatchSseLine(line);
     }
     if (!streamText.trim() && sseFatal) {
       pushChunk('**Could not complete reply.**\n\n' + sseFatal);
@@ -8354,6 +8851,7 @@ async function send(retryConvId, opts = {}) {
         ensureAssistantInferenceFooter(streamWrap, infLabel);
       }
       conv.messages.push(msg);
+      finalizeHermesProjectSessionState(conv);
       save();
       if (_isNotificationConv(conv)) syncNotifSectionUi();
       const p = convProj(conv);
@@ -8400,6 +8898,7 @@ async function send(retryConvId, opts = {}) {
           ensureAssistantInferenceFooter(streamWrap, infLabel);
         }
         conv.messages.push(msg);
+        finalizeHermesProjectSessionState(conv);
         save();
         if (_isNotificationConv(conv)) syncNotifSectionUi();
       }
@@ -8421,6 +8920,7 @@ async function send(retryConvId, opts = {}) {
           ensureAssistantInferenceFooter(streamWrap, infLabel);
         }
         conv.messages.push(msg);
+        finalizeHermesProjectSessionState(conv);
         save();
         if (_isNotificationConv(conv)) syncNotifSectionUi();
         renderMessages();
@@ -9428,8 +9928,26 @@ $('helpAskInput')?.addEventListener('keydown', (e) => {
   e.preventDefault();
   void submitHelpAsk();
 });
+
+/** Re-run token charts after expanding a ``<details>`` so bar widths measure with non-zero layout. */
+let _tokenChartReflowTimer = null;
+function scheduleTokenUsageChartReflow() {
+  if (_tokenChartReflowTimer) clearTimeout(_tokenChartReflowTimer);
+  _tokenChartReflowTimer = setTimeout(() => {
+    _tokenChartReflowTimer = null;
+    const panel = $('tab-tokens');
+    if (!panel || !panel.classList.contains('active')) return;
+    void renderTokenUsageModal();
+  }, 120);
+}
+document.querySelectorAll('#tab-tokens .token-usage-chart-details').forEach((el) => {
+  el.addEventListener('toggle', () => {
+    if (el.open) scheduleTokenUsageChartReflow();
+  });
+});
+
 $('tokenUsageRefreshBtn')?.addEventListener('click', () => void renderTokenUsageModal());
-$('tokenUsageExportBtn')?.addEventListener('click', () => void downloadTokenUsageCsv());
+$('tokenUsageRecordsBtn')?.addEventListener('click', () => void downloadFullTokenRecordsCsv());
 document.querySelectorAll('.token-usage-tab-btn').forEach((b) => {
   b.addEventListener('click', () => setTokenUsageTab(b.dataset.toktab || 'provider'));
 });
@@ -10922,7 +11440,7 @@ if (_cronPromptOptimizeBtn) {
       const project_name = cronProjectDisplayNameForScope(scopeId);
       const r = await fetch('/api/cron/optimize-prompt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: animusClientFetchHeaders({ 'Content-Type': 'application/json' }, 'prompt-optimizer'),
         body: JSON.stringify({
           prompt: raw,
           schedule_summary: schLine,
@@ -11131,7 +11649,7 @@ async function submitHelpAsk() {
   try {
     const r = await fetch('/api/help/ask', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: animusClientFetchHeaders({ 'Content-Type': 'application/json' }, 'help'),
       body: JSON.stringify(payload),
     });
     const j = await r.json().catch(() => ({}));
@@ -12000,7 +12518,7 @@ async function runWizardIfNeeded() {
             if (note) {
               note.textContent = j && j.ok === false ? String(j.error || 'Update failed').slice(0, 400) : (raw || 'Done.').slice(0, 400);
             }
-            if (j && j.ok !== false) recordTokenUsageManualIfPresent(j.usage, { source: 'skill', source_id: 'wizard-update-all' });
+            if (j && j.ok !== false) recordTokenUsageManualIfPresent(j.usage, { source: 'wizard', source_id: 'wizard-update-all' });
             if (!String(note && note.textContent).includes('0 ') && !raw.toLowerCase().includes('no ')) {
               /* keep list */
             }

@@ -182,7 +182,7 @@ ZIP="${ROOT}/animus-v${V}.zip"
 rm -f "${ZIP}"
 
 # Ship tree trims (v1.0 ≤55MB zip cap, no ANIMUS / core hermes runtime impact):
-# - hermes-agent/.venv: local dev virtualenv (distinct from venv/); never ship — blows zip past cap.
+# - hermes-agent/.venv / .e2e-venv: local dev / throwaway test virtualenvs; never ship — blows zip past cap.
 # - Ghost3D: optional GLB assets; PWA does not load them yet.
 # - hermes-agent/tests: pytest only; not imported at runtime.
 # - hermes-agent/website: docs site source; not used by `hermes` CLI or ANIMUS chat.
@@ -192,6 +192,7 @@ rm -f "${ZIP}"
 # - animus-update-server/: seller-only update manifest app; never ship to buyers.
 # - ./scripts/: repo-root dev/smoke checklists only (not hermes-agent/.../scripts/).
 # - seller-private/: seller-local tokens/notes; gitignored except README; never ship to buyers.
+# - artifacts/: internal verification / agent notes; not buyer runtime.
 # Internal monorepo continuity (not for buyers — clone the repo to develop ANIMUS):
 # - project_*.md, repo_map.md, AGENTS.md, CLAUDE.md, .cursorrules, .cursor/, setup_repo.md,
 #   animus-chat copies of repo_map / project_history / setup_repo; hermes-agent/AGENTS.md (upstream dev doc).
@@ -212,6 +213,7 @@ zip -qr "${ZIP}" . \
   -x"./animus-chat/whoami" \
   -x"./hermes-agent/venv/*" \
   -x"./hermes-agent/.venv/*" \
+  -x"./hermes-agent/.e2e-venv/*" \
   -x"./hermes-agent/node_modules/*" \
   -x"./hermes-agent/web/node_modules/*" \
   -x"./hermes-agent/.git/*" \
@@ -237,6 +239,7 @@ zip -qr "${ZIP}" . \
   -x"./animus-update-server/*" \
   -x"./scripts/*" \
   -x"./seller-private/*" \
+  -x"./artifacts/*" \
   -x"./animus-v*.zip"
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"

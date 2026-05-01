@@ -1,0 +1,1020 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-01T10:33:23Z",
+  "project_root": "/home/sketch/animus",
+  "entrypoints": [
+    {
+      "path": "animus-chat/app/index.html",
+      "summary": "large file (606843 bytes)"
+    },
+    {
+      "path": "animus-chat/server.py",
+      "summary": "large file (130716 bytes)"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/server.py",
+      "summary": "\"\"\"ACP agent server \u2014 exposes Hermes Agent via the Agent Client Protocol.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/cli.py",
+      "summary": "large file (497778 bytes)"
+    },
+    {
+      "path": "hermes-agent/README.md",
+      "summary": "<p align=\"center\"> <img src=\"assets/banner.png\" alt=\"Hermes Agent\" width=\"100%\"> </p>"
+    },
+    {
+      "path": "hermes-agent/rl_cli.py",
+      "summary": "#!/usr/bin/env python3 \"\"\" RL Training CLI Runner"
+    },
+    {
+      "path": "README.md",
+      "summary": "# ANIMUS ANIMUS is a distributable bundle: the **animus-chat** web app (Starlette + PWA) and a full **hermes-agent** checkout, so local customisations (gateway\u2026"
+    }
+  ],
+  "areas": [
+    {
+      "name": "hermes-agent",
+      "file_count": 138
+    },
+    {
+      "name": "animus-chat",
+      "file_count": 39
+    },
+    {
+      "name": "docs",
+      "file_count": 8
+    },
+    {
+      "name": "docker",
+      "file_count": 3
+    },
+    {
+      "name": ".gitignore",
+      "file_count": 1
+    },
+    {
+      "name": "AGENTS.md",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.0.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.1.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.2.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.3.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.4.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.5.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.6.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.7.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.8.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.0.9.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus.env",
+      "file_count": 1
+    },
+    {
+      "name": "animus.env.example",
+      "file_count": 1
+    },
+    {
+      "name": "ANIMUSLOGO.png",
+      "file_count": 1
+    },
+    {
+      "name": "ANIMUSLOGOICON.png",
+      "file_count": 1
+    },
+    {
+      "name": "build-release.sh",
+      "file_count": 1
+    },
+    {
+      "name": "CLAUDE.md",
+      "file_count": 1
+    },
+    {
+      "name": "ghostonlyicon.png",
+      "file_count": 1
+    },
+    {
+      "name": "INSTALL.md",
+      "file_count": 1
+    }
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "summary": "# Python __pycache__/ *.py[cod]"
+    },
+    {
+      "path": "AGENTS.md",
+      "summary": "--- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true"
+    },
+    {
+      "path": "animus-chat/animus.env",
+      "summary": "text file (1 bytes)"
+    },
+    {
+      "path": "animus-chat/animus.env.example",
+      "summary": "# === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not \u2026"
+    },
+    {
+      "path": "animus-chat/animus_machinae.png",
+      "summary": "large file (1393299 bytes)"
+    },
+    {
+      "path": "animus-chat/app/animus_machinae.png",
+      "summary": "large file (1393299 bytes)"
+    },
+    {
+      "path": "animus-chat/app/ANIMUSLOGO.png",
+      "summary": "large file (664372 bytes)"
+    },
+    {
+      "path": "animus-chat/app/ANIMUSLOGOICON.png",
+      "summary": "large file (478545 bytes)"
+    },
+    {
+      "path": "animus-chat/app/ghostonlyicon.png",
+      "summary": "large file (659281 bytes)"
+    },
+    {
+      "path": "animus-chat/app/icon-192.png",
+      "summary": "binary (.png)"
+    },
+    {
+      "path": "animus-chat/app/icon-512.png",
+      "summary": "binary (.png)"
+    },
+    {
+      "path": "animus-chat/app/icon.svg",
+      "summary": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"> <rect width=\"100\" height=\"100\" rx=\"22\" fill=\"#7c3aed\"/> <g transform=\"translate(10 10) scale(3.3\u2026"
+    },
+    {
+      "path": "animus-chat/app/index.html",
+      "summary": "large file (606843 bytes)"
+    },
+    {
+      "path": "animus-chat/app/manifest.json",
+      "summary": "{ \"name\": \"ANIMUS\", \"short_name\": \"ANIMUS\","
+    },
+    {
+      "path": "animus-chat/app/sw.js",
+      "summary": "// Bump when shell HTML or critical assets change \u2014 activate() evicts older caches. const CACHE = 'animus-v41';"
+    },
+    {
+      "path": "animus-chat/cron_routes.py",
+      "summary": "\"\"\"Cron API \u2014 proxies Hermes gateway ``/api/jobs`` (OpenAI server) with in-process fallback on transport errors.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/generate-icons.py",
+      "summary": "#!/usr/bin/env python3 \"\"\"Generate PNG icons for Android PWA install. Run once.\"\"\" from pathlib import Path"
+    },
+    {
+      "path": "animus-chat/help_routes.py",
+      "summary": "\"\"\"ANIMUS Help bot \u2014 answers from ``docs/animus-user-guide.md`` only (no tools, no mutations).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/hermes-chat.env.example",
+      "summary": "# Copy to hermes-chat.env and fill in secrets. Do not commit hermes-chat.env. # # After git pull or editing server.py: ./restart-after-code-change.sh (or --pul\u2026"
+    },
+    {
+      "path": "animus-chat/hermes_runner.py",
+      "summary": "\"\"\"Single subprocess entrypoint for the ``hermes`` CLI (ANIMUS control plane).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/hermes_service_client.py",
+      "summary": "\"\"\"Call Hermes gateway (OpenAI server, port 8642) and optional Hermes dashboard (9119) from ANIMUS.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/integrations_slack.py",
+      "summary": "\"\"\"Slack webhook / bot settings (Phase 7) \u2014 reads and writes repo-root ``animus.env``.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/messaging_routes.py",
+      "summary": "\"\"\"Settings \u2192 Messaging: Hermes gateway platforms \u2014 read/write ``~/.hermes/.env`` + ``config.yaml``.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/project_history.md",
+      "summary": "# Project history (ANIMUS animus-chat) Chronological work log. Newest entries at the bottom."
+    },
+    {
+      "path": "animus-chat/project_history.md.flock",
+      "summary": "empty file"
+    },
+    {
+      "path": "animus-chat/repo_map.md",
+      "summary": "# Repo map \u2014 `animus-chat/` Python Starlette server (`server.py`) plus static PWA in `app/`."
+    },
+    {
+      "path": "animus-chat/requirements.txt",
+      "summary": "httpx>=0.27 uvicorn[standard]>=0.30 starlette>=0.37"
+    },
+    {
+      "path": "animus-chat/restart-after-code-change.sh",
+      "summary": "#!/usr/bin/env bash # After editing server.py (or anything under animus-chat/), restart user systemd # so the running process loads new code. Prefers animus.se\u2026"
+    },
+    {
+      "path": "animus-chat/restart.sh",
+      "summary": "#!/usr/bin/env bash # Reload ANIMUS after editing server.py (user systemd unit animus.service). set -euo pipefail"
+    },
+    {
+      "path": "animus-chat/server.py",
+      "summary": "large file (130716 bytes)"
+    },
+    {
+      "path": "animus-chat/setup_repo.md",
+      "summary": "# Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo\u2026"
+    },
+    {
+      "path": "animus-chat/setup_wizard/__init__.py",
+      "summary": "\"\"\"First-run setup wizard API routes.\"\"\""
+    },
+    {
+      "path": "animus-chat/setup_wizard/wizard_routes.py",
+      "summary": "\"\"\"Setup wizard HTTP API (\u00a74, \u00a717.4 ANIMUS).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/skills_md.py",
+      "summary": "\"\"\"SKILL.md path resolution for the skills raw editor (shared with skills_routes).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/skills_routes.py",
+      "summary": "\"\"\"Skills API \u2014 in-process skill discovery + ``hermes skills`` CLI for mutations.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/ssh_routes.py",
+      "summary": "\"\"\"Global SSH host registry + connection test (Phase 7).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/sync-from-release-zip.sh",
+      "summary": "#!/usr/bin/env bash # Patch THIS animus-chat/ directory from animus-vX.Y.Z.zip (official release layout). # Use when you only have animus-chat/ (no installer/ \u2026"
+    },
+    {
+      "path": "animus-chat/systemd/hermes-chat.service",
+      "summary": "# Legacy filename \u2014 use ../../systemd/animus.service in the ANIMUS monorepo. # Copy to ~/.config/systemd/user/animus.service and edit paths."
+    },
+    {
+      "path": "animus-chat/TAILSCALE-SERVE.md",
+      "summary": "# Tailscale Serve This file is kept for backwards compatibility. **Authoritative guidance** for ANIMUS is in the monorepo:"
+    },
+    {
+      "path": "animus-chat/token_usage.py",
+      "summary": "\"\"\"Append-only token usage log + read API (Phase 7).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-chat/tts_routes.py",
+      "summary": "\"\"\"TTS helpers \u2014 browser vs local Piper (optional binary).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "animus-v1.0.0.zip",
+      "summary": "large file (28817354 bytes)"
+    },
+    {
+      "path": "animus-v1.0.1.zip",
+      "summary": "large file (28818481 bytes)"
+    },
+    {
+      "path": "animus-v1.0.2.zip",
+      "summary": "large file (28818481 bytes)"
+    },
+    {
+      "path": "animus-v1.0.3.zip",
+      "summary": "large file (31633515 bytes)"
+    },
+    {
+      "path": "animus-v1.0.4.zip",
+      "summary": "large file (31636165 bytes)"
+    },
+    {
+      "path": "animus-v1.0.5.zip",
+      "summary": "large file (31637109 bytes)"
+    },
+    {
+      "path": "animus-v1.0.6.zip",
+      "summary": "large file (31645591 bytes)"
+    },
+    {
+      "path": "animus-v1.0.7.zip",
+      "summary": "large file (31690107 bytes)"
+    },
+    {
+      "path": "animus-v1.0.8.zip",
+      "summary": "large file (31696295 bytes)"
+    },
+    {
+      "path": "animus-v1.0.9.zip",
+      "summary": "large file (28887236 bytes)"
+    },
+    {
+      "path": "animus.env",
+      "summary": "# === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not \u2026"
+    },
+    {
+      "path": "animus.env.example",
+      "summary": "# === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not \u2026"
+    },
+    {
+      "path": "ANIMUSLOGO.png",
+      "summary": "large file (664372 bytes)"
+    },
+    {
+      "path": "ANIMUSLOGOICON.png",
+      "summary": "large file (478545 bytes)"
+    },
+    {
+      "path": "build-release.sh",
+      "summary": "#!/usr/bin/env bash set -euo pipefail ROOT=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+    },
+    {
+      "path": "CLAUDE.md",
+      "summary": "--- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true"
+    },
+    {
+      "path": "docker/.env.example",
+      "summary": "# Docker-specific copy of animus env \u2014 paths differ inside the container. HERMES_API_URL=http://host.docker.internal:8642 HERMES_API_KEY="
+    },
+    {
+      "path": "docker/docker-compose.yml",
+      "summary": "services: animus: build:"
+    },
+    {
+      "path": "docker/Dockerfile",
+      "summary": "FROM python:3.12-slim WORKDIR /app"
+    },
+    {
+      "path": "docs/animus-user-guide.md",
+      "summary": "# ANIMUS user guide This document is the **official in-app Help source**. The Help assistant only uses what is written here."
+    },
+    {
+      "path": "docs/BUYER_UPDATES.md",
+      "summary": "# Getting ANIMUS Updates ## Automatic updates"
+    },
+    {
+      "path": "docs/GUMROAD.md",
+      "summary": "# Gumroad delivery \u2014 ANIMUS Concise guide for packaging and listing. Full product criteria remain in `project_goal.md` (Gumroad sections)."
+    },
+    {
+      "path": "docs/hermes-agent-patches.md",
+      "summary": "# Hermes Agent \u2014 ANIMUS patch record **Bundled version:** v0.11.0 (2026.4.23). **Upstream drift:** as of this ANIMUS release, upstream `hermes-agent` was **778\u2026"
+    },
+    {
+      "path": "docs/models.md",
+      "summary": "# Models in ANIMUS ## Hermes gateway"
+    },
+    {
+      "path": "docs/ssh.md",
+      "summary": "# SSH hosts and remote projects (ANIMUS) ## SSH key authentication (recommended)"
+    },
+    {
+      "path": "docs/tailscale.md",
+      "summary": "# Tailscale and ANIMUS ## Recommended pattern"
+    },
+    {
+      "path": "docs/tts.md",
+      "summary": "# Text-to-speech (read aloud) \u2014 Piper on the ANIMUS host ANIMUS can read assistant replies aloud using either the **browser** (Web Speech API) or **Piper**, a \u2026"
+    },
+    {
+      "path": "ghostonlyicon.png",
+      "summary": "large file (659281 bytes)"
+    },
+    {
+      "path": "hermes-agent/.env.example",
+      "summary": "# Hermes Agent Environment Configuration # Copy this file to .env and fill in your API keys"
+    },
+    {
+      "path": "hermes-agent/.github/actions/nix-setup/action.yml",
+      "summary": "name: 'Setup Nix' description: 'Install Nix with DeterminateSystems and enable magic-nix-cache'"
+    },
+    {
+      "path": "hermes-agent/.github/ISSUE_TEMPLATE/bug_report.yml",
+      "summary": "name: \"\ud83d\udc1b Bug Report\" description: Report a bug \u2014 something that's broken, crashes, or behaves incorrectly. title: \"[Bug]: \""
+    },
+    {
+      "path": "hermes-agent/.github/ISSUE_TEMPLATE/config.yml",
+      "summary": "blank_issues_enabled: true contact_links: - name: \ud83d\udcac Nous Research Discord"
+    },
+    {
+      "path": "hermes-agent/.github/ISSUE_TEMPLATE/feature_request.yml",
+      "summary": "name: \"\u2728 Feature Request\" description: Suggest a new feature or improvement. title: \"[Feature]: \""
+    },
+    {
+      "path": "hermes-agent/.github/ISSUE_TEMPLATE/setup_help.yml",
+      "summary": "name: \"\ud83d\udd27 Setup / Installation Help\" description: Having trouble installing or configuring Hermes? Ask here. title: \"[Setup]: \""
+    },
+    {
+      "path": "hermes-agent/.github/PULL_REQUEST_TEMPLATE.md",
+      "summary": "## What does this PR do? <!-- Describe the change clearly. What problem does it solve? Why is this approach the right one? -->"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/contributor-check.yml",
+      "summary": "name: Contributor Attribution Check on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/deploy-site.yml",
+      "summary": "name: Deploy Site on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/docker-publish.yml",
+      "summary": "name: Docker Build and Publish on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/docs-site-checks.yml",
+      "summary": "name: Docs Site Checks on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/nix-lockfile-check.yml",
+      "summary": "name: Nix Lockfile Check on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/nix-lockfile-fix.yml",
+      "summary": "name: Nix Lockfile Fix on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/nix.yml",
+      "summary": "name: Nix on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/skills-index.yml",
+      "summary": "name: Build Skills Index on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/supply-chain-audit.yml",
+      "summary": "name: Supply Chain Audit on:"
+    },
+    {
+      "path": "hermes-agent/.github/workflows/tests.yml",
+      "summary": "name: Tests on:"
+    },
+    {
+      "path": "hermes-agent/.gitignore",
+      "summary": ".DS_Store /venv/ /_pycache/"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/__init__.py",
+      "summary": "\"\"\"ACP (Agent Communication Protocol) adapter for hermes-agent.\"\"\""
+    },
+    {
+      "path": "hermes-agent/acp_adapter/__main__.py",
+      "summary": "\"\"\"Allow running the ACP adapter as ``python -m acp_adapter``.\"\"\" from .entry import main"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/auth.py",
+      "summary": "\"\"\"ACP auth helpers \u2014 detect the currently configured Hermes provider.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/entry.py",
+      "summary": "\"\"\"CLI entry point for the hermes-agent ACP adapter. Loads environment variables from ``~/.hermes/.env``, configures logging"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/events.py",
+      "summary": "\"\"\"Callback factories for bridging AIAgent events to ACP notifications. Each factory returns a callable with the signature that AIAgent expects"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/permissions.py",
+      "summary": "\"\"\"ACP permission bridging \u2014 maps ACP approval requests to hermes approval callbacks.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/server.py",
+      "summary": "\"\"\"ACP agent server \u2014 exposes Hermes Agent via the Agent Client Protocol.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/session.py",
+      "summary": "\"\"\"ACP session manager \u2014 maps ACP sessions to Hermes AIAgent instances. Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they"
+    },
+    {
+      "path": "hermes-agent/acp_adapter/tools.py",
+      "summary": "\"\"\"ACP tool-call helpers for mapping hermes tools to ACP ToolKind and building content.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/acp_registry/agent.json",
+      "summary": "{ \"schema_version\": 1, \"name\": \"hermes-agent\","
+    },
+    {
+      "path": "hermes-agent/acp_registry/icon.svg",
+      "summary": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\" width=\"64\" height=\"64\"> <defs> <linearGradient id=\"gold\" x1=\"0%\" y1=\"0%\" x2=\"0%\" y2=\"100%\">"
+    },
+    {
+      "path": "hermes-agent/agent/__init__.py",
+      "summary": "\"\"\"Agent internals -- extracted modules from run_agent.py. These modules contain pure utility functions and self-contained classes"
+    },
+    {
+      "path": "hermes-agent/agent/account_usage.py",
+      "summary": "from __future__ import annotations from dataclasses import dataclass"
+    },
+    {
+      "path": "hermes-agent/agent/anthropic_adapter.py",
+      "summary": "large file (71721 bytes)"
+    },
+    {
+      "path": "hermes-agent/agent/auto_model_by_complexity.py",
+      "summary": "\"\"\"Pick a provider-local agentic model for this turn. OpenAI Codex uses the live/cache Codex catalog (``get_codex_model_ids``) and a"
+    },
+    {
+      "path": "hermes-agent/agent/auxiliary_client.py",
+      "summary": "large file (144626 bytes)"
+    },
+    {
+      "path": "hermes-agent/agent/bedrock_adapter.py",
+      "summary": "\"\"\"AWS Bedrock Converse API adapter for Hermes Agent. Provides native integration with Amazon Bedrock using the Converse API,"
+    },
+    {
+      "path": "hermes-agent/agent/codex_responses_adapter.py",
+      "summary": "\"\"\"Codex Responses API adapter. Pure format-conversion and normalization logic for the OpenAI Responses API"
+    },
+    {
+      "path": "hermes-agent/agent/context_compressor.py",
+      "summary": "large file (59124 bytes)"
+    },
+    {
+      "path": "hermes-agent/agent/context_engine.py",
+      "summary": "\"\"\"Abstract base class for pluggable context engines. A context engine controls how conversation context is managed when"
+    },
+    {
+      "path": "hermes-agent/agent/context_references.py",
+      "summary": "from __future__ import annotations import asyncio"
+    },
+    {
+      "path": "hermes-agent/agent/copilot_acp_client.py",
+      "summary": "\"\"\"OpenAI-compatible shim that forwards Hermes requests to `copilot --acp`. This adapter lets Hermes treat the GitHub Copilot ACP server as a chat-style"
+    },
+    {
+      "path": "hermes-agent/agent/credential_pool.py",
+      "summary": "large file (60789 bytes)"
+    },
+    {
+      "path": "hermes-agent/agent/credential_sources.py",
+      "summary": "\"\"\"Unified removal contract for every credential source Hermes reads from. Hermes seeds its credential pool from many places:"
+    },
+    {
+      "path": "hermes-agent/agent/cursor_agent_client.py",
+      "summary": "\"\"\"OpenAI-compatible shim that forwards Hermes turns to ``cursor-agent`` / ``cursor agent``. Each ``chat.completions.create`` runs a short-lived subprocess: st\u2026"
+    },
+    {
+      "path": "hermes-agent/agent/display.py",
+      "summary": "\"\"\"CLI presentation -- spinner, kawaii faces, tool preview formatting. Pure display functions and classes with no AIAgent dependency."
+    },
+    {
+      "path": "hermes-agent/agent/error_classifier.py",
+      "summary": "\"\"\"API error classification for smart failover and recovery. Provides a structured taxonomy of API errors and a priority-ordered"
+    },
+    {
+      "path": "hermes-agent/agent/file_safety.py",
+      "summary": "\"\"\"Shared file safety rules used by both tools and ACP shims.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/agent/gemini_cloudcode_adapter.py",
+      "summary": "\"\"\"OpenAI-compatible facade that talks to Google's Cloud Code Assist backend. This adapter lets Hermes use the ``google-gemini-cli`` provider as if it were"
+    },
+    {
+      "path": "hermes-agent/agent/gemini_native_adapter.py",
+      "summary": "\"\"\"OpenAI-compatible facade over Google AI Studio's native Gemini API. Hermes keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the"
+    },
+    {
+      "path": "hermes-agent/agent/gemini_schema.py",
+      "summary": "\"\"\"Helpers for translating OpenAI-style tool schemas to Gemini's schema subset.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/agent/google_code_assist.py",
+      "summary": "\"\"\"Google Code Assist API client \u2014 project discovery, onboarding, quota. The Code Assist API powers Google's official gemini-cli. It sits at"
+    },
+    {
+      "path": "hermes-agent/agent/google_oauth.py",
+      "summary": "\"\"\"Google OAuth PKCE flow for the Gemini (google-gemini-cli) inference provider. This module implements Authorization Code + PKCE (S256) OAuth against Google's"
+    },
+    {
+      "path": "hermes-agent/agent/image_gen_provider.py",
+      "summary": "\"\"\" Image Generation Provider ABC ============================="
+    },
+    {
+      "path": "hermes-agent/agent/image_gen_registry.py",
+      "summary": "\"\"\" Image Generation Provider Registry =================================="
+    },
+    {
+      "path": "hermes-agent/agent/insights.py",
+      "summary": "\"\"\" Session Insights Engine for Hermes Agent."
+    },
+    {
+      "path": "hermes-agent/agent/manual_compression_feedback.py",
+      "summary": "\"\"\"User-facing summaries for manual compression commands.\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/agent/memory_manager.py",
+      "summary": "\"\"\"MemoryManager \u2014 orchestrates the built-in memory provider plus at most ONE external plugin memory provider."
+    },
+    {
+      "path": "hermes-agent/agent/memory_provider.py",
+      "summary": "\"\"\"Abstract base class for pluggable memory providers. Memory providers give the agent persistent recall across sessions. One"
+    },
+    {
+      "path": "hermes-agent/agent/model_metadata.py",
+      "summary": "large file (57868 bytes)"
+    },
+    {
+      "path": "hermes-agent/agent/models_dev.py",
+      "summary": "\"\"\"Models.dev registry integration \u2014 primary database for providers and models. Fetches from https://models.dev/api.json \u2014 a community-maintained database"
+    },
+    {
+      "path": "hermes-agent/agent/moonshot_schema.py",
+      "summary": "\"\"\"Helpers for translating OpenAI-style tool schemas to Moonshot's schema subset. Moonshot (Kimi) accepts a stricter subset of JSON Schema than standard OpenAI"
+    },
+    {
+      "path": "hermes-agent/agent/nous_rate_guard.py",
+      "summary": "\"\"\"Cross-session rate limit guard for Nous Portal. Writes rate limit state to a shared file so all sessions (CLI, gateway,"
+    },
+    {
+      "path": "hermes-agent/agent/project_workspace.py",
+      "summary": "\"\"\"Workspace markdown files for Hermes Chat project folders (history, repo map, notes, goal). Used by ``hermes project \u2026`` CLI, Hermes Chat server routes, and \u2026"
+    },
+    {
+      "path": "hermes-agent/agent/prompt_builder.py",
+      "summary": "large file (49054 bytes)"
+    },
+    {
+      "path": "hermes-agent/agent/prompt_caching.py",
+      "summary": "\"\"\"Anthropic prompt caching (system_and_3 strategy). Reduces input token costs by ~75% on multi-turn conversations by caching"
+    },
+    {
+      "path": "hermes-agent/agent/rate_limit_tracker.py",
+      "summary": "\"\"\"Rate limit tracking for inference API responses. Captures x-ratelimit-* headers from provider responses and provides"
+    },
+    {
+      "path": "hermes-agent/agent/redact.py",
+      "summary": "\"\"\"Regex-based secret redaction for logs and tool output. Applies pattern matching to mask API keys, tokens, and credentials"
+    },
+    {
+      "path": "hermes-agent/agent/retry_utils.py",
+      "summary": "\"\"\"Retry utilities \u2014 jittered backoff for decorrelated retries. Replaces fixed exponential backoff with jittered delays to prevent"
+    },
+    {
+      "path": "hermes-agent/agent/shell_hooks.py",
+      "summary": "\"\"\" Shell-script hooks bridge."
+    },
+    {
+      "path": "hermes-agent/agent/skill_commands.py",
+      "summary": "\"\"\"Shared slash command helpers for skills. Shared between CLI (cli.py) and gateway (gateway/run.py) so both surfaces"
+    },
+    {
+      "path": "hermes-agent/agent/skill_utils.py",
+      "summary": "\"\"\"Lightweight skill metadata utilities shared by prompt_builder and skills_tool. This module intentionally avoids importing the tool registry, CLI config, or \u2026"
+    },
+    {
+      "path": "hermes-agent/agent/subdirectory_hints.py",
+      "summary": "\"\"\"Progressive subdirectory hint discovery. As the agent navigates into subdirectories via tool calls (read_file, terminal,"
+    },
+    {
+      "path": "hermes-agent/agent/task_complexity.py",
+      "summary": "\"\"\"Heuristic task complexity for routing (delegation ACP, per-turn model pick).\"\"\" from __future__ import annotations"
+    },
+    {
+      "path": "hermes-agent/agent/title_generator.py",
+      "summary": "\"\"\"Auto-generate short session titles from the first user/assistant exchange. Runs asynchronously after the first response is delivered so it never"
+    },
+    {
+      "path": "hermes-agent/agent/trajectory.py",
+      "summary": "\"\"\"Trajectory saving utilities and static helpers. _convert_to_trajectory_format stays as an AIAgent method (batch_runner.py"
+    },
+    {
+      "path": "hermes-agent/agent/transports/__init__.py",
+      "summary": "\"\"\"Transport layer types and registry for provider response normalization. Usage:"
+    },
+    {
+      "path": "hermes-agent/agent/transports/anthropic.py",
+      "summary": "\"\"\"Anthropic Messages API transport. Delegates to the existing adapter functions in agent/anthropic_adapter.py."
+    },
+    {
+      "path": "hermes-agent/agent/transports/base.py",
+      "summary": "\"\"\"Abstract base for provider transports. A transport owns the data path for one api_mode:"
+    },
+    {
+      "path": "hermes-agent/agent/transports/bedrock.py",
+      "summary": "\"\"\"AWS Bedrock Converse API transport. Delegates to the existing adapter functions in agent/bedrock_adapter.py."
+    },
+    {
+      "path": "hermes-agent/agent/transports/chat_completions.py",
+      "summary": "\"\"\"OpenAI Chat Completions transport. Handles the default api_mode ('chat_completions') used by ~16 OpenAI-compatible"
+    },
+    {
+      "path": "hermes-agent/agent/transports/codex.py",
+      "summary": "\"\"\"OpenAI Responses API (Codex) transport. Delegates to the existing adapter functions in agent/codex_responses_adapter.py."
+    },
+    {
+      "path": "hermes-agent/agent/transports/types.py",
+      "summary": "\"\"\"Shared types for normalized provider responses. These dataclasses define the canonical shape that all provider adapters"
+    },
+    {
+      "path": "hermes-agent/agent/usage_pricing.py",
+      "summary": "from __future__ import annotations from dataclasses import dataclass"
+    },
+    {
+      "path": "hermes-agent/AGENTS.md",
+      "summary": "# Hermes Agent - Development Guide Instructions for AI coding assistants and developers working on the hermes-agent codebase."
+    },
+    {
+      "path": "hermes-agent/assets/banner.png",
+      "summary": "binary (.png)"
+    },
+    {
+      "path": "hermes-agent/batch_runner.py",
+      "summary": "large file (55631 bytes)"
+    },
+    {
+      "path": "hermes-agent/cli-config.yaml.example",
+      "summary": "large file (49933 bytes)"
+    },
+    {
+      "path": "hermes-agent/cli.py",
+      "summary": "large file (497778 bytes)"
+    },
+    {
+      "path": "hermes-agent/constraints-termux.txt",
+      "summary": "# Termux / Android dependency constraints for Hermes Agent. # # Usage:"
+    },
+    {
+      "path": "hermes-agent/CONTRIBUTING.md",
+      "summary": "# Contributing to Hermes Agent Thank you for contributing to Hermes Agent! This guide covers everything you need: setting up your dev environment, understandin\u2026"
+    },
+    {
+      "path": "hermes-agent/cron/__init__.py",
+      "summary": "\"\"\" Cron job scheduling system for Hermes Agent."
+    },
+    {
+      "path": "hermes-agent/cron/hermes_chat_delivery.py",
+      "summary": "\"\"\" Append cron job output into Hermes Chat server-side transcripts."
+    },
+    {
+      "path": "hermes-agent/cron/jobs.py",
+      "summary": "\"\"\" Cron job storage and management."
+    },
+    {
+      "path": "hermes-agent/cron/scheduler.py",
+      "summary": "large file (59450 bytes)"
+    },
+    {
+      "path": "hermes-agent/datagen-config-examples/example_browser_tasks.jsonl",
+      "summary": "{\"prompt\": \"Go to https://news.ycombinator.com and find the top 5 posts on the front page. For each post, get the title, URL, points, and number of comments. R\u2026"
+    },
+    {
+      "path": "hermes-agent/docker-compose.yml",
+      "summary": "# # docker-compose.yml for Hermes Agent #"
+    },
+    {
+      "path": "hermes-agent/Dockerfile",
+      "summary": "FROM ghcr.io/astral-sh/uv:0.11.6-python3.13-trixie@sha256:b3c543b6c4f23a5f2df22866bd7857e5d304b67a564f4feab6ac22044dde719b AS uv_source FROM tianon/gosu:1.19-t\u2026"
+    },
+    {
+      "path": "hermes-agent/flake.lock",
+      "summary": "{ \"nodes\": { \"flake-parts\": {"
+    },
+    {
+      "path": "hermes-agent/flake.nix",
+      "summary": "{ description = \"Hermes Agent - AI agent framework by Nous Research\";"
+    },
+    {
+      "path": "hermes-agent/hermes",
+      "summary": "#!/usr/bin/env python3 \"\"\" Hermes Agent CLI launcher."
+    },
+    {
+      "path": "hermes-agent/hermes-already-has-routines.md",
+      "summary": "# Hermes Agent Has Had \"Routines\" Since March Anthropic just announced [Claude Code Routines](https://claude.com/blog/introducing-routines-in-claude-code) \u2014 sc\u2026"
+    },
+    {
+      "path": "hermes-agent/hermes_constants.py",
+      "summary": "\"\"\"Shared constants for Hermes Agent. Import-safe module with no dependencies \u2014 can be imported from anywhere"
+    },
+    {
+      "path": "hermes-agent/hermes_logging.py",
+      "summary": "\"\"\"Centralized logging setup for Hermes Agent. Provides a single ``setup_logging()`` entry point that both the CLI and"
+    },
+    {
+      "path": "hermes-agent/hermes_state.py",
+      "summary": "large file (68482 bytes)"
+    },
+    {
+      "path": "hermes-agent/hermes_time.py",
+      "summary": "\"\"\" Timezone-aware clock for Hermes."
+    },
+    {
+      "path": "hermes-agent/LICENSE",
+      "summary": "MIT License Copyright (c) 2025 Nous Research"
+    },
+    {
+      "path": "hermes-agent/localhost+4-key.pem",
+      "summary": "-----BEGIN PRIVATE KEY----- MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDwQPXikE+J3Te7 bguwMrxMh0DRPvgtYImpMo0PSo0zwYp2Oa2aHptkYov9ZNFBBWZEh18+ZtzVqovH"
+    },
+    {
+      "path": "hermes-agent/localhost+4.pem",
+      "summary": "-----BEGIN CERTIFICATE----- MIIEFjCCAn6gAwIBAgIQbwnMYPFEekdShkG0EYb1yTANBgkqhkiG9w0BAQsFADBV MR4wHAYDVQQKExVta2NlcnQgZGV2ZWxvcG1lbnQgQ0ExFTATBgNVBAsMDHNrZXRj"
+    },
+    {
+      "path": "hermes-agent/localhost+5-key.pem",
+      "summary": "-----BEGIN PRIVATE KEY----- MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDg62/0eigfUjfT kQTtuTNHg4LKcGFeN/aAKekpjLW3Qm6S357jesnfsqyOnA5UixVxS3BcnMyzxswp"
+    },
+    {
+      "path": "hermes-agent/localhost+5.pem",
+      "summary": "-----BEGIN CERTIFICATE----- MIIEHTCCAoWgAwIBAgIRAJcTSKVMYoe9YRpIKJl4+J8wDQYJKoZIhvcNAQELBQAw VTEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMRUwEwYDVQQLDAxza2V0"
+    },
+    {
+      "path": "hermes-agent/MANIFEST.in",
+      "summary": "graft skills graft optional-skills global-exclude __pycache__"
+    },
+    {
+      "path": "hermes-agent/mcp_serve.py",
+      "summary": "\"\"\" Hermes MCP Server \u2014 expose messaging conversations as MCP tools."
+    },
+    {
+      "path": "hermes-agent/mini_swe_runner.py",
+      "summary": "#!/usr/bin/env python3 \"\"\" SWE Runner with Hermes Trajectory Format"
+    },
+    {
+      "path": "hermes-agent/model_tools.py",
+      "summary": "#!/usr/bin/env python3 \"\"\" Model Tools Module"
+    },
+    {
+      "path": "hermes-agent/package-lock.json",
+      "summary": "large file (94861 bytes)"
+    },
+    {
+      "path": "hermes-agent/package.json",
+      "summary": "{ \"name\": \"hermes-agent\", \"version\": \"1.0.0\","
+    },
+    {
+      "path": "hermes-agent/pyproject.toml",
+      "summary": "[build-system] requires = [\"setuptools>=61.0\"] build-backend = \"setuptools.build_meta\""
+    },
+    {
+      "path": "hermes-agent/README.md",
+      "summary": "<p align=\"center\"> <img src=\"assets/banner.png\" alt=\"Hermes Agent\" width=\"100%\"> </p>"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.10.0.md",
+      "summary": "# Hermes Agent v0.10.0 (v2026.4.16) **Release Date:** April 16, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.11.0.md",
+      "summary": "# Hermes Agent v0.11.0 (v2026.4.23) **Release Date:** April 23, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.2.0.md",
+      "summary": "# Hermes Agent v0.2.0 (v2026.3.12) **Release Date:** March 12, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.3.0.md",
+      "summary": "# Hermes Agent v0.3.0 (v2026.3.17) **Release Date:** March 17, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.4.0.md",
+      "summary": "# Hermes Agent v0.4.0 (v2026.3.23) **Release Date:** March 23, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.5.0.md",
+      "summary": "# Hermes Agent v0.5.0 (v2026.3.28) **Release Date:** March 28, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.6.0.md",
+      "summary": "# Hermes Agent v0.6.0 (v2026.3.30) **Release Date:** March 30, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.7.0.md",
+      "summary": "# Hermes Agent v0.7.0 (v2026.4.3) **Release Date:** April 3, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.8.0.md",
+      "summary": "# Hermes Agent v0.8.0 (v2026.4.8) **Release Date:** April 8, 2026"
+    },
+    {
+      "path": "hermes-agent/RELEASE_v0.9.0.md",
+      "summary": "# Hermes Agent v0.9.0 (v2026.4.13) **Release Date:** April 13, 2026"
+    },
+    {
+      "path": "hermes-agent/rl_cli.py",
+      "summary": "#!/usr/bin/env python3 \"\"\" RL Training CLI Runner"
+    },
+    {
+      "path": "hermes-agent/run_agent.py",
+      "summary": "large file (658612 bytes)"
+    },
+    {
+      "path": "hermes-agent/SECURITY.md",
+      "summary": "# Hermes Agent Security Policy This document outlines the security protocols, trust model, and deployment hardening guidelines for the **Hermes Agent** project."
+    },
+    {
+      "path": "hermes-agent/setup-hermes.sh",
+      "summary": "#!/bin/bash # ============================================================================ # Hermes Agent Setup Script"
+    },
+    {
+      "path": "hermes-agent/toolset_distributions.py",
+      "summary": "#!/usr/bin/env python3 \"\"\" Toolset Distributions Module"
+    },
+    {
+      "path": "hermes-agent/toolsets.py",
+      "summary": "#!/usr/bin/env python3 \"\"\" Toolsets Module"
+    },
+    {
+      "path": "hermes-agent/trajectory_compressor.py",
+      "summary": "large file (65305 bytes)"
+    },
+    {
+      "path": "hermes-agent/url_host_preflight.py",
+      "summary": "\"\"\"Patch a stale ``utils`` module with URL hostname helpers before other imports. Stale ``~/.hermes/hermes-agent`` trees sometimes ship an older ``utils.py`` t\u2026"
+    },
+    {
+      "path": "hermes-agent/url_host_utils.py",
+      "summary": "\"\"\"Hostname-safe URL matching for provider routing (split out for partial deploys). Cron and gateways occasionally run from a ``~/.hermes/hermes-agent`` tree t\u2026"
+    },
+    {
+      "path": "hermes-agent/utils.py",
+      "summary": "\"\"\"Shared utility functions for hermes-agent.\"\"\" import json"
+    },
+    {
+      "path": "hermes-agent/uv.lock",
+      "summary": "large file (1048678 bytes)"
+    },
+    {
+      "path": "INSTALL.md",
+      "summary": "# Installing ANIMUS ## Requirements"
+    },
+    {
+      "path": "LICENSE",
+      "summary": "MIT License Copyright (c) ANIMUS contributors"
+    },
+    {
+      "path": "notes.md",
+      "summary": "# Notes Operator notes for this project (Markdown). Edited in Hermes Chat under **Project workspace \u2192 Notes**."
+    },
+    {
+      "path": "project_goal.md",
+      "summary": "large file (140753 bytes)"
+    },
+    {
+      "path": "project_history.md",
+      "summary": "large file (64999 bytes)"
+    },
+    {
+      "path": "project_history.md.flock",
+      "summary": "empty file"
+    },
+    {
+      "path": "project_knowledge.md",
+      "summary": "large file (79206 bytes)"
+    },
+    {
+      "path": "project_status.md",
+      "summary": "# Project status (animus) ## Current state"
+    },
+    {
+      "path": "README.md",
+      "summary": "# ANIMUS ANIMUS is a distributable bundle: the **animus-chat** web app (Starlette + PWA) and a full **hermes-agent** checkout, so local customisations (gateway\u2026"
+    },
+    {
+      "path": "repo_map.md",
+      "summary": "large file (94901 bytes)"
+    },
+    {
+      "path": "setup_repo.md",
+      "summary": "# Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo\u2026"
+    },
+    {
+      "path": "START_HERE.txt",
+      "summary": "ANIMUS \u2014 START HERE ==================="
+    },
+    {
+      "path": "VERSION",
+      "summary": "1.0.9"
+    }
+  ],
+  "commands": [
+    "Read project_memory/index.json first",
+    "Read repo_map.md only for human-oriented backup detail",
+    "Read only recent project_history.md lines when needed"
+  ]
+}

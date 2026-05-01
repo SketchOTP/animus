@@ -23,9 +23,12 @@ def test_ensure_and_append_history(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     assert (root / pw.HISTORY_FILENAME).is_file()
     assert (root / pw.STATUS_FILENAME).is_file()
     assert (root / pw.KNOWLEDGE_FILENAME).is_file()
+    assert (root / pw.PROJECT_MEMORY_DIRNAME).is_dir()
+    assert (root / pw.PROJECT_MEMORY_DIRNAME / pw.PROJECT_MEMORY_INDEX_FILENAME).is_file()
     assert (root / pw.AGENTS_MD_FILENAME).is_file()
     assert (root / pw.CLAUDE_MD_FILENAME).is_file()
     assert (root / pw.CURSOR_RULES_FILENAME).is_file()
+    assert "hermes-project-memory-v1" in (root / pw.AGENTS_MD_FILENAME).read_text(encoding="utf-8")
     assert "created" in info
     line = pw.append_project_history_line(root, "hello world", source="test")
     assert "— hello world" in line
@@ -154,8 +157,9 @@ def test_refresh_repo_map_ensures_and_mirrors_policy_files(tmp_path: Path) -> No
     assert str(root / pw.KNOWLEDGE_FILENAME) in info.get("created", [])
     assert str(root / pw.CLAUDE_MD_FILENAME) in info.get("updated", [])
     assert str(root / pw.CURSOR_RULES_FILENAME) in info.get("updated", [])
-    assert (root / pw.CLAUDE_MD_FILENAME).read_text(encoding="utf-8") == canonical
-    assert (root / pw.CURSOR_RULES_FILENAME).read_text(encoding="utf-8") == canonical
+    assert canonical in (root / pw.CLAUDE_MD_FILENAME).read_text(encoding="utf-8")
+    assert canonical in (root / pw.CURSOR_RULES_FILENAME).read_text(encoding="utf-8")
+    assert (root / pw.PROJECT_MEMORY_DIRNAME / pw.PROJECT_MEMORY_INDEX_FILENAME).is_file()
 
 
 def test_iter_hermes_chat_project_roots_dedupes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -237,7 +241,35 @@ def test_refresh_all_missing_only_does_not_overwrite_map(
     rows = pw.refresh_all_hermes_chat_repo_maps(missing_only=True)
     assert len(rows) == 1
     assert rows[0]["repo_map_refreshed"] is False
+    assert rows[0]["project_memory_refreshed"] is True
+    assert isinstance(rows[0]["project_memory_entries"], int)
     assert "<!-- MARK -->" in (p / pw.REPO_MAP_FILENAME).read_text(encoding="utf-8")
+
+
+def test_refresh_all_missing_only_refreshes_existing_project_memory_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from agent import project_workspace as pw
+
+    sync = tmp_path / "sp"
+    p = sync / "proj"
+    sync.mkdir()
+    p.mkdir()
+    monkeypatch.setenv("CHAT_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("HERMES_CHAT_PROJECTS_SYNC_ROOT", str(sync))
+    (tmp_path / "projects.json").write_text(
+        json.dumps([{"id": "1", "name": "P", "path": str(p)}]),
+        encoding="utf-8",
+    )
+    pw.ensure_workspace_files(p, generate_repo_map_if_missing=False)
+    memory_index = p / pw.PROJECT_MEMORY_DIRNAME / pw.PROJECT_MEMORY_INDEX_FILENAME
+    memory_index.write_text(json.dumps({"schema_version": 999}) + "\n", encoding="utf-8")
+
+    rows = pw.refresh_all_hermes_chat_repo_maps(missing_only=True)
+    assert rows[0]["project_memory_refreshed"] is True
+    body = json.loads(memory_index.read_text(encoding="utf-8"))
+    assert body["schema_version"] == 1
+    assert isinstance(body.get("files"), list)
 
 
 def test_ensure_workspace_copies_setup_repo_and_appends_agent_note(
@@ -292,8 +324,24 @@ def test_policy_files_mirror_agents_md(tmp_path: Path) -> None:
     info = pw.ensure_workspace_files(root, generate_repo_map_if_missing=False)
     assert str(root / pw.CLAUDE_MD_FILENAME) in info.get("updated", [])
     assert str(root / pw.CURSOR_RULES_FILENAME) in info.get("updated", [])
-    assert (root / pw.CLAUDE_MD_FILENAME).read_text(encoding="utf-8") == canonical
-    assert (root / pw.CURSOR_RULES_FILENAME).read_text(encoding="utf-8") == canonical
+    assert canonical in (root / pw.CLAUDE_MD_FILENAME).read_text(encoding="utf-8")
+    assert canonical in (root / pw.CURSOR_RULES_FILENAME).read_text(encoding="utf-8")
+
+
+def test_ensure_workspace_refreshes_invalid_memory_index(tmp_path: Path) -> None:
+    from agent import project_workspace as pw
+
+    root = tmp_path / "proj"
+    root.mkdir()
+    pw.ensure_workspace_files(root, generate_repo_map_if_missing=False)
+    index_path = root / pw.PROJECT_MEMORY_DIRNAME / pw.PROJECT_MEMORY_INDEX_FILENAME
+    index_path.write_text(json.dumps({"schema_version": 999}) + "\n", encoding="utf-8")
+
+    info = pw.ensure_workspace_files(root, generate_repo_map_if_missing=False)
+    assert str(index_path) in info.get("updated", [])
+    body = json.loads(index_path.read_text(encoding="utf-8"))
+    assert body["schema_version"] == 1
+    assert isinstance(body.get("files"), list)
 
 
 def test_refresh_all_missing_only_creates_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

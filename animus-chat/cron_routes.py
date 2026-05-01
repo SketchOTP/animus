@@ -321,7 +321,15 @@ async def cron_trigger_api(req: Request) -> Response:
                 job = body["job"]
             prov = str(job.get("provider") or job.get("hermes_provider") or "").strip() or "hermes"
             model = str(job.get("model") or "").strip() or ""
-            record_token_usage(prov, model or "(job)", None, None, "cron", str(job.get("id") or job_id))
+            record_token_usage(
+                prov,
+                model or "(job)",
+                None,
+                None,
+                "cron",
+                str(job.get("id") or job_id),
+                animus_client="cron",
+            )
         except Exception as exc:
             log.debug("cron token record skipped: %s", exc)
     _audit("TRIGGER", job_id=job_id, result="ok" if r.status_code == 200 else "err")
@@ -446,6 +454,24 @@ async def cron_optimize_prompt_api(req: Request) -> Response:
     out = _chat_completion_choice_text(data if isinstance(data, dict) else {}).strip()
     if not out:
         return JSONResponse({"error": "Empty response from model."}, status_code=502)
+    try:
+        from token_usage import chat_usage_in_out, record_token_usage
+
+        u = data.get("usage") if isinstance(data, dict) else None
+        inp_i, out_i = chat_usage_in_out(u if isinstance(u, dict) else None)
+        if inp_i is not None or out_i is not None:
+            resolved = str((data if isinstance(data, dict) else {}).get("model") or model).strip()
+            record_token_usage(
+                hermes_provider,
+                resolved or model,
+                inp_i,
+                out_i,
+                "cron",
+                "optimize-prompt",
+                animus_client="prompt-optimizer",
+            )
+    except Exception:
+        pass
     return JSONResponse({"ok": True, "prompt": out})
 
 

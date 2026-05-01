@@ -86,6 +86,48 @@ def test_normalize_usage_openai_reads_top_level_cache_read_when_details_missing(
     assert normalized.input_tokens == 200
 
 
+def test_normalize_usage_codex_accepts_plain_dict_usage():
+    """Codex / Responses paths sometimes surface ``usage`` as JSON dicts; dict must not read as all zeros."""
+    usage = {
+        "input_tokens": 1200,
+        "output_tokens": 300,
+        "total_tokens": 1500,
+        "input_tokens_details": {"cached_tokens": 200, "cache_creation_tokens": 100},
+    }
+    normalized = normalize_usage(usage, provider="openai-codex", api_mode="codex_responses")
+    assert normalized.cache_read_tokens == 200
+    assert normalized.cache_write_tokens == 100
+    assert normalized.input_tokens == 900
+    assert normalized.output_tokens == 300
+
+
+def test_normalize_usage_chat_completions_accepts_plain_dict_usage():
+    usage = {
+        "prompt_tokens": 800,
+        "completion_tokens": 150,
+        "prompt_tokens_details": {"cached_tokens": 100, "cache_write_tokens": 50},
+    }
+    normalized = normalize_usage(usage, provider="openai", api_mode="chat_completions")
+    assert normalized.input_tokens == 650
+    assert normalized.output_tokens == 150
+    assert normalized.cache_read_tokens == 100
+    assert normalized.cache_write_tokens == 50
+
+
+def test_normalize_usage_anthropic_accepts_plain_dict_usage():
+    usage = {
+        "input_tokens": 400,
+        "output_tokens": 120,
+        "cache_read_input_tokens": 50,
+        "cache_creation_input_tokens": 30,
+    }
+    normalized = normalize_usage(usage, provider="anthropic", api_mode="anthropic_messages")
+    assert normalized.input_tokens == 400
+    assert normalized.output_tokens == 120
+    assert normalized.cache_read_tokens == 50
+    assert normalized.cache_write_tokens == 30
+
+
 def test_normalize_usage_openai_prefers_prompt_tokens_details_over_top_level():
     """When both prompt_tokens_details and top-level Anthropic fields are
     present, we prefer the OpenAI-standard nested fields. Top-level Anthropic

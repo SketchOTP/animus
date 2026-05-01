@@ -49,7 +49,7 @@ Sections include:
 5. **Inference** (collapsible) — provider matrix + **Model** picker for the active provider; **About**, **Check updates**, **Refresh models**.
 6. **Messaging** (collapsible) — Hermes **gateway platforms** (Telegram, Discord, **Slack**, …): turn each **On**, open **Configuration**, save credentials to **`~/.hermes/.env`**, then **Restart gateway**. If you already had **`SLACK_BOT_TOKEN`** in **`animus.env`** but not in Hermes yet, ANIMUS may **import it once** when the Messaging list loads (see **Slack** below).
 7. **SSH hosts** — aliases for remote project roots (**`docs/ssh.md`**).
-8. **Token usage** — separate tab: usage aggregates and CSV export.
+8. **Token usage** — opens the **Tokens** sidebar tab (same screen as **Settings → Token usage → Open token usage tracker**): aggregates, collapsible history charts, **Refresh**, and **Records** CSV. While **Tokens** is the active tab and the page is visible (not a background tab), data reloads about every **10 minutes** automatically.
 9. **HELP** — this guide + **Ask ANIMUS** (read-only).
 10. **Server** — restart gateway / chat server, and **Purge all chat history** (destructive).
 
@@ -68,7 +68,17 @@ If chat fails with **configuration** or **upstream** errors, check `animus.env` 
 
 ## Token usage tracker
 
-**Settings → Token usage → Open token usage tracker** shows usage aggregates (provider, model, source). Usage is recorded when the gateway returns token counts on chat streams and for some other API paths. It helps compare cost and verify reporting.
+Open **Tokens** in the sidebar (or **Settings → Token usage → Open token usage tracker**). You get usage aggregates, three **collapsible** bar charts, per-row lists, **Refresh**, and **Records** (CSV export). Usage is recorded when the gateway returns token counts on chat streams and for some other API paths—use it to compare cost and verify reporting.
+
+**History charts** (each in its own expand/collapse block): **This month (by day)**, **By calendar month (all-time)**, and **By calendar year (all-time)**. **By calendar month (all-time)** starts **open**; the other two start **collapsed** so the default view stays compact. If a chart looks empty or mis-sized until you expand it, open that section once so the layout can reflow.
+
+While **Tokens** is the active tab and the document is **visible** (not a background tab), the server data reloads about every **10 minutes**; use **Refresh** anytime. Leaving **Tokens** or hiding the tab stops the auto-refresh until you return.
+
+**ANIMUS client (product surface)** vs **By source (logging)** (and the **By provider** / **By model** tabs): **ANIMUS client** groups rows that carry the cooperative **`X-Animus-Client: <slug>`** header from the in-app UI (for example **`chat`**, **`plan`**, **`skills`**, **`wizard`**, **`help`**, **`cron`**, **`prompt-optimizer`**). **By source (logging)** reflects JSONL **`source`** / **`source_id`** (technical route names). The same request can contribute to both views; use **ANIMUS client** when you care which product area drove tokens, and **By source** when you care about the logged API route.
+
+Other apps (for example **Cursor**) can call ANIMUS **`POST /api/chat`** like an OpenAI-compatible proxy without sending **`hermes_provider`**. When the server can infer that pattern (Cursor **User-Agent** or **`composer-…`** model ids from the stream), new log rows use the provider slug **`cursor-coding`**, shown in the UI as **Cursor coding**. Rows that stay under **Provider not reported** still lack both an explicit provider and a known inference.
+
+The **ANIMUS web app** sends **`X-Animus-Client`** on in-app requests that matter for attribution. The allowlist matches **`token_usage.ANIMUS_CLIENT_SLUGS`** on the server; matching **`POST /api/tokens/record`** and **`POST /api/chat`** responses store **`animus_client`** on **`token_usage.jsonl`** rows. Server-only paths (Help completion logging, cron trigger placeholder, cron prompt optimizer completion) also stamp **`animus_client`** directly. CSV **Records** includes the **`animus_client`** column. External OpenAI-shaped clients omit the header unless they add it; **`animus_client`** may be blank for those rows (the chat stream may still infer **Cursor coding** when fingerprints match). Traffic that never reaches logged token paths will not appear in these views.
 
 ## Cron jobs
 

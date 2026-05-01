@@ -17,6 +17,7 @@ Then from repo root:
 
 ```bash
 export ADMIN_TOKEN="$(tr -d '[:space:]' < seller-private/ADMIN_TOKEN)"
+export ANIMUS_RELEASE_NOTES='Short buyer-facing summary of this zip (at least 24 characters).'
 ./scripts/publish-animus-manifest.sh
 ```
 

@@ -2,7 +2,8 @@
 OpenAI-compatible API server platform adapter.
 
 Exposes an HTTP server with endpoints:
-- POST /v1/chat/completions        — OpenAI Chat Completions format (stateless; opt-in session continuity via X-Hermes-Session-Id header)
+- POST /v1/chat/completions        — OpenAI Chat Completions format (stateless; session via ``X-Hermes-Session-Id``; derived IDs include optional ``conversation_id`` body field)
+- GET  /v1/chat/session-prompt-status — whether ``sessions.system_prompt`` is non-empty for a session id (ANIMUS preflight)
 - POST /v1/responses               — OpenAI Responses API format (stateful via previous_response_id)
 - GET  /v1/responses/{response_id} — Retrieve a stored response
 - DELETE /v1/responses/{response_id} — Delete a stored response
@@ -606,17 +607,19 @@ def _make_request_fingerprint(body: Dict[str, Any], keys: List[str]) -> str:
 def _derive_chat_session_id(
     system_prompt: Optional[str],
     first_user_message: str,
+    conversation_id: str = "",
 ) -> str:
-    """Derive a stable session ID from the conversation's first user message.
+    """Derive a stable session ID when ``X-Hermes-Session-Id`` is absent.
 
-    OpenAI-compatible frontends (Open WebUI, LibreChat, etc.) send the full
-    conversation history with every request.  The system prompt and first user
-    message are constant across all turns of the same conversation, so hashing
-    them produces a deterministic session ID that lets the API server reuse
-    the same Hermes session (and therefore the same Docker container sandbox
-    directory) across turns.
+    OpenAI-compatible frontends often send the full history each turn; hashing
+    system + first user yields a stable ID across turns for the same thread.
+
+    ANIMUS (and similar) SHOULD send ``X-Hermes-Session-Id`` per chat. When they
+    also pass ``conversation_id`` in the JSON body, include it in the seed so
+    two different chats that start with the same first line do not collide.
     """
-    seed = f"{system_prompt or ''}\n{first_user_message}"
+    cid = (conversation_id or "").strip()
+    seed = f"{system_prompt or ''}\n{first_user_message}\n{cid}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:16]
     return f"api-{digest}"
 
@@ -784,6 +787,22 @@ class APIServerAdapter(BasePlatformAdapter):
                 logger.debug("SessionDB unavailable for API server: %s", e)
         return self._session_db
 
+    def _session_has_nonempty_stored_system_prompt(self, session_id: Optional[str]) -> bool:
+        """True when ``sessions.system_prompt`` is non-blank for this session id."""
+        if not session_id or not str(session_id).strip():
+            return False
+        db = self._ensure_session_db()
+        if db is None:
+            return False
+        try:
+            row = db.get_session(str(session_id).strip())
+            if not row:
+                return False
+            sp = row.get("system_prompt")
+            return bool(sp and str(sp).strip())
+        except Exception:
+            return False
+
     # ------------------------------------------------------------------
     # Agent creation helper
     # ------------------------------------------------------------------
@@ -918,6 +937,55 @@ class APIServerAdapter(BasePlatformAdapter):
             ],
         })
 
+    async def _handle_chat_session_prompt_status(self, request: "web.Request") -> "web.Response":
+        """GET /v1/chat/session-prompt-status — SQLite truth for ANIMUS preflight before omitting project system.
+
+        Query ``session_id`` or header ``X-Hermes-Session-Id`` (header wins when both present).
+        Requires the same authentication policy as session continuation when ``API_SERVER_KEY`` is set.
+        """
+        auth_err = self._check_auth(request)
+        if auth_err:
+            return auth_err
+
+        sid = request.headers.get("X-Hermes-Session-Id", "").strip()
+        if sid.lower() in ("undefined", "null", "none", "[object object]"):
+            sid = ""
+        if not sid:
+            q = request.rel_url.query.get("session_id", "")
+            if isinstance(q, str):
+                sid = q.strip()
+        if sid.lower() in ("undefined", "null", "none", "[object object]"):
+            sid = ""
+        if not sid:
+            return web.json_response({
+                "has_stored_system_prompt": False,
+                "session_known": False,
+            })
+
+        if self._api_key and re.search(r'[\r\n\x00]', sid):
+            return web.json_response(
+                {"error": {"message": "Invalid session ID", "type": "invalid_request_error"}},
+                status=400,
+            )
+
+        db = self._ensure_session_db()
+        row = None
+        if db is not None:
+            try:
+                row = db.get_session(sid)
+            except Exception as exc:
+                logger.warning("session-prompt-status get_session failed: %s", exc)
+                row = None
+
+        session_known = row is not None
+        has_sp = self._session_has_nonempty_stored_system_prompt(sid)
+
+        return web.json_response({
+            "has_stored_system_prompt": bool(has_sp),
+            "session_known": bool(session_known),
+            "session_id": sid,
+        })
+
     async def _handle_chat_completions(self, request: "web.Request") -> "web.Response":
         """POST /v1/chat/completions — OpenAI Chat Completions format."""
         auth_err = self._check_auth(request)
@@ -982,6 +1050,8 @@ class APIServerAdapter(BasePlatformAdapter):
         # authenticated.  Without this gate, any unauthenticated client could
         # read arbitrary session history by guessing/enumerating session IDs.
         provided_session_id = request.headers.get("X-Hermes-Session-Id", "").strip()
+        if provided_session_id.lower() in ("undefined", "null", "none", "[object object]"):
+            provided_session_id = ""
         if provided_session_id:
             if not self._api_key:
                 logger.warning(
@@ -1020,7 +1090,17 @@ class APIServerAdapter(BasePlatformAdapter):
                 if cm.get("role") == "user":
                     first_user = cm.get("content", "")
                     break
-            session_id = _derive_chat_session_id(system_prompt, first_user)
+            conv_stable = ""
+            cid = body.get("conversation_id")
+            if isinstance(cid, str) and cid.strip():
+                conv_stable = cid.strip()
+            else:
+                meta = body.get("metadata")
+                if isinstance(meta, dict):
+                    mid = meta.get("conversation_id")
+                    if isinstance(mid, str) and mid.strip():
+                        conv_stable = mid.strip()
+            session_id = _derive_chat_session_id(system_prompt, first_user, conv_stable)
             # history already set from request body above
 
         completion_id = f"chatcmpl-{uuid.uuid4().hex[:29]}"
@@ -1182,7 +1262,14 @@ class APIServerAdapter(BasePlatformAdapter):
             },
         }
 
-        return web.json_response(response_data, headers={"X-Hermes-Session-Id": session_id})
+        hdrs = {"X-Hermes-Session-Id": session_id}
+        try:
+            _primed = "1" if self._session_has_nonempty_stored_system_prompt(session_id) else "0"
+            hdrs["X-Hermes-Has-Stored-System-Prompt"] = _primed
+            hdrs["X-Hermes-Session-Primed"] = _primed
+        except Exception:
+            pass
+        return web.json_response(response_data, headers=hdrs)
 
     async def _write_sse_chat_completion(
         self, request: "web.Request", completion_id: str, model: str,
@@ -1328,6 +1415,21 @@ class APIServerAdapter(BasePlatformAdapter):
                 },
             }
             await response.write(f"data: {json.dumps(finish_chunk)}\n\n".encode())
+            # ANIMUS (and other UIs) may omit the project system block on later
+            # turns only when the merged prompt was persisted to SQLite.  Surface
+            # authoritative post-turn state so clients are not misled by local
+            # flags when the DB row has no ``system_prompt`` yet.
+            try:
+                has_sp = self._session_has_nonempty_stored_system_prompt(session_id)
+                sess_payload = {
+                    "sessionPrimed": bool(has_sp),
+                    "hasStoredSystemPrompt": bool(has_sp),
+                }
+                await response.write(
+                    f"event: hermes.session\ndata: {json.dumps(sess_payload)}\n\n".encode()
+                )
+            except Exception:
+                pass
             await response.write(b"data: [DONE]\n\n")
         except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
             # Client disconnected mid-stream.  Interrupt the agent so it
@@ -2719,6 +2821,7 @@ class APIServerAdapter(BasePlatformAdapter):
             self._app.router.add_get("/health/detailed", self._handle_health_detailed)
             self._app.router.add_get("/v1/health", self._handle_health)
             self._app.router.add_get("/v1/models", self._handle_models)
+            self._app.router.add_get("/v1/chat/session-prompt-status", self._handle_chat_session_prompt_status)
             self._app.router.add_post("/v1/chat/completions", self._handle_chat_completions)
             self._app.router.add_post("/v1/responses", self._handle_responses)
             self._app.router.add_get("/v1/responses/{response_id}", self._handle_get_response)

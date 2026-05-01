@@ -53,8 +53,10 @@ Agents must:
 
 - **Minimize tokens:** Use the least reading, search, tool output, and prose necessary to complete the task safely. Prefer narrow searches, partial file reads, and small diffs over whole-repo exploration or dumping large files when the task does not require it.
 - **Navigate with `repo_map.md`:** Read `repo_map.md` early and follow it to entrypoints and owning directories. Do not read the entire codebase or enumerate every file by default—open only paths the map (or a targeted search) justifies.
+- **Use compact memory index first:** Read `project_memory/index.json` before `repo_map.md` and code scans. Use it as the token-light machine index for entrypoints, areas, and high-value files; use `repo_map.md` as human-readable backup only.
 - **Enrich `project_knowledge.md` for the next agent:** When you learn shortcuts that save time or tokens (fast validation commands, safe edit paths, folders to skip, search patterns, navigation tips), add concise bullets there. That file is for durable, reusable efficiency lessons—not for duplicating `project_history.md`.
 - **`project_history.md` when logging:** To add a session entry, **append** a new block at the bottom. Do **not** read or reload the full `project_history.md` just to append. Full-file reads of history are only for tasks that truly require auditing the entire log.
+- **Keep compact memory current:** After meaningful structural changes, refresh `project_memory/index.json` (or run the workspace refresh path that regenerates it) so future agents can navigate without broad repo scans.
 
 ---
 
@@ -416,3 +418,11 @@ What state the project is currently in.
 What durable lessons are known.
 What still needs attention.
 ```
+
+<!-- hermes-project-memory-v1 -->
+Compact project memory workflow:
+- Read `project_memory/index.json` first for token-light navigation.
+- Use `repo_map.md` as human-readable backup, not the primary full context payload.
+- Do not load full `project_history.md` by default; only recent tail entries when needed.
+- Keep `project_memory/index.json` current after structural changes.
+

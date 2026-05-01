@@ -34,5 +34,8 @@ hermes-agent/venv/
 hermes-agent/node_modules/
 hermes-agent/**/__pycache__/
 
+# Internal QA / agent artifacts (not shipped in release zip)
+artifacts/
+
 # Release artifact
 animus-v*.zip

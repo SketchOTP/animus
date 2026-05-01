@@ -35,4 +35,5 @@ echo "[release-and-publish] Copied ${ZIP} → ${SITE}/releases/"
 
 echo "[release-and-publish] Vercel deploy finished."
 echo "Publish / refresh manifest (if needed):"
+echo "  export ANIMUS_RELEASE_NOTES='… (≥24 chars, buyer-facing summary) …'"
 echo "  cd ${ROOT} && ./scripts/publish-animus-manifest.sh"

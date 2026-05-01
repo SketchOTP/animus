@@ -220,7 +220,7 @@ async def help_ask_post(req: Request) -> Response:
             except (TypeError, ValueError):
                 out_i = None
             resolved = str(data.get("model") or model).strip()
-            record_token_usage(hp, resolved, inp_i, out_i, "help", "")
+            record_token_usage(hp, resolved, inp_i, out_i, "help", "", animus_client="help")
     except Exception:
         pass
     return JSONResponse({"ok": True, "answer": answer})

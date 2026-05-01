@@ -3040,6 +3040,23 @@ def _pick_systemctl_prefix(service: str) -> Optional[list]:
     return None
 
 
+def _gateway_profile_hint_from_env() -> str:
+    """Return a stable Hermes profile name inferred from ``HERMES_HOME``."""
+    raw = (os.environ.get("HERMES_HOME") or "").strip()
+    if not raw:
+        return "default"
+    try:
+        parts = Path(raw).expanduser().parts
+        for i, seg in enumerate(parts):
+            if seg == "profiles" and i + 1 < len(parts):
+                cand = parts[i + 1].strip()
+                if cand and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", cand):
+                    return cand
+    except Exception:
+        pass
+    return "default"
+
+
 def _restart_service_now(service: str) -> Tuple[bool, str, str]:
     prefix = _pick_systemctl_prefix(service)
     if not prefix:
@@ -3089,6 +3106,25 @@ async def _delayed_argv_restart(argv: list, delay: float) -> None:
 async def _restart_gateway_background() -> None:
     """Long-running gateway restart (dashboard / ``hermes`` CLI / systemd) — must not block the HTTP response."""
     await asyncio.sleep(0.25)
+    unit = HERMES_GATEWAY_SYSTEMD_UNIT
+    profile_hint = _gateway_profile_hint_from_env()
+
+    # Prefer restarting the pinned systemd unit first: unit ExecStart can lock
+    # profile selection even when ~/.hermes/active_profile points elsewhere.
+    def _systemd() -> Tuple[bool, str, str]:
+        ok, cmd, err = _restart_service_now(unit)
+        if not ok and err == "systemctl service not found":
+            err = _systemd_unit_missing_detail(unit, for_chat=False)
+        if ok:
+            log.info("gateway restart: systemd ok %s", cmd)
+        else:
+            log.warning("gateway restart: systemd failed %s err=%s", cmd, err)
+        return ok, cmd, err
+
+    ok_systemd, _cmd, _err = await asyncio.to_thread(_systemd)
+    if ok_systemd:
+        return
+
     try:
         from hermes_runner import run_hermes
         from hermes_service_client import dashboard_post_gateway_restart, hermes_dashboard_session_token
@@ -3101,9 +3137,17 @@ async def _restart_gateway_background() -> None:
             if st not in (0, 401, 404):
                 log.warning("dashboard gateway restart HTTP %s: %s", st, body)
 
-        cli_res = await asyncio.to_thread(run_hermes, ["gateway", "restart"], 90)
+        cli_res = await asyncio.to_thread(
+            run_hermes,
+            ["--profile", profile_hint, "gateway", "restart"],
+            90,
+        )
         if cli_res.get("ok"):
-            log.info("gateway restart: hermes_cli ok stdout=%s", (cli_res.get("stdout") or "")[:200])
+            log.info(
+                "gateway restart: hermes_cli ok profile=%s stdout=%s",
+                profile_hint,
+                (cli_res.get("stdout") or "")[:200],
+            )
             return
         log.warning("hermes gateway restart failed: %s", cli_res.get("stderr") or cli_res)
     except Exception as exc:
@@ -3126,17 +3170,7 @@ async def _restart_gateway_background() -> None:
         await asyncio.to_thread(_run)
         return
 
-    unit = HERMES_GATEWAY_SYSTEMD_UNIT
-
-    def _systemd() -> None:
-        ok, cmd, err = _restart_service_now(unit)
-        if not ok and err == "systemctl service not found":
-            err = _systemd_unit_missing_detail(unit, for_chat=False)
-        if ok:
-            log.info("gateway restart: systemd ok %s", cmd)
-        else:
-            log.error("gateway restart: systemd failed %s err=%s", cmd, err)
-
+    # Final fallback: try systemd one last time (e.g. transient sudo/systemctl hiccup).
     await asyncio.to_thread(_systemd)
 
 

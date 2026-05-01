@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-01T10:33:23Z",
+  "generated_at": "2026-05-01T16:41:05Z",
   "project_root": "/home/sketch/animus",
   "entrypoints": [
     {
       "path": "animus-chat/app/index.html",
-      "summary": "large file (606843 bytes)"
+      "summary": "large file (640267 bytes)"
     },
     {
       "path": "animus-chat/server.py",
-      "summary": "large file (130716 bytes)"
+      "summary": "large file (139564 bytes)"
     },
     {
       "path": "hermes-agent/acp_adapter/server.py",
@@ -35,15 +35,19 @@
   "areas": [
     {
       "name": "hermes-agent",
-      "file_count": 138
+      "file_count": 139
     },
     {
       "name": "animus-chat",
-      "file_count": 39
+      "file_count": 41
     },
     {
       "name": "docs",
       "file_count": 8
+    },
+    {
+      "name": "artifacts",
+      "file_count": 3
     },
     {
       "name": "docker",
@@ -58,43 +62,19 @@
       "file_count": 1
     },
     {
-      "name": "animus-v1.0.0.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.1.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.2.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.3.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.4.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.5.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.6.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.7.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.0.8.zip",
-      "file_count": 1
-    },
-    {
       "name": "animus-v1.0.9.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.1.0.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.1.1.zip",
+      "file_count": 1
+    },
+    {
+      "name": "animus-v1.1.2.zip",
       "file_count": 1
     },
     {
@@ -127,6 +107,26 @@
     },
     {
       "name": "INSTALL.md",
+      "file_count": 1
+    },
+    {
+      "name": "LICENSE",
+      "file_count": 1
+    },
+    {
+      "name": "notes.md",
+      "file_count": 1
+    },
+    {
+      "name": "project_goal.md",
+      "file_count": 1
+    },
+    {
+      "name": "project_history.md",
+      "file_count": 1
+    },
+    {
+      "name": "project_history.md.flock",
       "file_count": 1
     }
   ],
@@ -181,7 +181,7 @@
     },
     {
       "path": "animus-chat/app/index.html",
-      "summary": "large file (606843 bytes)"
+      "summary": "large file (640267 bytes)"
     },
     {
       "path": "animus-chat/app/manifest.json",
@@ -189,7 +189,7 @@
     },
     {
       "path": "animus-chat/app/sw.js",
-      "summary": "// Bump when shell HTML or critical assets change \u2014 activate() evicts older caches. const CACHE = 'animus-v41';"
+      "summary": "// Bump when shell HTML or critical assets change \u2014 activate() evicts older caches. const CACHE = 'animus-v60';"
     },
     {
       "path": "animus-chat/cron_routes.py",
@@ -249,7 +249,7 @@
     },
     {
       "path": "animus-chat/server.py",
-      "summary": "large file (130716 bytes)"
+      "summary": "large file (139564 bytes)"
     },
     {
       "path": "animus-chat/setup_repo.md",
@@ -288,6 +288,14 @@
       "summary": "# Tailscale Serve This file is kept for backwards compatibility. **Authoritative guidance** for ANIMUS is in the monorepo:"
     },
     {
+      "path": "animus-chat/tests/__init__.py",
+      "summary": "# ANIMUS animus-chat test package (unittest discover from animus-chat/)."
+    },
+    {
+      "path": "animus-chat/tests/test_token_usage_animus_client.py",
+      "summary": "\"\"\"Regression tests for allowlisted ``animus_client`` slugs (token_usage.jsonl). Run from ``animus-chat/``::"
+    },
+    {
       "path": "animus-chat/token_usage.py",
       "summary": "\"\"\"Append-only token usage log + read API (Phase 7).\"\"\" from __future__ import annotations"
     },
@@ -296,44 +304,20 @@
       "summary": "\"\"\"TTS helpers \u2014 browser vs local Piper (optional binary).\"\"\" from __future__ import annotations"
     },
     {
-      "path": "animus-v1.0.0.zip",
-      "summary": "large file (28817354 bytes)"
-    },
-    {
-      "path": "animus-v1.0.1.zip",
-      "summary": "large file (28818481 bytes)"
-    },
-    {
-      "path": "animus-v1.0.2.zip",
-      "summary": "large file (28818481 bytes)"
-    },
-    {
-      "path": "animus-v1.0.3.zip",
-      "summary": "large file (31633515 bytes)"
-    },
-    {
-      "path": "animus-v1.0.4.zip",
-      "summary": "large file (31636165 bytes)"
-    },
-    {
-      "path": "animus-v1.0.5.zip",
-      "summary": "large file (31637109 bytes)"
-    },
-    {
-      "path": "animus-v1.0.6.zip",
-      "summary": "large file (31645591 bytes)"
-    },
-    {
-      "path": "animus-v1.0.7.zip",
-      "summary": "large file (31690107 bytes)"
-    },
-    {
-      "path": "animus-v1.0.8.zip",
-      "summary": "large file (31696295 bytes)"
-    },
-    {
       "path": "animus-v1.0.9.zip",
       "summary": "large file (28887236 bytes)"
+    },
+    {
+      "path": "animus-v1.1.0.zip",
+      "summary": "large file (28915617 bytes)"
+    },
+    {
+      "path": "animus-v1.1.1.zip",
+      "summary": "large file (28921742 bytes)"
+    },
+    {
+      "path": "animus-v1.1.2.zip",
+      "summary": "large file (28924003 bytes)"
     },
     {
       "path": "animus.env",
@@ -350,6 +334,18 @@
     {
       "path": "ANIMUSLOGOICON.png",
       "summary": "large file (478545 bytes)"
+    },
+    {
+      "path": "artifacts/animus_digest_token_inflation_fix.md",
+      "summary": "# Proof: ANIMUS digest no longer duplicated in `sessions.system_prompt` (token inflation fix) This document records **live gateway** verification after deployi\u2026"
+    },
+    {
+      "path": "artifacts/hermes_project_session_priming_e2e.md",
+      "summary": "# Hermes project session priming \u2014 E2E verification artifact (updated) ## Status summary"
+    },
+    {
+      "path": "artifacts/token_tracker_tab_explained.md",
+      "summary": "# ANIMUS Token Tracker Tab \u2014 Full Explanation This document traces **capture \u2192 `token_usage.jsonl` \u2192 read API \u2192 Tokens tab UI \u2192 CSV**, with explicit limits and\u2026"
     },
     {
       "path": "build-release.sh",
@@ -740,6 +736,10 @@
       "summary": "# Hermes Agent - Development Guide Instructions for AI coding assistants and developers working on the hermes-agent codebase."
     },
     {
+      "path": "hermes-agent/animus_chat_digest_persist.py",
+      "summary": "\"\"\"Strip ANIMUS-only transient system text before persisting gateway chat ephemerals to SQLite.\"\"\" _ANIMUS_CHAT_DIGEST_MARKERS = ("
+    },
+    {
       "path": "hermes-agent/assets/banner.png",
       "summary": "binary (.png)"
     },
@@ -921,7 +921,7 @@
     },
     {
       "path": "hermes-agent/run_agent.py",
-      "summary": "large file (658612 bytes)"
+      "summary": "large file (659662 bytes)"
     },
     {
       "path": "hermes-agent/SECURITY.md",
@@ -977,7 +977,7 @@
     },
     {
       "path": "project_history.md",
-      "summary": "large file (64999 bytes)"
+      "summary": "large file (78347 bytes)"
     },
     {
       "path": "project_history.md.flock",
@@ -985,7 +985,7 @@
     },
     {
       "path": "project_knowledge.md",
-      "summary": "large file (79206 bytes)"
+      "summary": "large file (91625 bytes)"
     },
     {
       "path": "project_status.md",
@@ -997,7 +997,7 @@
     },
     {
       "path": "repo_map.md",
-      "summary": "large file (94901 bytes)"
+      "summary": "large file (97275 bytes)"
     },
     {
       "path": "setup_repo.md",
@@ -1009,7 +1009,7 @@
     },
     {
       "path": "VERSION",
-      "summary": "1.0.9"
+      "summary": "1.1.2"
     }
   ],
   "commands": [

@@ -212,42 +212,55 @@ class CursorAgentClient:
         if not env.get("CURSOR_API_KEY") and self.api_key and self.api_key != "cursor-agent":
             env["CURSOR_API_KEY"] = str(self.api_key)
 
-        try:
-            proc = subprocess.Popen(
-                argv,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                cwd=self._cwd,
-                env=env,
-            )
-        except FileNotFoundError as exc:
-            raise RuntimeError(
-                f"Could not start Cursor CLI ({self._exe!r}). "
-                "Install Cursor and ensure `cursor-agent` or `cursor` is on PATH, "
-                "or set HERMES_CURSOR_AGENT_COMMAND."
-            ) from exc
+        def _run_once(run_env: dict[str, str]) -> tuple[int, str, str]:
+            try:
+                proc = subprocess.Popen(
+                    argv,
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    cwd=self._cwd,
+                    env=run_env,
+                )
+            except FileNotFoundError as exc:
+                raise RuntimeError(
+                    f"Could not start Cursor CLI ({self._exe!r}). "
+                    "Install Cursor and ensure `cursor-agent` or `cursor` is on PATH, "
+                    "or set HERMES_CURSOR_AGENT_COMMAND."
+                ) from exc
 
-        with self._active_process_lock:
-            self._active_process = proc
-        self.is_closed = False
-
-        try:
-            out, err = proc.communicate(input=prompt_text + "\n", timeout=effective_timeout)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            raise TimeoutError(
-                f"cursor-agent subprocess exceeded {effective_timeout:.0f}s timeout."
-            ) from None
-        finally:
             with self._active_process_lock:
-                self._active_process = None
-            self.is_closed = True
+                self._active_process = proc
+            self.is_closed = False
 
-        if proc.returncode:
-            detail = (err or "").strip() or (out or "").strip() or f"exit {proc.returncode}"
-            raise RuntimeError(f"Cursor CLI exited with status {proc.returncode}: {detail[:2000]}")
+            try:
+                out, err = proc.communicate(input=prompt_text + "\n", timeout=effective_timeout)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                raise TimeoutError(
+                    f"cursor-agent subprocess exceeded {effective_timeout:.0f}s timeout."
+                ) from None
+            finally:
+                with self._active_process_lock:
+                    self._active_process = None
+                self.is_closed = True
+            return proc.returncode, out or "", err or ""
+
+        returncode, out, err = _run_once(env)
+        if returncode and env.get("CURSOR_API_KEY"):
+            detail = (err or "").strip() or (out or "").strip()
+            # Browser-auth installs may have stale CURSOR_API_KEY exported in
+            # ~/.hermes/.env; retry once without that env var so cursor login
+            # sessions can be used.
+            if "api key is invalid" in detail.lower() and "cursor_api_key" in detail.lower():
+                retry_env = dict(env)
+                retry_env.pop("CURSOR_API_KEY", None)
+                returncode, out, err = _run_once(retry_env)
+
+        if returncode:
+            detail = (err or "").strip() or (out or "").strip() or f"exit {returncode}"
+            raise RuntimeError(f"Cursor CLI exited with status {returncode}: {detail[:2000]}")
 
         response_text = (out or "").strip()
         if not response_text and (err or "").strip():

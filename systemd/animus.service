@@ -1,6 +1,7 @@
 [Unit]
 Description=ANIMUS chat UI (restart: systemctl --user restart animus.service)
-After=network.target
+After=network.target hermes-gateway.service
+Wants=hermes-gateway.service
 
 [Service]
 Type=simple

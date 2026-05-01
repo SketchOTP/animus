@@ -4,6 +4,26 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 
 ---
 
+## mitmproxy + ANIMUS / Hermes gateway (010526)
+
+- **Stable default:** set mitm **`HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY=127.0.0.1,localhost,::1`** on **`~/.config/systemd/user/hermes-gateway.service`** only. **Do not** set those on repo-root **`animus.env`** — ANIMUS→**`127.0.0.1:8642`** over httpx saw flaky failures / races with proxy enabled. Provider **`model` + `messages`** still appear in mitm on **gateway→provider HTTPS**. After unit edits: **`systemctl --user daemon-reload`** + **`restart hermes-gateway.service`** (and **`animus.service`** if **`animus.env`** changed).
+- **Legacy “both files” pairing** is deprecated for this host after 010526; examples and **`repo_map.md`** reflect gateway-only proxy.
+- **Cursor `http.proxy`** does not apply to **`animus.service`** (Python **httpx**); gateway Python honors the same env vars when set on the unit.
+- **`NO_PROXY=127.0.0.1,localhost,::1`:** keeps **local Hermes HTTP** off mitm (avoids **502 / connection errors**). For **“which model / full prompt sent out”**, inspect mitm flows for **gateway → provider HTTPS** (e.g. **`api.openai.com`**, Codex, Anthropic): the **request JSON** carries **`model`** and **`messages`** as sent upstream — that is the authoritative capture vs browser UI labels. **ANIMUS → `127.0.0.1:8642`** is intentionally not in that capture path.
+- **When the mitm block is enabled**, **mitmproxy must listen on `127.0.0.1:8080`** or outbound calls fail. If provider TLS fails, trust mitm CA system-wide or set **`SSL_CERT_FILE`** for the gateway process. Templates: **`animus.env.example`**, **`animus-chat/animus.env.example`**.
+- **Reliability toggle (010526 live check):** if chats start failing with `API call failed after 3 retries: Connection error`, first disable gateway proxy env lines in `~/.config/systemd/user/hermes-gateway.service` and restart gateway/chat. On this host, Codex immediately recovered (`CODX_OK`) when those proxy lines were commented.
+- **Forensic provider-proof recipe (010526):** use a **separate temporary mitm port** (e.g., `8083`) instead of the shared `8080` session to avoid mixed noise. Point only `hermes-gateway.service` to that port (`HTTP_PROXY`/`HTTPS_PROXY` + loopback `NO_PROXY`), add `SSL_CERT_FILE=/home/sketch/.mitmproxy/mitmproxy-ca-cert.pem` for TLS trust, restart gateway, run one provider-forced ANIMUS `/api/chat` request per capture window, and inspect the mitm JSONL for upstream host/path/model (Codex→`chatgpt.com/backend-api/codex/responses`, Claude→`api.anthropic.com/v1/messages`, Cursor→`api2.cursor.sh/*`). After capture, **revert unit env lines and restart gateway**.
+
+## Profile lock hardening (010526)
+
+- **Cursor browser-auth fallback (010526):** if `cursor-agent` fails with an invalid `CURSOR_API_KEY` message, retry once with that env var removed so CLI login (`cursor login`) can be used. This prevents stale env keys in `~/.hermes/.env` from breaking browser-auth Cursor runs.
+- **Per-request provider override in API server:** when `hermes_provider` or `hermes_base_url` is overridden, recompute `api_mode` from provider/base URL (`determine_api_mode`). Otherwise stale default-mode values (e.g. `codex_responses`) can misroute Cursor/Copilot shims and trigger `.responses` attribute errors.
+- **Per-request provider override must re-resolve full runtime config (010526):** recomputing `api_mode` alone is insufficient for alias providers such as `claude-code`. If `provider` changes but stale `base_url`/`api_key` from the default runtime remain, requests can silently hit the wrong upstream (e.g. Codex endpoint) and hang/fail. In `gateway/platforms/api_server.py`, use `resolve_runtime_provider(requested=..., explicit_base_url=..., target_model=...)` and overwrite `provider/base_url/api_mode/api_key/command/args/credential_pool` together.
+- **Hermes default profile path is `~/.hermes`** (not `~/.hermes/profiles/default`). If ANIMUS uses the latter while gateway runs with `--profile default`, `/api/hermes-chat-meta` shows mismatch and Settings/model sync can target the wrong profile.
+- **Pin gateway profile in systemd ExecStart:** use `... -m hermes_cli.main --profile default gateway run --replace` in `hermes-gateway.service`. This prevents `~/.hermes/active_profile` (e.g., `dpc` symlinked to companion home) from silently hijacking ANIMUS traffic.
+- **Restart hardening in `animus-chat/server.py`:** `POST /api/restart/gateway` now prefers systemd restart first; if fallback CLI is needed it passes `--profile <derived-from-HERMES_HOME>`. This avoids profile drift during restart paths.
+- **`scripts/sync-dev-systemd.sh` must keep `HERMES_HOME=$HOME/.hermes`** and normalize legacy `HERMES_HOME=.../.hermes/profiles/default` in existing `animus.env` files.
+
 ## Release zip size (010526)
 
 - **`hermes-agent/.e2e-venv/`** is gitignored but still lives on disk; **`build-release.sh`** must **`zip -x`** it or the buyer zip balloons past the **55MB** cap (symptom: ~77MB). **`artifacts/`** is gitignored and excluded from zip so internal QA markdown does not ship to buyers.
@@ -267,7 +287,7 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Single dev tree:** Prefer **one** ANIMUS clone (**`/home/sketch/animus`**) for chat + agent + gateway. Run **`./scripts/sync-dev-systemd.sh`** to install **`animus.service`** and **`hermes-gateway.service`** from that **`ROOT`** (no parallel **`animus-fresh-install/hermes-agent`** path required). Use a separate unzip dir only when simulating a buyer machine; do not treat it as a second “source of truth.”
 - **`hermes project`:** Handlers live in **`hermes_cli/project_workspace_cmd.py`**; **`hermes_cli/main.py`** must register the **`project`** subparser and **`cmd_project`** (init / history-append / repo-map-refresh / repo-maps-refresh-all / show / write) or CLI help will not list the command.
 - **Gateway restart vs ANIMUS:** If **`hermes-gateway.service`** uses **`WorkingDirectory=/home/sketch/.hermes/hermes-agent`** (or any non-ANIMUS tree), restarting it does **not** load the monorepo **`hermes-agent/`**. Either run **`./scripts/sync-dev-systemd.sh`** so the unit tracks **`$ROOT/hermes-agent`**, or spot-check delivery with a throwaway **`CHAT_DATA_DIR`** and **`PYTHONPATH=<animus>/hermes-agent`** (no systemd) before touching a shared gateway.
-- **Dev host gateway unit (300426):** **`scripts/sync-dev-systemd.sh`** writes **`~/.config/systemd/user/hermes-gateway.service`** with **`WorkingDirectory`** = **`$ROOT/hermes-agent`**, **`CHAT_DATA_DIR=$ROOT/animus-chat/data`**, **`HERMES_HOME=$HOME/.hermes/profiles/default`**. Re-run after moving the repo. Backup old units before profile/chat-dir experiments (e.g. **`hermes-gateway.service.bak-20260430-dpc`**).
+- **Dev host gateway unit (300426):** **`scripts/sync-dev-systemd.sh`** writes **`~/.config/systemd/user/hermes-gateway.service`** with **`WorkingDirectory`** = **`$ROOT/hermes-agent`**, **`CHAT_DATA_DIR=$ROOT/animus-chat/data`**, **`HERMES_HOME=$HOME/.hermes`**, and **`ExecStart ... --profile default`**. Re-run after moving the repo. Backup old units before profile/chat-dir experiments (e.g. **`hermes-gateway.service.bak-20260430-dpc`**).
 
 ## Stack and validation
 
@@ -295,6 +315,7 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 
 - **`repo_map.md` first:** Small tree here—open listed paths only; when code lands, keep the map current so agents avoid whole-repo walks.
 - **`project_history.md`:** Append new entries at EOF; do not load the full log just to add a line. Skim recent entries for context.
+- **History append safety:** for large logs, take a short tail read first and patch against the current EOF anchor; do not blind-append without checking the latest tail block.
 - **Mirrors:** After editing `AGENTS.md`, run `cmp` copies: `cp AGENTS.md .cursorrules CLAUDE.md .cursor/rules/operating_rules.md` (adjust paths); one source of truth.
 - **`setup_repo.md`:** Appendix A must stay aligned with `AGENTS.md` (same policy body; `[repo]` vs real name is the only intentional difference).
 

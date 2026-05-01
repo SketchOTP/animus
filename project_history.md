@@ -2139,3 +2139,122 @@ Files touched:
 - project_knowledge.md
 - repo_map.md
 - project_history.md
+
+1624 010526 - Wired ANIMUS systemd env for mitmproxy (HTTP_PROXY/HTTPS_PROXY/NO_PROXY); documented in animus.env.example; restarted animus.service.
+Files touched:
+- animus.env
+- animus.env.example
+- animus-chat/animus.env.example
+- repo_map.md
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1635 010526 - Added mitmproxy HTTP_PROXY/HTTPS_PROXY/NO_PROXY to user hermes-gateway.service; restarted unit; docs touch.
+Files touched:
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+- project_history.md
+
+1710 010526 - Removed mitmproxy proxy env from animus.env and hermes-gateway.service; documented paired toggle; restarted both units.
+Files touched:
+- animus.env
+- animus.env.example
+- animus-chat/animus.env.example
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_knowledge.md
+- project_status.md
+- repo_map.md
+- project_history.md
+
+1745 010526 - Re-enabled mitmproxy HTTP_PROXY/HTTPS_PROXY/NO_PROXY on animus.env and hermes-gateway.service; restarted both units.
+Files touched:
+- animus.env
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_history.md
+
+1655 010526 - Mitm: NO_PROXY loopback bypass + animus.service After/Wants hermes-gateway; synced repo systemd/animus.service; doc touch.
+Files touched:
+- animus.env
+- animus.env.example
+- animus-chat/animus.env.example
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- /home/sketch/.config/systemd/user/animus.service
+- systemd/animus.service
+- project_knowledge.md
+- project_history.md
+
+1805 010526 - Commented out mitm HTTP_PROXY/HTTPS_PROXY/NO_PROXY in animus.env and hermes-gateway.service; restarted both units.
+Files touched:
+- animus.env
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_history.md
+
+1820 010526 - Re-enabled mitm proxy with NO_PROXY loopback; documented provider-HTTPS capture in animus.env and examples.
+Files touched:
+- animus.env
+- animus.env.example
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_knowledge.md
+- project_history.md
+
+1657 010526 - Removed HTTP(S)_PROXY from repo animus.env (gateway-only mitm); updated examples, repo_map, status/knowledge; restarted user units; smoke curl meta + gateway health.
+Files touched:
+- animus.env
+- animus.env.example
+- animus-chat/animus.env.example
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_status.md
+- project_knowledge.md
+- project_history.md
+- repo_map.md
+
+1716 010526 - Hardened gateway profile pinning and restart path to prevent active_profile drift; aligned HERMES_HOME to Hermes default profile path and verified chat↔gateway home match.
+Files touched:
+- animus-chat/server.py
+- scripts/sync-dev-systemd.sh
+- animus.env
+- animus.env.example
+- animus-chat/animus.env.example
+- docker/Dockerfile
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1739 010526 - Disabled gateway mitm proxy lines to restore chat reliability; validated Codex success and documented separate cursor-agent runtime error.
+Files touched:
+- /home/sketch/.config/systemd/user/hermes-gateway.service
+- project_status.md
+- project_knowledge.md
+- project_history.md
+
+1743 010526 - Fixed Cursor CLI provider runtime path: recompute api_mode for per-request provider overrides and retry cursor-agent once without stale CURSOR_API_KEY; verified Cursor and Codex chat pass.
+Files touched:
+- hermes-agent/gateway/platforms/api_server.py
+- hermes-agent/agent/cursor_agent_client.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1756 010526 - Fixed Claude Code provider override routing by re-resolving full runtime provider config per request; validated Codex/Cursor/Claude live chat responses.
+Files touched:
+- hermes-agent/gateway/platforms/api_server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1833 010526 - Documented a repeatable forensic provider-routing capture procedure (isolated mitm port, gateway-only proxy, TLS cert, and rollback) for future agents.
+Files touched:
+- project_knowledge.md
+- project_history.md
+
+1835 010526 - Added explicit tail-read + EOF-anchor safety guidance for project_history append operations.
+Files touched:
+- project_knowledge.md
+- project_history.md

@@ -10,7 +10,7 @@ Root: `/home/sketch/animus`
 - `.gitignore` — # Python __pycache__/ *.py[cod]
 - `AGENTS.md` — --- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true
 - `animus-chat/animus.env` — text file (1 bytes)
-- `animus-chat/animus.env.example` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
+- `animus-chat/animus.env.example` — copy template; mitm notes point to root **`animus.env.example`** (proxy on **`hermes-gateway.service`** only).
 - `animus-chat/animus_machinae.png` — large file (1393299 bytes)
 - `animus-chat/app/animus_machinae.png` — large file (1393299 bytes)
 - `animus-chat/app/ANIMUSLOGO.png` — large file (664372 bytes)
@@ -60,8 +60,9 @@ Root: `/home/sketch/animus`
 - `animus-v1.0.8.zip` — large file (31696295 bytes)
 - `animus-v1.0.9.zip` — large file (28887236 bytes)
 - `animus-v1.1.0.zip` — large file (28915617 bytes)
-- `animus.env` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
-- `animus.env.example` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
+- `animus.env` — root runtime env (**`systemd/animus.service`** **`EnvironmentFile`**). Use **`HERMES_HOME=/home/.../.hermes`** for the Hermes **default** profile (not `/profiles/default`). **Do not** set mitm **HTTP_PROXY** / **HTTPS_PROXY** here (loopback chat to Hermes became flaky); capture stays on the gateway unit.
+- **Host:** `~/.config/systemd/user/hermes-gateway.service` (not shipped in repo) — gateway unit should run `ExecStart ... --profile default` with **`HERMES_HOME=~/.hermes`** to prevent `active_profile` drift; optional mitm **`Environment=`** lines (**`HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY=127.0.0.1,localhost,::1`**). After edits: **`daemon-reload`** + restart **`hermes-gateway.service`** (and **`animus.service`** if **`animus.env`** changed).
+- `animus.env.example` — stock template + commented **mitmproxy** vars (same as `animus-chat/animus.env.example` pointer).
 - `ANIMUSLOGO.png` — large file (664372 bytes)
 - `ANIMUSLOGOICON.png` — large file (478545 bytes)
 - `build-release.sh` — Buyer zip from `VERSION`; excludes dev trees (e.g. `hermes-agent/.venv`, `hermes-agent/.e2e-venv`, `version archive/`, `artifacts/`, internal `project_*.md`); fails if zip exceeds 55MB cap.
@@ -120,7 +121,7 @@ Root: `/home/sketch/animus`
 - `hermes-agent/agent/copilot_acp_client.py` — """OpenAI-compatible shim that forwards Hermes requests to `copilot --acp`. This adapter lets Hermes treat the GitHub Copilot ACP server as a chat-style
 - `hermes-agent/agent/credential_pool.py` — large file (60789 bytes)
 - `hermes-agent/agent/credential_sources.py` — """Unified removal contract for every credential source Hermes reads from. Hermes seeds its credential pool from many places:
-- `hermes-agent/agent/cursor_agent_client.py` — """OpenAI-compatible shim that forwards Hermes turns to ``cursor-agent`` / ``cursor agent``. Each ``chat.completions.create`` runs a short-lived subprocess: st…
+- `hermes-agent/agent/cursor_agent_client.py` — OpenAI-compatible Cursor CLI shim (`cursor-agent` / `cursor agent`) for browser-auth and API-key auth; retries once without `CURSOR_API_KEY` when env key is invalid so CLI login sessions can still run.
 - `hermes-agent/agent/display.py` — """CLI presentation -- spinner, kawaii faces, tool preview formatting. Pure display functions and classes with no AIAgent dependency.
 - `hermes-agent/agent/error_classifier.py` — """API error classification for smart failover and recovery. Provides a structured taxonomy of API errors and a priority-ordered
 - `hermes-agent/agent/file_safety.py` — """Shared file safety rules used by both tools and ACP shims.""" from __future__ import annotations
@@ -236,7 +237,7 @@ Root: `/home/sketch/animus`
 - `hermes-agent/gateway/pairing.py` — """ DM Pairing System
 - `hermes-agent/gateway/platforms/__init__.py` — """ Platform adapters for messaging integrations.
 - `hermes-agent/gateway/platforms/ADDING_A_PLATFORM.md` — # Adding a New Messaging Platform Checklist for integrating a new messaging platform into the Hermes gateway.
-- `hermes-agent/gateway/platforms/api_server.py` — OpenAI-compatible HTTP adapter; **`GET /v1/chat/session-prompt-status`** (SQLite truth for ANIMUS preflight); streaming chat completions emit **`event: hermes.session`**; non-stream **`X-Hermes-Has-Stored-System-Prompt`** (large file)
+- `hermes-agent/gateway/platforms/api_server.py` — OpenAI-compatible HTTP adapter; per-request `hermes_provider`/`hermes_base_url` now re-resolve full runtime provider credentials (`provider/base_url/api_mode/api_key/command/args`) so alias/external providers (`cursor-agent`, `claude-code`) do not inherit stale default-provider routing; includes **`GET /v1/chat/session-prompt-status`**, `hermes.session` SSE, and `X-Hermes-Has-Stored-System-Prompt` headers (large file)
 - `hermes-agent/gateway/platforms/base.py` — large file (106884 bytes)
 - `hermes-agent/gateway/platforms/bluebubbles.py` — """BlueBubbles iMessage platform adapter. Uses the local BlueBubbles macOS server for outbound REST sends and inbound
 - `hermes-agent/gateway/platforms/dingtalk.py` — large file (55909 bytes)

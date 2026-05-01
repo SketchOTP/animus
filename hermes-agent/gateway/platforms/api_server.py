@@ -837,11 +837,40 @@ class APIServerAdapter(BasePlatformAdapter):
         if mo:
             model = mo
         po = (provider_override or "").strip() if provider_override else ""
-        if po:
-            runtime_kwargs["provider"] = po
         bou = (base_url_override or "").strip() if base_url_override else ""
-        if bou:
-            runtime_kwargs["base_url"] = bou
+        if po or bou:
+            # Re-resolve runtime credentials for per-request provider/base overrides.
+            # This keeps provider/base/api_mode/api_key coherent for aliases such as
+            # `claude-code` and external-process shims like `cursor-agent`.
+            try:
+                from hermes_cli.runtime_provider import resolve_runtime_provider
+
+                resolved = resolve_runtime_provider(
+                    requested=po or str(runtime_kwargs.get("provider") or ""),
+                    explicit_base_url=(bou or None),
+                    target_model=(mo or model or None),
+                )
+                runtime_kwargs["api_key"] = resolved.get("api_key")
+                runtime_kwargs["base_url"] = resolved.get("base_url")
+                runtime_kwargs["provider"] = resolved.get("provider")
+                runtime_kwargs["api_mode"] = resolved.get("api_mode")
+                runtime_kwargs["command"] = resolved.get("command")
+                runtime_kwargs["args"] = list(resolved.get("args") or [])
+                runtime_kwargs["credential_pool"] = resolved.get("credential_pool")
+            except Exception:
+                # Best-effort fallback: apply direct overrides and recompute api_mode.
+                if po:
+                    runtime_kwargs["provider"] = po
+                if bou:
+                    runtime_kwargs["base_url"] = bou
+                try:
+                    from hermes_cli.providers import determine_api_mode
+
+                    eff_provider = str(runtime_kwargs.get("provider") or "")
+                    eff_base_url = str(runtime_kwargs.get("base_url") or "")
+                    runtime_kwargs["api_mode"] = determine_api_mode(eff_provider, eff_base_url)
+                except Exception:
+                    pass
 
         user_config = _load_gateway_config()
         enabled_toolsets = sorted(_get_platform_tools(user_config, "api_server"))

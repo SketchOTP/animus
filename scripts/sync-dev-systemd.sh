@@ -24,7 +24,7 @@ echo "Installed ${UNIT_DST}"
 
 # systemd EnvironmentFile does not expand ${HOME} the way a login shell does;
 # use an absolute path so Hermes profile/cron paths resolve correctly.
-HERMES_HOME_ABS="${HOME}/.hermes/profiles/default"
+HERMES_HOME_ABS="${HOME}/.hermes"
 
 if [[ ! -f "${ENV_DST}" ]]; then
   if [[ ! -f "${ENV_EX}" ]]; then
@@ -56,10 +56,14 @@ else
     printf '\nINSTALL_DIR=%s\n' "${ROOT}" >>"${ENV_DST}"
     echo "Appended INSTALL_DIR to ${ENV_DST}"
   fi
-  # Fix broken HERMES_HOME if env still uses ${HOME} (not expanded under systemd).
+  # Fix broken HERMES_HOME if env still uses ${HOME} (not expanded under systemd),
+  # or a legacy ".hermes/profiles/default" path (Hermes "default" profile is ~/.hermes).
   if grep -qE '^HERMES_HOME=.*\$\{HOME\}' "${ENV_DST}"; then
     sed -i "s|^HERMES_HOME=.*|HERMES_HOME=${HERMES_HOME_ABS}|" "${ENV_DST}"
     echo "Normalized HERMES_HOME to ${HERMES_HOME_ABS} (systemd-safe path)."
+  elif grep -qE '^HERMES_HOME=.*/\.hermes/profiles/default$' "${ENV_DST}"; then
+    sed -i "s|^HERMES_HOME=.*|HERMES_HOME=${HERMES_HOME_ABS}|" "${ENV_DST}"
+    echo "Normalized HERMES_HOME to ${HERMES_HOME_ABS} (Hermes default profile path)."
   fi
 fi
 
@@ -81,7 +85,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=${PYTHON_GATE} -m hermes_cli.main gateway run --replace
+ExecStart=${PYTHON_GATE} -m hermes_cli.main --profile default gateway run --replace
 WorkingDirectory=${AGENT}
 Environment="PATH=${PATH_GATE}"
 Environment="VIRTUAL_ENV=${AGENT}/venv"

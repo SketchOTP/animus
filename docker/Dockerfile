@@ -24,7 +24,7 @@ ENV CHAT_HOST=0.0.0.0
 ENV CHAT_PORT=3001
 ENV HERMES_AGENT_DIR=/opt/hermes-agent
 # Example file uses a host placeholder path; container profile lives under root.
-ENV HERMES_HOME=/root/.hermes/profiles/default
+ENV HERMES_HOME=/root/.hermes
 
 EXPOSE 3001
 

@@ -2,6 +2,7 @@
 ANIMUS chat server (Starlette)
 - Serves the static PWA frontend from ./app/
 - Proxies /api/chat       → Hermes API /v1/chat/completions (streaming SSE)
+- ``POST /api/chat/summarize-context`` → one-shot Hermes completion to compress a long transcript (PWA auto context compaction; optional ``ANIMUS_CONTEXT_SUMMARY_MODEL``)
 - ``GET /api/hermes/session-prompt-status`` → Hermes ``GET /v1/chat/session-prompt-status`` (server-side gateway auth; ANIMUS preflight before omitting project system)
 - Proxies /api/models     → Hermes API /v1/models
 - /api/models              → UI model catalog (JSON array) + optional ``?gateway=1`` for raw gateway JSON
@@ -231,7 +232,8 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260501-token-charts-collapsible-v59"
+CHAT_SERVER_REV = "20260501-tokens-chart-defaults-v62"
+ANIMUS_CONTEXT_SUMMARY_MODEL = (os.environ.get("ANIMUS_CONTEXT_SUMMARY_MODEL") or "gpt-4o-mini").strip()
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
 # Filled in lifespan: GET /v1/models against HERMES_API with gateway_upstream_headers().
@@ -1596,6 +1598,48 @@ _ANIMUS_SKILLS_GUIDANCE = (
 )
 
 
+_CONTEXT_SUMMARY_SYSTEM = """You maintain a single cumulative IN-CHAT digest for one ANIMUS conversation thread (not project files).
+
+Input shape (from the client):
+- Section A = running combined summary from earlier auto-compactions in this same thread (may be empty on first run).
+- Section B = verbatim user/assistant turns to fold in now (everything being rolled into the digest this pass).
+- Section C = instructions.
+
+Your job:
+- Output ONE plain-text replacement for section A that merges A with B into a denser combined summary for this chat session only.
+- Dedupe facts already stated in A when they repeat in B; add new facts, decisions, paths, errors, tool outcomes, names, open questions.
+- Output plain text only: no markdown fences, no preamble ("Here is…"), no title line.
+- This digest reduces tokens inside the chat UI only. It does NOT replace project workspace continuity files (project_history.md, project_status.md, repo_map.md, project_knowledge.md, notes, etc.); those are updated by the normal agent/tool flow. Do not claim you wrote those files from this task.
+- If B is short, still return a tight merged digest (no refusal)."""
+
+
+def _assistant_text_from_chat_completion_payload(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return ""
+    first = choices[0]
+    if not isinstance(first, dict):
+        return ""
+    msg = first.get("message")
+    if not isinstance(msg, dict):
+        return ""
+    c = msg.get("content")
+    if isinstance(c, str):
+        return c.strip()
+    if isinstance(c, list):
+        parts: list[str] = []
+        for p in c:
+            if not isinstance(p, dict):
+                continue
+            t = p.get("text")
+            if isinstance(t, str):
+                parts.append(t)
+        return "".join(parts).strip()
+    return ""
+
+
 def _inject_animus_skills_guidance(chat_body: dict) -> None:
     """Add model-agnostic skill guidance for ANIMUS chat turns when requested by the UI."""
     if not isinstance(chat_body, dict):
@@ -1732,6 +1776,92 @@ async def chat(req: Request) -> Response:
         stream_headers["X-Hermes-Codex-Auto-Model"] = codex_auto_resolved_model
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers=stream_headers)
+
+
+async def chat_summarize_context(req: Request) -> Response:
+    """POST JSON ``{transcript, summary_model?, hermes_provider?, hermes_base_url?}`` → ``{summary}``."""
+    try:
+        body = await req.json()
+    except Exception:
+        return JSONResponse({"error": {"message": "Invalid JSON body"}}, status=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"error": {"message": "Body must be a JSON object"}}, status=400)
+    transcript = body.get("transcript")
+    if not isinstance(transcript, str) or not transcript.strip():
+        return JSONResponse({"error": {"message": "Field transcript (non-empty string) is required"}}, status=400)
+    text = transcript.strip()
+    if len(text) > 500_000:
+        text = text[:500_000] + "\n\n[... transcript truncated by ANIMUS at 500k chars ...]"
+
+    model_raw = body.get("summary_model")
+    model = (str(model_raw).strip() if model_raw is not None else "") or ANIMUS_CONTEXT_SUMMARY_MODEL
+    if not model:
+        model = "gpt-4o-mini"
+
+    upstream_payload: dict = {
+        "model": model,
+        "stream": False,
+        "temperature": 0.15,
+        "max_tokens": 8192,
+        "messages": [
+            {"role": "system", "content": _CONTEXT_SUMMARY_SYSTEM},
+            {
+                "role": "user",
+                "content": (
+                    "Follow sections A–C in the transcript below. Output only the merged replacement for section A.\n\n---\n\n"
+                    + text
+                ),
+            },
+        ],
+    }
+    hp = str(body.get("hermes_provider") or "").strip()
+    hb = str(body.get("hermes_base_url") or "").strip()
+    if hp:
+        upstream_payload["hermes_provider"] = hp
+    if hb:
+        upstream_payload["hermes_base_url"] = hb
+
+    upstream_headers = gateway_upstream_headers()
+    _timeout = httpx.Timeout(connect=15, read=300, write=60, pool=5)
+    try:
+        async with httpx.AsyncClient(timeout=_timeout) as c:
+            r = await c.post(
+                f"{HERMES_API.rstrip('/')}/v1/chat/completions",
+                headers=upstream_headers,
+                json=upstream_payload,
+                timeout=_timeout,
+            )
+            raw = (await r.aread()).decode("utf-8", errors="replace")
+    except Exception as exc:
+        log.warning("chat_summarize_context upstream error: %s", exc)
+        return JSONResponse(
+            {"error": {"message": f"Upstream request failed: {exc}", "type": "upstream_error"}},
+            status=502,
+        )
+
+    if r.status_code >= 400:
+        try:
+            parsed = json.loads(raw) if raw.strip() else {}
+        except json.JSONDecodeError:
+            parsed = {}
+        err = parsed.get("error") if isinstance(parsed, dict) else None
+        if isinstance(err, dict):
+            msg = str(err.get("message") or json.dumps(err))[:8000]
+        elif isinstance(err, str):
+            msg = err[:8000]
+        else:
+            msg = (raw or "").strip()[:4000] or f"HTTP {r.status_code}"
+        return JSONResponse({"error": {"message": msg, "type": "upstream_error", "code": r.status_code}}, status=502)
+
+    try:
+        payload = json.loads(raw) if raw.strip() else {}
+    except json.JSONDecodeError:
+        return JSONResponse({"error": {"message": "Invalid JSON from upstream"}}, status=502)
+
+    summary = _assistant_text_from_chat_completion_payload(payload)
+    if not summary:
+        return JSONResponse({"error": {"message": "Empty summary from upstream model"}}, status=502)
+    return JSONResponse({"summary": summary})
 
 
 async def hermes_session_prompt_status(req: Request) -> Response:
@@ -3202,6 +3332,7 @@ app = Starlette(
         Route("/api/models/refresh",       models_refresh, methods=["POST"]),
         Route("/api/hermes/session-prompt-status", hermes_session_prompt_status, methods=["GET"]),
         Route("/api/chat",                 chat,         methods=["POST"]),
+        Route("/api/chat/summarize-context", chat_summarize_context, methods=["POST"]),
         Route("/api/chat/attachments/text", attachment_text_extract, methods=["POST"]),
         Route("/api/fs/validate",          fs_validate),
         Route("/api/fs/ls",                fs_ls),

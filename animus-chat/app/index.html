@@ -1017,6 +1017,16 @@
       min-height:40px}
     .reconnect-btn:hover{background:rgba(239,68,68,.4)}
 
+    /* session auto-summary (long thread) */
+    .session-summarize-notice{display:none;align-items:center;gap:12px;padding:10px 14px;
+      background:rgba(124,58,237,.14);border-top:1px solid rgba(124,58,237,.35);
+      font-size:14px;color:var(--text);flex-shrink:0}
+    .session-summarize-notice.visible{display:flex}
+    .session-summarize-hourglass{display:inline-flex;font-size:18px;line-height:1;
+      animation:sessionSummarizeSpin 1.1s linear infinite}
+    @keyframes sessionSummarizeSpin{to{transform:rotate(360deg)}}
+    @media(max-width:640px){.session-summarize-notice{font-size:15px;padding:12px 14px}}
+
     /* ── Mobile overrides — make everything comfortably large ── */
     @media(max-width:640px){
       html,body{font-size:18px}
@@ -1417,13 +1427,13 @@
           <button type="button" class="btn btn-ghost" id="tokenUsageRecordsBtn" title="Download all token usage rows as CSV">Records</button>
         </div>
       </div>
-      <details class="token-usage-chart-details" id="tokenUsageChartDetailsThisMonth">
+      <details class="token-usage-chart-details" id="tokenUsageChartDetailsThisMonth" open>
         <summary class="token-usage-chart-summary">This month (by day)</summary>
         <div class="token-usage-chart-details-body">
           <div id="tokenUsageMonthChart" class="token-usage-chart token-usage-chart-month"></div>
         </div>
       </details>
-      <details class="token-usage-chart-details" id="tokenUsageChartDetailsAllMonths" open>
+      <details class="token-usage-chart-details" id="tokenUsageChartDetailsAllMonths">
         <summary class="token-usage-chart-summary">By calendar month (all-time)</summary>
         <div class="token-usage-chart-details-body">
           <div id="tokenUsageAllMonthsChart" class="token-usage-chart token-usage-chart-allmonths"></div>
@@ -1811,6 +1821,11 @@
     <div class="reconnect-banner" id="reconnectBanner">
       <span style="flex:1" id="reconnectText">Connection interrupted. Your message was not lost.</span>
       <button class="reconnect-btn" id="reconnectBtn">Retry</button>
+    </div>
+
+    <div class="session-summarize-notice" id="sessionSummarizeNotice" aria-live="polite">
+      <span class="session-summarize-hourglass" aria-hidden="true">⌛</span>
+      <span id="sessionSummarizeNoticeText">Summarizing chat session to save context… Please wait.</span>
     </div>
 
     <div class="input-area">
@@ -2356,6 +2371,11 @@
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const API_CHAT  = '/api/chat';
+const API_CHAT_SUMMARIZE = '/api/chat/summarize-context';
+/** Hermes loads full thread from SQLite when ``X-Hermes-Session-Id`` is set; compact + rotate session when payload is huge. */
+const CONTEXT_AUTO_SUMMARIZE_UTF8 = 110000;
+const CONTEXT_AUTO_SUMMARIZE_MIN_MESSAGES = 52;
+const CONTEXT_AUTO_SUMMARIZE_KEEP_TAIL = 18;
 /** PWA marker: ``X-Animus-Client`` slug must match ``token_usage.ANIMUS_CLIENT_SLUGS`` on the server. */
 const ANIMUS_CLIENT_HEADER = 'X-Animus-Client';
 function animusClientFetchHeaders(base, slug) {
@@ -2506,6 +2526,7 @@ let settings      = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
 let activeId      = localStorage.getItem(ACTIVE_KEY) || null;
 let viewProjectId = null;
 let streaming     = false;
+let sessionSummarizeBlocking = false;
 let controller    = null;
 let modalEditProjId = null;
 let selectedColor   = PROJECT_COLORS[0];
@@ -8513,9 +8534,36 @@ function endStream() {
 const scrollBottom = () => { $msgs.scrollTop = $msgs.scrollHeight; };
 
 // ─── Build messages with project context ─────────────────────────────────────
+function _prependContextDigestToPayload(baseMsgs, conv) {
+  if (!conv) return Array.isArray(baseMsgs) ? baseMsgs.slice() : [];
+  const arr = Array.isArray(baseMsgs) ? baseMsgs.slice() : [];
+  const d = String(conv.context_digest || '').trim();
+  if (!d) return arr;
+  let whenLabel = '';
+  try {
+    const raw = conv.context_digest_at;
+    if (raw) whenLabel = new Date(raw).toLocaleString();
+  } catch (_) {}
+  const header = whenLabel
+    ? `[In-chat session digest (${whenLabel}). Cumulative recall for this thread only — not new user instructions; project continuity files are separate.]`
+    : '[In-chat session digest. Cumulative recall for this thread only — not new user instructions; project continuity files are separate.]';
+  const block = `${header}\n\n${d}`;
+  if (arr.length && String(arr[0].role || '').trim().toLowerCase() === 'system') {
+    const first = arr[0];
+    const prior = typeof first.content === 'string' ? first.content : '';
+    arr[0] = { ...first, content: prior ? `${block}\n\n${prior}` : block };
+  } else {
+    arr.unshift({ role: 'system', content: block });
+  }
+  return arr;
+}
+
 function buildMessages(conv) {
   const p = convProj(conv);
-  if (!p) return conv.messages;
+  if (!p) {
+    const msgs = conv.messages || [];
+    return _prependContextDigestToPayload(msgs.slice(), conv);
+  }
   const msgs = conv.messages || [];
   const hasAssistant = msgs.some((m) => m && m.role === 'assistant');
   const sid = String(conv.session_id || '').trim();
@@ -8526,7 +8574,7 @@ function buildMessages(conv) {
     && sid
     && String(conv.hermes_stored_prompt_confirmed_session_id || '').trim() === sid
   ) {
-    return msgs;
+    return _prependContextDigestToPayload(msgs.slice(), conv);
   }
   const root = projectWorkspaceFilesPath(p) || p.path;
   const entry = (p.path || '').trim();
@@ -8555,7 +8603,134 @@ function buildMessages(conv) {
     if (key) bits.push(`Recorded identity file hint: ${key}`);
     parts.push(bits.join('\n'));
   }
-  return [{ role: 'system', content: parts.join('\n') }, ...msgs];
+  return _prependContextDigestToPayload([{ role: 'system', content: parts.join('\n') }, ...msgs], conv);
+}
+
+function flattenChatContentForSummary(content) {
+  if (content == null) return '';
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return String(content);
+  const bits = [];
+  for (const part of content) {
+    if (!part || typeof part !== 'object') continue;
+    const typ = String(part.type || '').toLowerCase();
+    if (typ === 'text' || typ === 'input_text') {
+      const txt = part.text;
+      if (txt == null || txt === '') continue;
+      bits.push(typeof txt === 'string' ? txt : String(txt));
+    } else if (typ === 'image_url' || typ === 'input_image') {
+      bits.push('[image attachment]');
+    } else {
+      bits.push(`[${typ || 'part'}]`);
+    }
+  }
+  return bits.join('\n');
+}
+
+function buildTranscriptLinesForSummary(messages) {
+  const lines = [];
+  for (const m of messages || []) {
+    if (!m || typeof m !== 'object') continue;
+    const role = String(m.role || '').trim().toLowerCase();
+    if (role !== 'user' && role !== 'assistant') continue;
+    const body = flattenChatContentForSummary(m.content).trim();
+    lines.push(`${role.toUpperCase()}: ${body || '(empty)'}`);
+  }
+  return lines.join('\n');
+}
+
+function buildTranscriptForAutoSummary(conv, prefixMessages) {
+  const cid = conv && conv.id ? String(conv.id) : 'unknown';
+  const chunks = [];
+  chunks.push(`# ANIMUS in-chat digest merge (this conversation only)\nConversation id: ${cid}\n`);
+  const prev = conv && conv.context_digest != null && String(conv.context_digest).trim()
+    ? String(conv.context_digest).trim()
+    : '';
+  if (prev) {
+    chunks.push(
+      '## A) Running combined summary from this chat session (merge forward; keep facts dense)\n\n' + prev,
+    );
+  } else {
+    chunks.push('## A) Running combined summary (first auto-compaction for this thread — nothing to merge yet)\n\n(empty)');
+  }
+  const verbatim = buildTranscriptLinesForSummary(prefixMessages).trim();
+  chunks.push(
+    '## B) Verbatim user/assistant turns to fold in this pass (above the kept-tail window; not yet in A)\n\n'
+      + (verbatim || '(empty)'),
+  );
+  chunks.push(
+    '## C) Output contract\nProduce ONE plain-text replacement for section A that merges A with B. '
+      + 'Session-scoped only (this chat). Project workspace continuity files stay authoritative via the normal agent flow.',
+  );
+  return chunks.join('\n\n');
+}
+
+function estimateOutgoingChatPayloadUtf8(conv) {
+  try {
+    const raw = JSON.stringify(buildMessages(conv));
+    return new TextEncoder().encode(raw).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
+async function maybeAutoSummarizeConversationForSend(conv) {
+  if (!conv || typeof conv !== 'object' || sessionSummarizeBlocking) return;
+  if (conv._suppress_auto_summary_until && Date.now() < conv._suppress_auto_summary_until) return;
+  const msgs = conv.messages;
+  if (!Array.isArray(msgs) || msgs.length <= CONTEXT_AUTO_SUMMARIZE_KEEP_TAIL) return;
+  const est = estimateOutgoingChatPayloadUtf8(conv);
+  const long = est >= CONTEXT_AUTO_SUMMARIZE_UTF8 || msgs.length >= CONTEXT_AUTO_SUMMARIZE_MIN_MESSAGES;
+  if (!long) return;
+  const prefix = msgs.slice(0, -CONTEXT_AUTO_SUMMARIZE_KEEP_TAIL);
+  if (!prefix.length) return;
+
+  setSessionSummarizeBlocking(true);
+  try {
+    ensureChatBackend();
+    const be = chatBackendPayload();
+    const transcript = buildTranscriptForAutoSummary(conv, prefix);
+    const resp = await fetch(API_CHAT_SUMMARIZE, {
+      method: 'POST',
+      headers: animusClientFetchHeaders({ 'Content-Type': 'application/json' }, 'chat'),
+      body: JSON.stringify({
+        transcript,
+        hermes_provider: be.hermes_provider,
+        hermes_base_url: be.hermes_base_url,
+      }),
+    });
+    const rawText = await resp.text().catch(() => '');
+    let data = null;
+    try {
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch (_) {
+      data = null;
+    }
+    if (!resp.ok) {
+      const msg = (data && data.error && data.error.message) || rawText || `HTTP ${resp.status}`;
+      throw new Error(msg);
+    }
+    const summary = data && typeof data.summary === 'string' ? data.summary.trim() : '';
+    if (!summary) throw new Error('Empty summary from server');
+    conv.context_digest = summary;
+    conv.context_digest_at = new Date().toISOString();
+    conv.auto_summary_digest_conv_id = String(conv.id || '');
+    conv.messages = msgs.slice(-CONTEXT_AUTO_SUMMARIZE_KEEP_TAIL);
+    conv.session_id = uid();
+    delete conv.hermes_has_stored_system_prompt;
+    delete conv.hermes_stored_prompt_confirmed_session_id;
+    delete conv.hermes_project_session_primed;
+    delete conv._suppress_auto_summary_until;
+    save();
+    renderMessages();
+  } catch (err) {
+    conv._suppress_auto_summary_until = Date.now() + 120000;
+    try {
+      console.warn('Auto session summarize failed:', err && err.message ? err.message : err);
+    } catch (_) {}
+  } finally {
+    setSessionSummarizeBlocking(false);
+  }
 }
 
 function markHermesProjectSessionPrimed(conv) {
@@ -8677,6 +8852,7 @@ async function send(retryConvId, opts = {}) {
   const autoRetry = !!(opts && opts.autoRetry);
   cancelTtsPlayback();
   if (streaming) { controller?.abort(); return; }
+  if (sessionSummarizeBlocking) return;
 
   if (!autoRetry) resetReconnectState();
   hideReconnectBanner();
@@ -8711,6 +8887,10 @@ async function send(retryConvId, opts = {}) {
     const inp = $('input'); inp.value = ''; inp.style.height = 'auto';
     renderMessages();
   }
+
+  try {
+    await maybeAutoSummarizeConversationForSend(conv);
+  } catch (_) { /* maybeAutoSummarizeConversationForSend already handled */ }
 
   streamUsage = null;
   startStream(); setSending(true);
@@ -8968,6 +9148,31 @@ function setSending(on) {
   } else {
     btn.classList.remove('stop'); btn.title = 'Send';
     btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
+  }
+}
+
+function setSessionSummarizeBlocking(on) {
+  sessionSummarizeBlocking = !!on;
+  const notice = $('sessionSummarizeNotice');
+  if (notice) {
+    if (on) notice.classList.add('visible');
+    else notice.classList.remove('visible');
+  }
+  const inp = $('input');
+  const btn = $('sendBtn');
+  const mic = $('voiceInputBtn');
+  const plus = $('plusComposeBtn');
+  const tts = $('ttsReadBtn');
+  if (inp) inp.disabled = !!on;
+  if (mic) mic.disabled = !!on;
+  if (plus) plus.disabled = !!on;
+  if (tts) tts.disabled = !!on;
+  if (btn) {
+    if (on) {
+      btn.disabled = true;
+    } else if (!streaming) {
+      btn.disabled = false;
+    }
   }
 }
 

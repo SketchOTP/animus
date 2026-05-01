@@ -9370,13 +9370,26 @@ class AIAgent:
         # from disk that the model already knows about (it wrote them!),
         # producing a different system prompt and breaking the Anthropic
         # prefix cache.
+        #
+        # Important: do **not** gate loading on ``conversation_history`` being
+        # non-empty.  The HTTP gateway may pass an empty snapshot in edge cases,
+        # and gating caused every turn to rebuild the full core system prompt
+        # (~multi-k tokens) plus re-merge ephemeral context — same token cost
+        # for every message instead of reusing the SQLite snapshot.  A
+        # non-blank ``sessions.system_prompt`` means turn 1 already persisted
+        # the merged snapshot (core + gateway ephemeral such as ANIMUS project
+        # block); reuse it whenever present.  Turn 1 still uses ``_build_system_prompt``
+        # because ``create_session`` leaves ``system_prompt`` NULL until the
+        # first successful persist.
         if self._cached_system_prompt is None:
             stored_prompt = None
-            if conversation_history and self._session_db:
+            if self._session_db:
                 try:
                     session_row = self._session_db.get_session(self.session_id)
                     if session_row:
-                        stored_prompt = session_row.get("system_prompt") or None
+                        sp = session_row.get("system_prompt")
+                        if sp is not None and str(sp).strip():
+                            stored_prompt = str(sp).strip()
                 except Exception:
                     pass  # Fall through to build fresh
 

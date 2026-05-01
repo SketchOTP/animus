@@ -19,9 +19,9 @@ Root: `/home/sketch/animus`
 - `animus-chat/app/icon-192.png` — binary (.png)
 - `animus-chat/app/icon-512.png` — binary (.png)
 - `animus-chat/app/icon.svg` — <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"> <rect width="100" height="100" rx="22" fill="#7c3aed"/> <g transform="translate(10 10) scale(3.3…
-- `animus-chat/app/index.html` — large file (605116 bytes)
+- `animus-chat/app/index.html` — large PWA shell: chat **`send()`**, **`buildMessages`** (+ in-chat **`context_digest`** prepend), **`buildTranscriptForAutoSummary`** (A/B/C cumulative digest merge), **`maybeAutoSummarizeConversationForSend`**, **`#sessionSummarizeNotice`** above **`.input-area`**
 - `animus-chat/app/manifest.json` — { "name": "ANIMUS", "short_name": "ANIMUS",
-- `animus-chat/app/sw.js` — // Bump when shell HTML or critical assets change — activate() evicts older caches. const CACHE = 'animus-v57';
+- `animus-chat/app/sw.js` — PWA Cache Storage version (**`animus-v60`**) — bump with **`CHAT_SERVER_REV`** when shell HTML or critical assets change
 - `animus-chat/cron_routes.py` — """Cron API — proxies Hermes gateway ``/api/jobs`` (OpenAI server) with in-process fallback on transport errors.""" from __future__ import annotations
 - `animus-chat/generate-icons.py` — #!/usr/bin/env python3 """Generate PNG icons for Android PWA install. Run once.""" from pathlib import Path
 - `animus-chat/help_routes.py` — """ANIMUS Help bot — answers from ``docs/animus-user-guide.md`` only (no tools, no mutations).""" from __future__ import annotations
@@ -36,7 +36,7 @@ Root: `/home/sketch/animus`
 - `animus-chat/requirements.txt` — httpx>=0.27 uvicorn[standard]>=0.30 starlette>=0.37
 - `animus-chat/restart-after-code-change.sh` — #!/usr/bin/env bash # After editing server.py (or anything under animus-chat/), restart user systemd # so the running process loads new code. Prefers animus.se…
 - `animus-chat/restart.sh` — #!/usr/bin/env bash # Reload ANIMUS after editing server.py (user systemd unit animus.service). set -euo pipefail
-- `animus-chat/server.py` — large file (130704 bytes)
+- `animus-chat/server.py` — Starlette app: proxies **`/api/chat`** (SSE) + **`POST /api/chat/summarize-context`** (cumulative in-chat digest merge via Hermes one-shot; **`ANIMUS_CONTEXT_SUMMARY_MODEL`**); **`CHAT_SERVER_REV`**
 - `animus-chat/setup_repo.md` — # Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo…
 - `animus-chat/setup_wizard/__init__.py` — """First-run setup wizard API routes."""
 - `animus-chat/setup_wizard/wizard_routes.py` — """Setup wizard HTTP API (§4, §17.4 ANIMUS).""" from __future__ import annotations
@@ -636,7 +636,7 @@ Root: `/home/sketch/animus`
 - `hermes-agent/RELEASE_v0.8.0.md` — # Hermes Agent v0.8.0 (v2026.4.8) **Release Date:** April 8, 2026
 - `hermes-agent/RELEASE_v0.9.0.md` — # Hermes Agent v0.9.0 (v2026.4.13) **Release Date:** April 13, 2026
 - `hermes-agent/rl_cli.py` — #!/usr/bin/env python3 """ RL Training CLI Runner
-- `hermes-agent/run_agent.py` — large file (652839 bytes)
+- `hermes-agent/run_agent.py` — Core agent loop; `run_conversation` loads merged `sessions.system_prompt` from SQLite whenever non-blank (not gated on `conversation_history`), so gateway-per-message agents reuse the stored snapshot. Large file (659449 bytes).
 - `hermes-agent/SECURITY.md` — # Hermes Agent Security Policy This document outlines the security protocols, trust model, and deployment hardening guidelines for the **Hermes Agent** project.
 - `hermes-agent/setup-hermes.sh` — #!/bin/bash # ============================================================================ # Hermes Agent Setup Script
 - `hermes-agent/toolset_distributions.py` — #!/usr/bin/env python3 """ Toolset Distributions Module

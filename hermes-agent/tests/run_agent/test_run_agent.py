@@ -3437,35 +3437,59 @@ class TestSystemPromptStability:
     """Verify that the system prompt stays stable across turns for cache hits."""
 
     def test_stored_prompt_reused_for_continuing_session(self, agent):
-        """When conversation_history is non-empty and session DB has a stored
-        prompt, it should be reused instead of rebuilding from disk."""
+        """When session DB has a stored prompt, it should be reused instead of rebuilding."""
         stored = "You are helpful. [stored from turn 1]"
         mock_db = MagicMock()
         mock_db.get_session.return_value = {"system_prompt": stored}
         agent._session_db = mock_db
 
-        # Simulate a continuing session with history
         history = [
             {"role": "user", "content": "hello"},
             {"role": "assistant", "content": "hi"},
         ]
 
-        # First call — _cached_system_prompt is None, history is non-empty
         agent._cached_system_prompt = None
 
-        # Patch run_conversation internals to just test the system prompt logic.
-        # We'll call the prompt caching block directly by simulating what
-        # run_conversation does.
         conversation_history = history
 
-        # The block under test (from run_conversation):
+        # The block under test (mirrors run_conversation system-prompt load):
         if agent._cached_system_prompt is None:
             stored_prompt = None
-            if conversation_history and agent._session_db:
+            if agent._session_db:
                 try:
                     session_row = agent._session_db.get_session(agent.session_id)
                     if session_row:
-                        stored_prompt = session_row.get("system_prompt") or None
+                        sp = session_row.get("system_prompt")
+                        if sp is not None and str(sp).strip():
+                            stored_prompt = str(sp).strip()
+                except Exception:
+                    pass
+
+            if stored_prompt:
+                agent._cached_system_prompt = stored_prompt
+
+        assert agent._cached_system_prompt == stored
+        mock_db.get_session.assert_called_once_with(agent.session_id)
+
+    def test_stored_prompt_reused_when_history_empty_but_db_has_prompt(self, agent):
+        """Reuse SQLite snapshot even when conversation_history is empty (gateway edge)."""
+        stored = "You are helpful. [stored from turn 1]"
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = {"system_prompt": stored}
+        agent._session_db = mock_db
+
+        agent._cached_system_prompt = None
+        conversation_history = []
+
+        if agent._cached_system_prompt is None:
+            stored_prompt = None
+            if agent._session_db:
+                try:
+                    session_row = agent._session_db.get_session(agent.session_id)
+                    if session_row:
+                        sp = session_row.get("system_prompt")
+                        if sp is not None and str(sp).strip():
+                            stored_prompt = str(sp).strip()
                 except Exception:
                     pass
 
@@ -3476,28 +3500,32 @@ class TestSystemPromptStability:
         mock_db.get_session.assert_called_once_with(agent.session_id)
 
     def test_fresh_build_when_no_history(self, agent):
-        """On the first turn (no history), system prompt should be built fresh."""
+        """On the first turn (no stored prompt in DB), system prompt should be built fresh."""
         mock_db = MagicMock()
+        mock_db.get_session.return_value = {"system_prompt": None}
         agent._session_db = mock_db
 
         agent._cached_system_prompt = None
         conversation_history = []
 
-        # The block under test:
         if agent._cached_system_prompt is None:
             stored_prompt = None
-            if conversation_history and agent._session_db:
-                session_row = agent._session_db.get_session(agent.session_id)
-                if session_row:
-                    stored_prompt = session_row.get("system_prompt") or None
+            if agent._session_db:
+                try:
+                    session_row = mock_db.get_session(agent.session_id)
+                    if session_row:
+                        sp = session_row.get("system_prompt")
+                        if sp is not None and str(sp).strip():
+                            stored_prompt = str(sp).strip()
+                except Exception:
+                    pass
 
             if stored_prompt:
                 agent._cached_system_prompt = stored_prompt
             else:
                 agent._cached_system_prompt = agent._build_system_prompt()
 
-        # Should have built fresh, not queried the DB
-        mock_db.get_session.assert_not_called()
+        mock_db.get_session.assert_called_once_with(agent.session_id)
         assert agent._cached_system_prompt is not None
         assert "Hermes Agent" in agent._cached_system_prompt
 
@@ -3512,11 +3540,13 @@ class TestSystemPromptStability:
 
         if agent._cached_system_prompt is None:
             stored_prompt = None
-            if conversation_history and agent._session_db:
+            if agent._session_db:
                 try:
                     session_row = agent._session_db.get_session(agent.session_id)
                     if session_row:
-                        stored_prompt = session_row.get("system_prompt") or None
+                        sp = session_row.get("system_prompt")
+                        if sp is not None and str(sp).strip():
+                            stored_prompt = str(sp).strip()
                 except Exception:
                     pass
 

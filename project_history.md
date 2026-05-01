@@ -2060,3 +2060,50 @@ Files touched:
 Files touched:
 - (Vercel alias only; no repo files)
 
+
+0910 010526 - Gateway session tokens: run_conversation loads SQLite system_prompt without requiring non-empty conversation_history; TestSystemPromptStability + py_compile.
+Files touched:
+- hermes-agent/run_agent.py
+- hermes-agent/tests/run_agent/test_run_agent.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+0914 010526 - Chat PWA: auto long-thread context summarize (POST /api/chat/summarize-context), digest in buildMessages, Hermes session rotate, banner + spinner above input; CHAT_SERVER_REV + sw cache bump.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus.env.example
+- animus-chat/animus.env.example
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+0945 010526 - In-chat auto-summarize: A/B/C transcript (prior digest + verbatim prefix → one replacement); server prompt session-only vs project files; CHAT_SERVER_REV v61 + sw v59.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1009 010526 - Tokens tab: default expanded This month chart; calendar month + year charts default collapsed; CHAT_SERVER_REV v62 + sw animus-v60.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+1015 010526 - Release v1.1.1: VERSION bump; commit/push/build zip/publish pipeline (buyer bundle).
+Files touched:
+- VERSION
+- (release: animus-v1.1.1.zip via build-release.sh; manifest via publish script)
+- project_history.md

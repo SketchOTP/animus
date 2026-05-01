@@ -1598,3 +1598,71 @@ Files touched:
 - project_knowledge.md
 - repo_map.md
 - project_history.md
+
+1245 300426 - VERSION 1.0.8; build-release animus-v1.0.8.zip; git push main (eadee74); release-and-publish.sh + publish-animus-manifest to animusai.
+Files touched:
+- VERSION
+- project_status.md
+- (commit: prior session files + v1.0.8)
+- animus-v1.0.8.zip (artifact, gitignored)
+- /home/sketch/animus-site/releases/animus-v1.0.8.zip
+- project_history.md
+
+1310 300426 - Projects sidebar: mergeProjectLists local-order preference while order dirty + sessionStorage; await flush path; sw animus-v35; CHAT_SERVER_REV v37; status/knowledge/repo_map.
+Files touched:
+- animus-chat/app/index.html
+- animus-chat/app/sw.js
+- animus-chat/server.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+2002 300426 - Wired model-agnostic skills capability by forcing API-server skills toolset and injecting ANIMUS chat skill guidance for recurring workflows.
+Files touched:
+- hermes-agent/gateway/platforms/api_server.py
+- animus-chat/server.py
+- animus-chat/app/index.html
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+2003 043026 — Chat: We need to make sure Animus can use the skills Hermes agent exposes and that like Hermes agent it ca → Implemented this so ANIMUS can consistently use Hermes skills across backends and nudge skill creation for recurring wor (hermes-chat)
+2025 043026 — Chat: We need to know come up with a better memory system that's project specific currently we have projec → Yes — build a **project-local memory graph** and stop feeding full `project_history.md` into prompts. ## Proposed system (hermes-chat)
+
+2102 300426 - Automated project bootstrap now mirrors AGENTS/CLAUDE/.cursorrules and seeds status/knowledge files for newly added project roots.
+Files touched:
+- hermes-agent/agent/project_workspace.py
+- hermes-agent/tests/agent/test_project_workspace.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+2105 300426 - Repo-map refresh now ensures/mirrors workspace governance for existing projects and tests cover refresh-time policy/file repair.
+Files touched:
+- hermes-agent/agent/project_workspace.py
+- hermes-agent/tests/agent/test_project_workspace.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+2107 300426 - Cron workdir runs now auto-enforce project governance/continuity files before agent execution.
+Files touched:
+- hermes-agent/cron/scheduler.py
+- hermes-agent/tests/cron/test_cron_workdir.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md
+
+2111 300426 - Deep-pass hardened project continuity wiring by exposing status/knowledge in workspace APIs/UI and documenting refresh+cron continuity behavior in Help.
+Files touched:
+- animus-chat/server.py
+- animus-chat/app/index.html
+- docs/animus-user-guide.md
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md

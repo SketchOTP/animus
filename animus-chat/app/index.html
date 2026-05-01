@@ -1201,7 +1201,9 @@
           </div>
           <div class="proj-workspace-btns">
             <button type="button" class="proj-file-btn" id="projOpenHistory" title="project_history.md">History</button>
+            <button type="button" class="proj-file-btn" id="projOpenStatus" title="project_status.md">Status</button>
             <button type="button" class="proj-file-btn" id="projOpenRepoMap" title="repo_map.md">Repo map</button>
+            <button type="button" class="proj-file-btn" id="projOpenKnowledge" title="project_knowledge.md">Knowledge</button>
             <button type="button" class="proj-file-btn" id="projOpenNotes" title="notes.md">Notes</button>
             <button type="button" class="proj-file-btn" id="projOpenGoal" title="project_goal.md">Goal</button>
             <button type="button" class="proj-file-btn proj-refresh-btn" id="projWorkspaceRefreshBtn" title="Refresh workspace: regenerate repo_map.md from disk and ensure workspace markdown files exist; reloads the open editor">
@@ -2426,7 +2428,7 @@ let allSkills = [];
 let skillPickListLocal = [];
 /** Pending file attachments for the next send: ``{ id, name, parts }`` (OpenAI-style content parts). */
 let pendingAttachments = [];
-let projWsKind = ''; // 'project_history' | 'repo_map' | 'notes' | 'project_goal'
+let projWsKind = ''; // 'project_history' | 'project_status' | 'repo_map' | 'project_knowledge' | 'notes' | 'project_goal'
 let projWsPath = '';
 let skillEditMeta = null;
 let skillEditPath = '';
@@ -2753,7 +2755,7 @@ function normalizeExclusionKey(p) {
   return n ? n.toLowerCase() : '';
 }
 
-function mergeProjectLists(serverList, localList) {
+function mergeProjectLists(serverList, localList, orderPreference = 'server') {
   const keyOf = (p) => {
     if (!p || typeof p !== 'object') return '';
     const pathKey = normalizeSyncPath(p.path || '');
@@ -2776,14 +2778,17 @@ function mergeProjectLists(serverList, localList) {
 
   const orderedKeys = [];
   const seen = new Set();
-  for (const p of Array.isArray(serverList) ? serverList : []) {
+  const preferLocal = orderPreference === 'local';
+  const first = preferLocal ? localList : serverList;
+  const second = preferLocal ? serverList : localList;
+  for (const p of Array.isArray(first) ? first : []) {
     const k = keyOf(p);
     if (k && !seen.has(k)) {
       seen.add(k);
       orderedKeys.push(k);
     }
   }
-  for (const p of Array.isArray(localList) ? localList : []) {
+  for (const p of Array.isArray(second) ? second : []) {
     const k = keyOf(p);
     if (k && !seen.has(k)) {
       seen.add(k);
@@ -2844,6 +2849,30 @@ function applyExcludedPathsToProjects() {
 
 let syncExcludedPaths = loadSyncExclusions();
 
+/** True after sidebar project drag-reorder until a successful POST /api/projects (avoids stale server order clobbering local order on visibility refetch). Mirrored in sessionStorage so reload mid-flight still prefers local order. */
+let _projectsOrderDirty = false;
+const PROJECTS_ORDER_DIRTY_SS_KEY = 'animus_projects_order_dirty_v1';
+
+function _markProjectsOrderDirty() {
+  _projectsOrderDirty = true;
+  try {
+    sessionStorage.setItem(PROJECTS_ORDER_DIRTY_SS_KEY, '1');
+  } catch (_) {}
+}
+
+function _clearProjectsOrderDirty() {
+  _projectsOrderDirty = false;
+  try {
+    sessionStorage.removeItem(PROJECTS_ORDER_DIRTY_SS_KEY);
+  } catch (_) {}
+}
+
+function _restoreProjectsOrderDirtyFromSession() {
+  try {
+    if (sessionStorage.getItem(PROJECTS_ORDER_DIRTY_SS_KEY) === '1') _projectsOrderDirty = true;
+  } catch (_) {}
+}
+
 // ─── Persistence ─────────────────────────────────────────────────────────────
 // localStorage is the fast synchronous layer; server is the durable layer.
 // Writes go to both. On init and when the tab becomes visible, GET /api/convs
@@ -2856,16 +2885,18 @@ function _scheduleServerSync() {
 }
 async function _serverSync() {
   try {
-    await Promise.all([
-      fetch('/api/convs',    { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(convs) }),
-      fetch('/api/projects', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(projects) }),
+    const [cRes, pRes] = await Promise.all([
+      fetch('/api/convs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(convs) }),
+      fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(projects) }),
     ]);
+    if (pRes && pRes.ok) _clearProjectsOrderDirty();
   } catch (_) {}
 }
 
 async function flushProjectsToServer() {
   try {
-    await fetch('/api/projects', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(projects) });
+    const r = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(projects) });
+    if (r && r.ok) _clearProjectsOrderDirty();
   } catch (_) {}
 }
 
@@ -3092,7 +3123,7 @@ async function pullProjectsFromServer() {
     if (!pRes.ok) return false;
     const serverProjs = await pRes.json();
     if (!Array.isArray(serverProjs)) return false;
-    projects = mergeProjectLists(serverProjs, projects);
+    projects = mergeProjectLists(serverProjs, projects, _projectsOrderDirty ? 'local' : 'server');
     localStorage.setItem(PROJS_KEY, JSON.stringify(projects));
     return true;
   } catch (_) {
@@ -6727,6 +6758,7 @@ function reorderProjectsByDrop(fromId, targetId, insertBefore) {
   const insertAt = insertBefore ? toIdx : toIdx + 1;
   rest.splice(insertAt, 0, moving);
   projects = rest;
+  _markProjectsOrderDirty();
 }
 
 function renderProjectList() {
@@ -6795,7 +6827,9 @@ function renderProjectList() {
       reorderProjectsByDrop(fromId, p.id, insertBefore);
       save();
       renderProjectList();
-      void flushProjectsToServer();
+      void (async () => {
+        await flushProjectsToServer();
+      })();
     });
     el.addEventListener('click', (e) => {
       const gear = e.target.closest('.proj-gear');
@@ -8223,7 +8257,13 @@ async function send(retryConvId, opts = {}) {
   let conversationReplyText = '';
 
   try {
-    const chatBody = { model: MODEL, messages: buildMessages(conv), stream: true, stream_options: { include_usage: true } };
+    const chatBody = {
+      model: MODEL,
+      messages: buildMessages(conv),
+      stream: true,
+      stream_options: { include_usage: true },
+      animus_skill_mode: true,
+    };
     const proj = convProj(conv);
     if (proj) {
       const hp = projectWorkspaceFilesPath(proj);
@@ -12399,7 +12439,9 @@ async function openProjWorkspaceModal(kind) {
   projWsPath = path;
   const PROJ_WS_FILE_LABEL = {
     project_history: 'project_history.md',
+    project_status: 'project_status.md',
     repo_map: 'repo_map.md',
+    project_knowledge: 'project_knowledge.md',
     notes: 'notes.md',
     project_goal: 'project_goal.md',
   };
@@ -12427,7 +12469,9 @@ async function reloadProjWorkspaceBody() {
 }
 
 $('projOpenHistory').addEventListener('click', () => { openProjWorkspaceModal('project_history'); });
+$('projOpenStatus').addEventListener('click', () => { openProjWorkspaceModal('project_status'); });
 $('projOpenRepoMap').addEventListener('click', () => { openProjWorkspaceModal('repo_map'); });
+$('projOpenKnowledge').addEventListener('click', () => { openProjWorkspaceModal('project_knowledge'); });
 $('projOpenNotes').addEventListener('click', () => { openProjWorkspaceModal('notes'); });
 $('projOpenGoal').addEventListener('click', () => { openProjWorkspaceModal('project_goal'); });
 (function wireNotifCollapseOnce() {
@@ -12450,7 +12494,8 @@ $('projWorkspaceRefreshBtn').addEventListener('click', async () => {
   if (!confirm(
     'Refresh project workspace from disk?\n\n'
     + '• Regenerates repo_map.md from the directory tree (overwrites the file).\n'
-    + '• Ensures project_history.md, notes.md, and project_goal.md exist (adds standard headers if missing).\n'
+    + '• Ensures AGENTS.md, CLAUDE.md, and .cursorrules exist and are mirrored.\n'
+    + '• Ensures project_history.md, project_status.md, project_knowledge.md, notes.md, and project_goal.md exist.\n'
     + 'If a workspace editor is open, its contents reload from disk.'
   )) return;
   try {
@@ -12470,6 +12515,8 @@ $('projWorkspaceRefreshBtn').addEventListener('click', async () => {
     if (bd && bd.classList.contains('open') && projWsPath === path
         && (projWsKind === 'repo_map' ||
           projWsKind === 'project_history' ||
+          projWsKind === 'project_status' ||
+          projWsKind === 'project_knowledge' ||
           projWsKind === 'notes' ||
           projWsKind === 'project_goal')) {
       await reloadProjWorkspaceBody();
@@ -13873,6 +13920,7 @@ function showUpdateBanner(version, notes) {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 (async function init() {
   ensureChatBackend();
+  _restoreProjectsOrderDirtyFromSession();
   try {
     const raw = localStorage.getItem('animus_selected_model');
     if (raw && !(settings.chat_model || '').trim()) {
@@ -13927,7 +13975,7 @@ function showUpdateBanner(version, notes) {
     if (pRes.ok) {
       const serverProjs = await pRes.json();
       if (Array.isArray(serverProjs)) {
-        projects = mergeProjectLists(serverProjs, projects);
+        projects = mergeProjectLists(serverProjs, projects, _projectsOrderDirty ? 'local' : 'server');
         localStorage.setItem(PROJS_KEY, JSON.stringify(projects));
       }
     }

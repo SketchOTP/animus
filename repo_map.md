@@ -1,96 +1,661 @@
-# Repo map (animus)
+# Repository map
 
-Quick navigation for agents. Update when layout, entrypoints, or roles change.
+Auto-generated index of files under this project (depth- and size-limited).
+Regenerate with ``hermes project repo-map-refresh --path …``, ``hermes project repo-maps-refresh-all`` (cron), or **↻ Map** in Hermes Chat.
 
-## Repository root
+Root: `/home/sketch/animus`
 
-| Path | Purpose |
-|------|---------|
-| `README.md` | Product overview and quick start |
-| `START_HERE.txt` | Buyer-facing first steps after unzipping the release zip (Gumroad / direct download) |
-| `docs/GUMROAD.md` | Seller checklist, suggested listing copy, post-purchase blurb for Gumroad |
-| `docs/BUYER_UPDATES.md` | Buyer guide: manifest-based in-app updates + Gumroad re-download |
-| `INSTALL.md` | Manual install, systemd, troubleshooting |
-| `VERSION` | Semver exposed via `GET /api/version` |
-| `animus.env.example` | Environment template; **`install.sh`** / **`preflight.sh`** copy to **`animus.env`** when missing; **`HERMES_HOME`** must be an **absolute** path when using systemd **`EnvironmentFile`** (not `${HOME}`); documents **`HERMES_CHAT_STT_*`** / **`OPENAI_API_KEY`** for **`POST /api/stt/transcribe`** (mic + Conversation mode) |
-| `seller-private/` | **Seller-only:** local secrets (e.g. Vercel **`ADMIN_TOKEN`**); **gitignored** except **`README.md`**; **excluded** from **`build-release.sh`** zip + leak check |
-| `Ghost3D/` | Optional GLB assets (not loaded by the PWA today); **excluded from release zip** |
-| `build-release.sh` | Sanitisation checks + release zip (**≤55MB** hard cap) + ship trims (size + **internal dev**: `project_*.md`, `repo_map.md`, `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.cursor/`, `setup_repo.md`, `animus-chat/{repo_map,project_history,setup_repo}.md`, `hermes-agent/AGENTS.md`, `Ghost3D/`, agent `tests/` / `website/` / WhatsApp `node_modules` / `hermes-agent/.cursor/`, **`hermes-agent/.env`**, **`hermes-agent/.envrc`**, **`*.flock`**, **`animus-update-server/`**, **repo-root `scripts/`**) + post-zip **leak check** (no raw env, lock files, runtime data, or `animus-update-server/` in zip) + `## Patch` count in `docs/hermes-agent-patches.md`; **grep** asserts **`python-multipart`** and **`faster-whisper`** in **`animus-chat/requirements.txt`** (buyer zip / STT) |
-| `scripts/phase3-smoke-checklist.md` | Phase 3 manual smoke steps + **Practical tips** (keys, SSE usage, screenshots, `build-release.sh` shell hygiene); **`scripts/`** omitted from **buyer zip** — clone repo for these |
-| `scripts/publish-animus-manifest.sh` | Seller helper: `POST` JSON to **`animus-site`** **`/api/admin/publish`** (`ADMIN_TOKEN`, `DOWNLOAD_URL`, optional `ANIMUS_RELEASE_NOTES` / `ANIMUS_PUBLISH_URL`); zip must be at **`download_url`** (Blob URL or **`/releases/…`**) |
-| `scripts/release-and-publish.sh` | Seller helper: copy **`animus-v$(VERSION).zip`** to sibling **`animus-site/releases/`** and run **`vercel --prod`** (optional **`ANIMUS_SITE_DIR`**) |
-| `scripts/sync-dev-systemd.sh` | Dev host: install **`~/.config/systemd/user/animus.service`** + **`hermes-gateway.service`** (gateway **`WorkingDirectory`** / **`ExecStart`** = this repo’s **`hermes-agent/`** + **`venv`**, **`CHAT_DATA_DIR`** = **`animus-chat/data`**, **`HERMES_HOME`** = **`$HOME/.hermes/profiles/default`**), create/fix **`animus.env`** (absolute **`HERMES_AGENT_DIR`** / **`HERMES_HOME`**, **`INSTALL_DIR`**), **`daemon-reload`**, symlink **`scripts/animus`** → **`~/.local/bin/animus`** (`animus start|stop|restart|status`); warns if **`:3001`** busy (omit from buyer zip — **`scripts/`** excluded) |
-| `scripts/animus` | Bash CLI: **`animus start`**, **`stop`**, **`restart`**, **`status`** → **`systemctl --user`** on **`animus.service`** (override with **`ANIMUS_SYSTEMD_UNIT`**) |
-| `project_goal.md` | North star / build directive |
-| `project_status.md` | Current snapshot |
-| `project_history.md` | Session log |
-| `project_knowledge.md` | Lessons and validation tips |
-| `repo_map.md` | This map |
-| `AGENTS.md` | Agent workflow rules |
+## Files
 
-**Sibling repo (not inside this tree):** **`animus-site/`** — Vercel deployment: product-led marketing **`index.html`** (ghost header mark, centered hero logo, app shell, real ANIMUS feature copy, pricing/FAQ), **`updates.html`** (static v1.0.0 fallback + **`js/updates.js`** API enhancer), **`docs.html`** (links sellers to **`seller-publish.html`**), **`seller-publish.html`** (Blob upload + publish UI), **`css/main.css`**, **`js/main.js`**, **`js/release-admin.js`**, **`api/release_upload.js`** (Node **`@vercel/blob`** **`handleUpload`** + HMAC challenge), PNG logos under **`assets/`**, stylized product preview SVGs under **`assets/screenshots/`**, plus **`/api/latest.json`** for **`ANIMUS_UPDATE_URL`**. **Buyer-facing hostname:** **`https://animusai.vercel.app`** only (alias after each **`vercel --prod`**). Clone/deploy separately; see **`animus-site/README.md`** next to this repo (or your fork’s layout).
+- `.gitignore` — # Python __pycache__/ *.py[cod]
+- `AGENTS.md` — --- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true
+- `animus-chat/animus.env` — text file (1 bytes)
+- `animus-chat/animus.env.example` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
+- `animus-chat/animus_machinae.png` — large file (1393299 bytes)
+- `animus-chat/app/animus_machinae.png` — large file (1393299 bytes)
+- `animus-chat/app/ANIMUSLOGO.png` — large file (664372 bytes)
+- `animus-chat/app/ANIMUSLOGOICON.png` — large file (478545 bytes)
+- `animus-chat/app/ghostonlyicon.png` — large file (659281 bytes)
+- `animus-chat/app/icon-192.png` — binary (.png)
+- `animus-chat/app/icon-512.png` — binary (.png)
+- `animus-chat/app/icon.svg` — <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"> <rect width="100" height="100" rx="22" fill="#7c3aed"/> <g transform="translate(10 10) scale(3.3…
+- `animus-chat/app/index.html` — large file (605116 bytes)
+- `animus-chat/app/manifest.json` — { "name": "ANIMUS", "short_name": "ANIMUS",
+- `animus-chat/app/sw.js` — // Bump when shell HTML or critical assets change — activate() evicts older caches. const CACHE = 'animus-v35';
+- `animus-chat/cron_routes.py` — """Cron API — proxies Hermes gateway ``/api/jobs`` (OpenAI server) with in-process fallback on transport errors.""" from __future__ import annotations
+- `animus-chat/generate-icons.py` — #!/usr/bin/env python3 """Generate PNG icons for Android PWA install. Run once.""" from pathlib import Path
+- `animus-chat/help_routes.py` — """ANIMUS Help bot — answers from ``docs/animus-user-guide.md`` only (no tools, no mutations).""" from __future__ import annotations
+- `animus-chat/hermes-chat.env.example` — # Copy to hermes-chat.env and fill in secrets. Do not commit hermes-chat.env. # # After git pull or editing server.py: ./restart-after-code-change.sh (or --pul…
+- `animus-chat/hermes_runner.py` — """Single subprocess entrypoint for the ``hermes`` CLI (ANIMUS control plane).""" from __future__ import annotations
+- `animus-chat/hermes_service_client.py` — """Call Hermes gateway (OpenAI server, port 8642) and optional Hermes dashboard (9119) from ANIMUS.""" from __future__ import annotations
+- `animus-chat/integrations_slack.py` — """Slack webhook / bot settings (Phase 7) — reads and writes repo-root ``animus.env``.""" from __future__ import annotations
+- `animus-chat/messaging_routes.py` — """Settings → Messaging: Hermes gateway platforms — read/write ``~/.hermes/.env`` + ``config.yaml``.""" from __future__ import annotations
+- `animus-chat/project_history.md` — # Project history (ANIMUS animus-chat) Chronological work log. Newest entries at the bottom.
+- `animus-chat/project_history.md.flock` — empty file
+- `animus-chat/repo_map.md` — # Repo map — `animus-chat/` Python Starlette server (`server.py`) plus static PWA in `app/`.
+- `animus-chat/requirements.txt` — httpx>=0.27 uvicorn[standard]>=0.30 starlette>=0.37
+- `animus-chat/restart-after-code-change.sh` — #!/usr/bin/env bash # After editing server.py (or anything under animus-chat/), restart user systemd # so the running process loads new code. Prefers animus.se…
+- `animus-chat/restart.sh` — #!/usr/bin/env bash # Reload ANIMUS after editing server.py (user systemd unit animus.service). set -euo pipefail
+- `animus-chat/server.py` — large file (130704 bytes)
+- `animus-chat/setup_repo.md` — # Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo…
+- `animus-chat/setup_wizard/__init__.py` — """First-run setup wizard API routes."""
+- `animus-chat/setup_wizard/wizard_routes.py` — """Setup wizard HTTP API (§4, §17.4 ANIMUS).""" from __future__ import annotations
+- `animus-chat/skills_md.py` — """SKILL.md path resolution for the skills raw editor (shared with skills_routes).""" from __future__ import annotations
+- `animus-chat/skills_routes.py` — """Skills API — in-process skill discovery + ``hermes skills`` CLI for mutations.""" from __future__ import annotations
+- `animus-chat/ssh_routes.py` — """Global SSH host registry + connection test (Phase 7).""" from __future__ import annotations
+- `animus-chat/sync-from-release-zip.sh` — #!/usr/bin/env bash # Patch THIS animus-chat/ directory from animus-vX.Y.Z.zip (official release layout). # Use when you only have animus-chat/ (no installer/ …
+- `animus-chat/systemd/hermes-chat.service` — # Legacy filename — use ../../systemd/animus.service in the ANIMUS monorepo. # Copy to ~/.config/systemd/user/animus.service and edit paths.
+- `animus-chat/TAILSCALE-SERVE.md` — # Tailscale Serve This file is kept for backwards compatibility. **Authoritative guidance** for ANIMUS is in the monorepo:
+- `animus-chat/token_usage.py` — """Append-only token usage log + read API (Phase 7).""" from __future__ import annotations
+- `animus-chat/tts_routes.py` — """TTS helpers — browser vs local Piper (optional binary).""" from __future__ import annotations
+- `animus-chat/whoami` — empty file
+- `animus-v1.0.0.zip` — large file (28817354 bytes)
+- `animus-v1.0.1.zip` — large file (28818481 bytes)
+- `animus-v1.0.2.zip` — large file (28818481 bytes)
+- `animus-v1.0.3.zip` — large file (31633515 bytes)
+- `animus-v1.0.4.zip` — large file (31636165 bytes)
+- `animus-v1.0.5.zip` — large file (31637109 bytes)
+- `animus-v1.0.6.zip` — large file (31645591 bytes)
+- `animus-v1.0.7.zip` — large file (31690107 bytes)
+- `animus-v1.0.8.zip` — large file (31696295 bytes)
+- `animus.env` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
+- `animus.env.example` — # === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not …
+- `ANIMUSLOGO.png` — large file (664372 bytes)
+- `ANIMUSLOGOICON.png` — large file (478545 bytes)
+- `build-release.sh` — #!/usr/bin/env bash set -euo pipefail ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+- `CLAUDE.md` — --- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true
+- `docker/.env.example` — # Docker-specific copy of animus env — paths differ inside the container. HERMES_API_URL=http://host.docker.internal:8642 HERMES_API_KEY=
+- `docker/docker-compose.yml` — services: animus: build:
+- `docker/Dockerfile` — FROM python:3.12-slim WORKDIR /app
+- `docs/animus-user-guide.md` — # ANIMUS user guide This document is the **official in-app Help source**. The Help assistant only uses what is written here.
+- `docs/BUYER_UPDATES.md` — # Getting ANIMUS Updates ## Automatic updates
+- `docs/GUMROAD.md` — # Gumroad delivery — ANIMUS Concise guide for packaging and listing. Full product criteria remain in `project_goal.md` (Gumroad sections).
+- `docs/hermes-agent-patches.md` — # Hermes Agent — ANIMUS patch record **Bundled version:** v0.11.0 (2026.4.23). **Upstream drift:** as of this ANIMUS release, upstream `hermes-agent` was **778…
+- `docs/models.md` — # Models in ANIMUS ## Hermes gateway
+- `docs/ssh.md` — # SSH hosts and remote projects (ANIMUS) ## SSH key authentication (recommended)
+- `docs/tailscale.md` — # Tailscale and ANIMUS ## Recommended pattern
+- `docs/tts.md` — # Text-to-speech (read aloud) — Piper on the ANIMUS host ANIMUS can read assistant replies aloud using either the **browser** (Web Speech API) or **Piper**, a …
+- `ghostonlyicon.png` — large file (659281 bytes)
+- `hermes-agent/.env.example` — # Hermes Agent Environment Configuration # Copy this file to .env and fill in your API keys
+- `hermes-agent/.github/actions/nix-setup/action.yml` — name: 'Setup Nix' description: 'Install Nix with DeterminateSystems and enable magic-nix-cache'
+- `hermes-agent/.github/ISSUE_TEMPLATE/bug_report.yml` — name: "🐛 Bug Report" description: Report a bug — something that's broken, crashes, or behaves incorrectly. title: "[Bug]: "
+- `hermes-agent/.github/ISSUE_TEMPLATE/config.yml` — blank_issues_enabled: true contact_links: - name: 💬 Nous Research Discord
+- `hermes-agent/.github/ISSUE_TEMPLATE/feature_request.yml` — name: "✨ Feature Request" description: Suggest a new feature or improvement. title: "[Feature]: "
+- `hermes-agent/.github/ISSUE_TEMPLATE/setup_help.yml` — name: "🔧 Setup / Installation Help" description: Having trouble installing or configuring Hermes? Ask here. title: "[Setup]: "
+- `hermes-agent/.github/PULL_REQUEST_TEMPLATE.md` — ## What does this PR do? <!-- Describe the change clearly. What problem does it solve? Why is this approach the right one? -->
+- `hermes-agent/.github/workflows/contributor-check.yml` — name: Contributor Attribution Check on:
+- `hermes-agent/.github/workflows/deploy-site.yml` — name: Deploy Site on:
+- `hermes-agent/.github/workflows/docker-publish.yml` — name: Docker Build and Publish on:
+- `hermes-agent/.github/workflows/docs-site-checks.yml` — name: Docs Site Checks on:
+- `hermes-agent/.github/workflows/nix-lockfile-check.yml` — name: Nix Lockfile Check on:
+- `hermes-agent/.github/workflows/nix-lockfile-fix.yml` — name: Nix Lockfile Fix on:
+- `hermes-agent/.github/workflows/nix.yml` — name: Nix on:
+- `hermes-agent/.github/workflows/skills-index.yml` — name: Build Skills Index on:
+- `hermes-agent/.github/workflows/supply-chain-audit.yml` — name: Supply Chain Audit on:
+- `hermes-agent/.github/workflows/tests.yml` — name: Tests on:
+- `hermes-agent/.gitignore` — .DS_Store /venv/ /_pycache/
+- `hermes-agent/acp_adapter/__init__.py` — """ACP (Agent Communication Protocol) adapter for hermes-agent."""
+- `hermes-agent/acp_adapter/__main__.py` — """Allow running the ACP adapter as ``python -m acp_adapter``.""" from .entry import main
+- `hermes-agent/acp_adapter/auth.py` — """ACP auth helpers — detect the currently configured Hermes provider.""" from __future__ import annotations
+- `hermes-agent/acp_adapter/entry.py` — """CLI entry point for the hermes-agent ACP adapter. Loads environment variables from ``~/.hermes/.env``, configures logging
+- `hermes-agent/acp_adapter/events.py` — """Callback factories for bridging AIAgent events to ACP notifications. Each factory returns a callable with the signature that AIAgent expects
+- `hermes-agent/acp_adapter/permissions.py` — """ACP permission bridging — maps ACP approval requests to hermes approval callbacks.""" from __future__ import annotations
+- `hermes-agent/acp_adapter/server.py` — """ACP agent server — exposes Hermes Agent via the Agent Client Protocol.""" from __future__ import annotations
+- `hermes-agent/acp_adapter/session.py` — """ACP session manager — maps ACP sessions to Hermes AIAgent instances. Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they
+- `hermes-agent/acp_adapter/tools.py` — """ACP tool-call helpers for mapping hermes tools to ACP ToolKind and building content.""" from __future__ import annotations
+- `hermes-agent/acp_registry/agent.json` — { "schema_version": 1, "name": "hermes-agent",
+- `hermes-agent/acp_registry/icon.svg` — <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"> <defs> <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+- `hermes-agent/agent/__init__.py` — """Agent internals -- extracted modules from run_agent.py. These modules contain pure utility functions and self-contained classes
+- `hermes-agent/agent/account_usage.py` — from __future__ import annotations from dataclasses import dataclass
+- `hermes-agent/agent/anthropic_adapter.py` — large file (71721 bytes)
+- `hermes-agent/agent/auto_model_by_complexity.py` — """Pick a provider-local agentic model for this turn. OpenAI Codex uses the live/cache Codex catalog (``get_codex_model_ids``) and a
+- `hermes-agent/agent/auxiliary_client.py` — large file (144626 bytes)
+- `hermes-agent/agent/bedrock_adapter.py` — """AWS Bedrock Converse API adapter for Hermes Agent. Provides native integration with Amazon Bedrock using the Converse API,
+- `hermes-agent/agent/codex_responses_adapter.py` — """Codex Responses API adapter. Pure format-conversion and normalization logic for the OpenAI Responses API
+- `hermes-agent/agent/context_compressor.py` — large file (59124 bytes)
+- `hermes-agent/agent/context_engine.py` — """Abstract base class for pluggable context engines. A context engine controls how conversation context is managed when
+- `hermes-agent/agent/context_references.py` — from __future__ import annotations import asyncio
+- `hermes-agent/agent/copilot_acp_client.py` — """OpenAI-compatible shim that forwards Hermes requests to `copilot --acp`. This adapter lets Hermes treat the GitHub Copilot ACP server as a chat-style
+- `hermes-agent/agent/credential_pool.py` — large file (60789 bytes)
+- `hermes-agent/agent/credential_sources.py` — """Unified removal contract for every credential source Hermes reads from. Hermes seeds its credential pool from many places:
+- `hermes-agent/agent/cursor_agent_client.py` — """OpenAI-compatible shim that forwards Hermes turns to ``cursor-agent`` / ``cursor agent``. Each ``chat.completions.create`` runs a short-lived subprocess: st…
+- `hermes-agent/agent/display.py` — """CLI presentation -- spinner, kawaii faces, tool preview formatting. Pure display functions and classes with no AIAgent dependency.
+- `hermes-agent/agent/error_classifier.py` — """API error classification for smart failover and recovery. Provides a structured taxonomy of API errors and a priority-ordered
+- `hermes-agent/agent/file_safety.py` — """Shared file safety rules used by both tools and ACP shims.""" from __future__ import annotations
+- `hermes-agent/agent/gemini_cloudcode_adapter.py` — """OpenAI-compatible facade that talks to Google's Cloud Code Assist backend. This adapter lets Hermes use the ``google-gemini-cli`` provider as if it were
+- `hermes-agent/agent/gemini_native_adapter.py` — """OpenAI-compatible facade over Google AI Studio's native Gemini API. Hermes keeps ``api_mode='chat_completions'`` for the ``gemini`` provider so the
+- `hermes-agent/agent/gemini_schema.py` — """Helpers for translating OpenAI-style tool schemas to Gemini's schema subset.""" from __future__ import annotations
+- `hermes-agent/agent/google_code_assist.py` — """Google Code Assist API client — project discovery, onboarding, quota. The Code Assist API powers Google's official gemini-cli. It sits at
+- `hermes-agent/agent/google_oauth.py` — """Google OAuth PKCE flow for the Gemini (google-gemini-cli) inference provider. This module implements Authorization Code + PKCE (S256) OAuth against Google's
+- `hermes-agent/agent/image_gen_provider.py` — """ Image Generation Provider ABC =============================
+- `hermes-agent/agent/image_gen_registry.py` — """ Image Generation Provider Registry ==================================
+- `hermes-agent/agent/insights.py` — """ Session Insights Engine for Hermes Agent.
+- `hermes-agent/agent/manual_compression_feedback.py` — """User-facing summaries for manual compression commands.""" from __future__ import annotations
+- `hermes-agent/agent/memory_manager.py` — """MemoryManager — orchestrates the built-in memory provider plus at most ONE external plugin memory provider.
+- `hermes-agent/agent/memory_provider.py` — """Abstract base class for pluggable memory providers. Memory providers give the agent persistent recall across sessions. One
+- `hermes-agent/agent/model_metadata.py` — large file (57868 bytes)
+- `hermes-agent/agent/models_dev.py` — """Models.dev registry integration — primary database for providers and models. Fetches from https://models.dev/api.json — a community-maintained database
+- `hermes-agent/agent/moonshot_schema.py` — """Helpers for translating OpenAI-style tool schemas to Moonshot's schema subset. Moonshot (Kimi) accepts a stricter subset of JSON Schema than standard OpenAI
+- `hermes-agent/agent/nous_rate_guard.py` — """Cross-session rate limit guard for Nous Portal. Writes rate limit state to a shared file so all sessions (CLI, gateway,
+- `hermes-agent/agent/project_workspace.py` — """Workspace markdown files for Hermes Chat project folders (history, repo map, notes, goal). Used by ``hermes project …`` CLI, Hermes Chat server routes, and …
+- `hermes-agent/agent/prompt_builder.py` — large file (49054 bytes)
+- `hermes-agent/agent/prompt_caching.py` — """Anthropic prompt caching (system_and_3 strategy). Reduces input token costs by ~75% on multi-turn conversations by caching
+- `hermes-agent/agent/rate_limit_tracker.py` — """Rate limit tracking for inference API responses. Captures x-ratelimit-* headers from provider responses and provides
+- `hermes-agent/agent/redact.py` — """Regex-based secret redaction for logs and tool output. Applies pattern matching to mask API keys, tokens, and credentials
+- `hermes-agent/agent/retry_utils.py` — """Retry utilities — jittered backoff for decorrelated retries. Replaces fixed exponential backoff with jittered delays to prevent
+- `hermes-agent/agent/shell_hooks.py` — """ Shell-script hooks bridge.
+- `hermes-agent/agent/skill_commands.py` — """Shared slash command helpers for skills. Shared between CLI (cli.py) and gateway (gateway/run.py) so both surfaces
+- `hermes-agent/agent/skill_utils.py` — """Lightweight skill metadata utilities shared by prompt_builder and skills_tool. This module intentionally avoids importing the tool registry, CLI config, or …
+- `hermes-agent/agent/subdirectory_hints.py` — """Progressive subdirectory hint discovery. As the agent navigates into subdirectories via tool calls (read_file, terminal,
+- `hermes-agent/agent/task_complexity.py` — """Heuristic task complexity for routing (delegation ACP, per-turn model pick).""" from __future__ import annotations
+- `hermes-agent/agent/title_generator.py` — """Auto-generate short session titles from the first user/assistant exchange. Runs asynchronously after the first response is delivered so it never
+- `hermes-agent/agent/trajectory.py` — """Trajectory saving utilities and static helpers. _convert_to_trajectory_format stays as an AIAgent method (batch_runner.py
+- `hermes-agent/agent/transports/__init__.py` — """Transport layer types and registry for provider response normalization. Usage:
+- `hermes-agent/agent/transports/anthropic.py` — """Anthropic Messages API transport. Delegates to the existing adapter functions in agent/anthropic_adapter.py.
+- `hermes-agent/agent/transports/base.py` — """Abstract base for provider transports. A transport owns the data path for one api_mode:
+- `hermes-agent/agent/transports/bedrock.py` — """AWS Bedrock Converse API transport. Delegates to the existing adapter functions in agent/bedrock_adapter.py.
+- `hermes-agent/agent/transports/chat_completions.py` — """OpenAI Chat Completions transport. Handles the default api_mode ('chat_completions') used by ~16 OpenAI-compatible
+- `hermes-agent/agent/transports/codex.py` — """OpenAI Responses API (Codex) transport. Delegates to the existing adapter functions in agent/codex_responses_adapter.py.
+- `hermes-agent/agent/transports/types.py` — """Shared types for normalized provider responses. These dataclasses define the canonical shape that all provider adapters
+- `hermes-agent/agent/usage_pricing.py` — from __future__ import annotations from dataclasses import dataclass
+- `hermes-agent/AGENTS.md` — # Hermes Agent - Development Guide Instructions for AI coding assistants and developers working on the hermes-agent codebase.
+- `hermes-agent/assets/banner.png` — binary (.png)
+- `hermes-agent/batch_runner.py` — large file (55631 bytes)
+- `hermes-agent/cli-config.yaml.example` — large file (49933 bytes)
+- `hermes-agent/cli.py` — large file (497778 bytes)
+- `hermes-agent/constraints-termux.txt` — # Termux / Android dependency constraints for Hermes Agent. # # Usage:
+- `hermes-agent/CONTRIBUTING.md` — # Contributing to Hermes Agent Thank you for contributing to Hermes Agent! This guide covers everything you need: setting up your dev environment, understandin…
+- `hermes-agent/cron/__init__.py` — """ Cron job scheduling system for Hermes Agent.
+- `hermes-agent/cron/hermes_chat_delivery.py` — """ Append cron job output into Hermes Chat server-side transcripts.
+- `hermes-agent/cron/jobs.py` — """ Cron job storage and management.
+- `hermes-agent/cron/scheduler.py` — large file (59450 bytes)
+- `hermes-agent/datagen-config-examples/example_browser_tasks.jsonl` — {"prompt": "Go to https://news.ycombinator.com and find the top 5 posts on the front page. For each post, get the title, URL, points, and number of comments. R…
+- `hermes-agent/datagen-config-examples/run_browser_tasks.sh` — #!/bin/bash # =============================================================================
+- `hermes-agent/datagen-config-examples/trajectory_compression.yaml` — # Trajectory Compression Configuration # # Post-processes completed agent trajectories to fit within a target token budget.
+- `hermes-agent/datagen-config-examples/web_research.yaml` — # datagen-config-examples/web_research.yaml # # Batch data generation config for WebResearchEnv.
+- `hermes-agent/docker-compose.yml` — # # docker-compose.yml for Hermes Agent #
+- `hermes-agent/docker/entrypoint.sh` — #!/bin/bash # Docker/Podman entrypoint: bootstrap config files into the mounted volume, then run hermes. set -e
+- `hermes-agent/docker/SOUL.md` — # Hermes Agent Persona <!--
+- `hermes-agent/Dockerfile` — FROM ghcr.io/astral-sh/uv:0.11.6-python3.13-trixie@sha256:b3c543b6c4f23a5f2df22866bd7857e5d304b67a564f4feab6ac22044dde719b AS uv_source FROM tianon/gosu:1.19-t…
+- `hermes-agent/environments/__init__.py` — """ Hermes-Agent Atropos Environments
+- `hermes-agent/environments/agent_loop.py` — """ HermesAgentLoop -- Reusable Multi-Turn Agent Engine
+- `hermes-agent/environments/agentic_opd_env.py` — large file (51106 bytes)
+- `hermes-agent/environments/benchmarks/__init__.py` — empty file
+- `hermes-agent/environments/benchmarks/tblite/__init__.py` — empty file
+- `hermes-agent/environments/benchmarks/tblite/default.yaml` — # OpenThoughts-TBLite Evaluation -- Default Configuration # # Eval-only environment for the TBLite benchmark (100 difficulty-calibrated
+- `hermes-agent/environments/benchmarks/tblite/local.yaml` — # OpenThoughts-TBLite Evaluation -- Docker Backend (Local Compute) # # Runs tasks in Docker containers on the local machine.
+- `hermes-agent/environments/benchmarks/tblite/local_vllm.yaml` — # OpenThoughts-TBLite Evaluation -- Local vLLM Backend # # Runs against a local vLLM server with Docker sandboxes.
+- `hermes-agent/environments/benchmarks/tblite/README.md` — # OpenThoughts-TBLite Evaluation Environment This environment evaluates terminal agents on the [OpenThoughts-TBLite](https://huggingface.co/datasets/open-thoug…
+- `hermes-agent/environments/benchmarks/tblite/run_eval.sh` — #!/bin/bash # OpenThoughts-TBLite Evaluation
+- `hermes-agent/environments/benchmarks/tblite/tblite_env.py` — """ OpenThoughts-TBLite Evaluation Environment
+- `hermes-agent/environments/benchmarks/terminalbench_2/__init__.py` — empty file
+- `hermes-agent/environments/benchmarks/terminalbench_2/default.yaml` — # Terminal-Bench 2.0 Evaluation -- Default Configuration # # Eval-only environment for the TB2 benchmark (89 terminal tasks).
+- `hermes-agent/environments/benchmarks/terminalbench_2/run_eval.sh` — #!/bin/bash # Terminal-Bench 2.0 Evaluation
+- `hermes-agent/environments/benchmarks/terminalbench_2/terminalbench2_env.py` — """ TerminalBench2Env -- Terminal-Bench 2.0 Evaluation Environment
+- `hermes-agent/environments/benchmarks/yc_bench/__init__.py` — empty file
+- `hermes-agent/environments/benchmarks/yc_bench/default.yaml` — # YC-Bench Evaluation -- Default Configuration # # Long-horizon agent benchmark: agent plays CEO of an AI startup over
+- `hermes-agent/environments/benchmarks/yc_bench/README.md` — # YC-Bench: Long-Horizon Agent Benchmark [YC-Bench](https://github.com/collinear-ai/yc-bench) by [Collinear AI](https://collinear.ai/) is a deterministic, long…
+- `hermes-agent/environments/benchmarks/yc_bench/run_eval.sh` — #!/bin/bash # YC-Bench Evaluation
+- `hermes-agent/environments/benchmarks/yc_bench/yc_bench_env.py` — """ YCBenchEvalEnv -- YC-Bench Long-Horizon Agent Benchmark Environment
+- `hermes-agent/environments/hermes_base_env.py` — """ HermesAgentBaseEnv -- Abstract Base Environment for Hermes-Agent + Atropos
+- `hermes-agent/environments/hermes_swe_env/__init__.py` — empty file
+- `hermes-agent/environments/hermes_swe_env/default.yaml` — # SWE Environment -- Default Configuration # # SWE-bench style tasks with Modal sandboxes for cloud isolation.
+- `hermes-agent/environments/hermes_swe_env/hermes_swe_env.py` — """ HermesSweEnv -- SWE-Bench Style Environment with Modal Sandboxes
+- `hermes-agent/environments/patches.py` — """ Monkey patches for making hermes-agent tools work inside async frameworks (Atropos).
+- `hermes-agent/environments/README.md` — # Hermes-Agent Atropos Environments This directory contains the integration layer between **hermes-agent's** tool-calling capabilities and the **Atropos** RL t…
+- `hermes-agent/environments/terminal_test_env/__init__.py` — empty file
+- `hermes-agent/environments/terminal_test_env/default.yaml` — # Terminal Test Environment -- Default Configuration # # Simple file-creation tasks for validating the full Atropos + hermes-agent stack.
+- `hermes-agent/environments/terminal_test_env/terminal_test_env.py` — """ TerminalTestEnv -- Simple Test Environment for Validating the Stack
+- `hermes-agent/environments/tool_call_parsers/__init__.py` — """ Tool Call Parser Registry
+- `hermes-agent/environments/tool_call_parsers/deepseek_v3_1_parser.py` — """ DeepSeek V3.1 tool call parser.
+- `hermes-agent/environments/tool_call_parsers/deepseek_v3_parser.py` — """ DeepSeek V3 tool call parser.
+- `hermes-agent/environments/tool_call_parsers/glm45_parser.py` — """ GLM 4.5 (GLM-4-MoE) tool call parser.
+- `hermes-agent/environments/tool_call_parsers/glm47_parser.py` — """ GLM 4.7 tool call parser.
+- `hermes-agent/environments/tool_call_parsers/hermes_parser.py` — """ Hermes tool call parser.
+- `hermes-agent/environments/tool_call_parsers/kimi_k2_parser.py` — """ Kimi K2 tool call parser.
+- `hermes-agent/environments/tool_call_parsers/llama_parser.py` — """ Llama 3.x / 4 tool call parser.
+- `hermes-agent/environments/tool_call_parsers/longcat_parser.py` — """ Longcat Flash Chat tool call parser.
+- `hermes-agent/environments/tool_call_parsers/mistral_parser.py` — """ Mistral tool call parser.
+- `hermes-agent/environments/tool_call_parsers/qwen3_coder_parser.py` — """ Qwen3-Coder tool call parser.
+- `hermes-agent/environments/tool_call_parsers/qwen_parser.py` — """ Qwen 2.5 tool call parser.
+- `hermes-agent/environments/tool_context.py` — """ ToolContext -- Unrestricted Tool Access for Reward Functions
+- `hermes-agent/environments/web_research_env.py` — """ WebResearchEnv — RL Environment for Multi-Step Web Research ============================================================
+- `hermes-agent/flake.lock` — { "nodes": { "flake-parts": {
+- `hermes-agent/flake.nix` — { description = "Hermes Agent - AI agent framework by Nous Research";
+- `hermes-agent/gateway/__init__.py` — """ Hermes Gateway - Multi-platform messaging integration.
+- `hermes-agent/gateway/builtin_hooks/__init__.py` — """Built-in gateway hooks that are always registered."""
+- `hermes-agent/gateway/builtin_hooks/boot_md.py` — """Built-in boot-md hook — run ~/.hermes/BOOT.md on gateway startup. This hook is always registered. It silently skips if no BOOT.md exists.
+- `hermes-agent/gateway/channel_directory.py` — """ Channel directory -- cached map of reachable channels/contacts per platform.
+- `hermes-agent/gateway/config.py` — large file (60661 bytes)
+- `hermes-agent/gateway/delivery.py` — """ Delivery routing for cron job outputs and agent responses.
+- `hermes-agent/gateway/display_config.py` — """Per-platform display/verbosity configuration resolver. Provides ``resolve_display_setting()`` — the single entry-point for reading
+- `hermes-agent/gateway/hooks.py` — """ Event Hook System
+- `hermes-agent/gateway/mirror.py` — """ Session mirroring for cross-platform message delivery.
+- `hermes-agent/gateway/pairing.py` — """ DM Pairing System
+- `hermes-agent/gateway/platforms/__init__.py` — """ Platform adapters for messaging integrations.
+- `hermes-agent/gateway/platforms/ADDING_A_PLATFORM.md` — # Adding a New Messaging Platform Checklist for integrating a new messaging platform into the Hermes gateway.
+- `hermes-agent/gateway/platforms/api_server.py` — large file (121390 bytes)
+- `hermes-agent/gateway/platforms/base.py` — large file (106884 bytes)
+- `hermes-agent/gateway/platforms/bluebubbles.py` — """BlueBubbles iMessage platform adapter. Uses the local BlueBubbles macOS server for outbound REST sends and inbound
+- `hermes-agent/gateway/platforms/dingtalk.py` — large file (55909 bytes)
+- `hermes-agent/gateway/platforms/discord.py` — large file (173430 bytes)
+- `hermes-agent/gateway/platforms/email.py` — """ Email platform adapter for the Hermes gateway.
+- `hermes-agent/gateway/platforms/feishu.py` — large file (192513 bytes)
+- `hermes-agent/gateway/platforms/feishu_comment.py` — large file (50985 bytes)
+- `hermes-agent/gateway/platforms/feishu_comment_rules.py` — """ Feishu document comment access-control rules.
+- `hermes-agent/gateway/platforms/helpers.py` — """Shared helper classes for gateway platform adapters. Extracts common patterns that were duplicated across 5-7 adapters:
+- `hermes-agent/gateway/platforms/homeassistant.py` — """ Home Assistant platform adapter.
+- `hermes-agent/gateway/platforms/matrix.py` — large file (85416 bytes)
+- `hermes-agent/gateway/platforms/mattermost.py` — """Mattermost gateway adapter. Connects to a self-hosted (or cloud) Mattermost instance via its REST API
+- `hermes-agent/gateway/platforms/qqbot/__init__.py` — """ QQBot platform package.
+- `hermes-agent/gateway/platforms/qqbot/adapter.py` — large file (89581 bytes)
+- `hermes-agent/gateway/platforms/qqbot/constants.py` — """QQBot package-level constants shared across adapter, onboard, and other modules.""" from __future__ import annotations
+- `hermes-agent/gateway/platforms/qqbot/crypto.py` — """AES-256-GCM utilities for QQBot scan-to-configure credential decryption.""" from __future__ import annotations
+- `hermes-agent/gateway/platforms/qqbot/onboard.py` — """ QQBot scan-to-configure (QR code onboard) module.
+- `hermes-agent/gateway/platforms/qqbot/utils.py` — """QQBot shared utilities — User-Agent, HTTP helpers, config coercion.""" from __future__ import annotations
+- `hermes-agent/gateway/platforms/signal.py` — """Signal messenger platform adapter. Connects to a signal-cli daemon running in HTTP mode.
+- `hermes-agent/gateway/platforms/slack.py` — large file (71382 bytes)
+- `hermes-agent/gateway/platforms/sms.py` — """SMS (Twilio) platform adapter. Connects to the Twilio REST API for outbound SMS and runs an aiohttp
+- `hermes-agent/gateway/platforms/telegram.py` — large file (135965 bytes)
+- `hermes-agent/gateway/platforms/telegram_network.py` — """Telegram-specific network helpers. Provides a hostname-preserving fallback transport for networks where
+- `hermes-agent/gateway/platforms/webhook.py` — """Generic webhook platform adapter. Runs an aiohttp HTTP server that receives webhook POSTs from external
+- `hermes-agent/gateway/platforms/wecom.py` — large file (64948 bytes)
+- `hermes-agent/gateway/platforms/wecom_callback.py` — """WeCom callback-mode adapter for self-built enterprise applications. Unlike the bot/websocket adapter in ``wecom.py``, this handles the standard
+- `hermes-agent/gateway/platforms/wecom_crypto.py` — """WeCom BizMsgCrypt-compatible AES-CBC encryption for callback mode. Implements the same wire format as Tencent's official ``WXBizMsgCrypt``
+- `hermes-agent/gateway/platforms/weixin.py` — large file (77111 bytes)
+- `hermes-agent/gateway/platforms/whatsapp.py` — """ WhatsApp platform adapter.
+- `hermes-agent/gateway/restart.py` — """Shared gateway restart constants and parsing helpers.""" from hermes_cli.config import DEFAULT_CONFIG
+- `hermes-agent/gateway/run.py` — large file (524509 bytes)
+- `hermes-agent/gateway/session.py` — large file (51353 bytes)
+- `hermes-agent/gateway/session_context.py` — """ Session-scoped context variables for the Hermes gateway.
+- `hermes-agent/gateway/status.py` — """ Gateway runtime status helpers.
+- `hermes-agent/gateway/sticker_cache.py` — """ Sticker description cache for Telegram.
+- `hermes-agent/gateway/stream_consumer.py` — """Gateway streaming consumer — bridges sync agent callbacks to async platform delivery. The agent fires stream_delta_callback(text) synchronously from its wor…
+- `hermes-agent/gateway/whatsapp_identity.py` — """Shared helpers for canonicalising WhatsApp sender identity. WhatsApp's bridge can surface the same human under two different JID shapes
+- `hermes-agent/hermes` — #!/usr/bin/env python3 """ Hermes Agent CLI launcher.
+- `hermes-agent/hermes-already-has-routines.md` — # Hermes Agent Has Had "Routines" Since March Anthropic just announced [Claude Code Routines](https://claude.com/blog/introducing-routines-in-claude-code) — sc…
+- `hermes-agent/hermes_agent.egg-info/dependency_links.txt` — text file (1 bytes)
+- `hermes-agent/hermes_agent.egg-info/entry_points.txt` — [console_scripts] hermes = hermes_cli.main:main hermes-acp = acp_adapter.entry:main
+- `hermes-agent/hermes_agent.egg-info/PKG-INFO` — Metadata-Version: 2.4 Name: hermes-agent Version: 0.10.0
+- `hermes-agent/hermes_agent.egg-info/requires.txt` — openai<3,>=2.21.0 anthropic<1,>=0.39.0 python-dotenv<2,>=1.2.1
+- `hermes-agent/hermes_agent.egg-info/SOURCES.txt` — LICENSE MANIFEST.in README.md
+- `hermes-agent/hermes_agent.egg-info/top_level.txt` — acp_adapter agent batch_runner
+- `hermes-agent/hermes_cli/__init__.py` — """ Hermes CLI - Unified command-line interface for Hermes Agent.
+- `hermes-agent/hermes_cli/auth.py` — large file (168848 bytes)
+- `hermes-agent/hermes_cli/auth_commands.py` — """Credential-pool auth subcommands.""" from __future__ import annotations
+- `hermes-agent/hermes_cli/backup.py` — """ Backup and import commands for hermes CLI.
+- `hermes-agent/hermes_cli/banner.py` — """Welcome banner, ASCII art, skills summary, and update check for the CLI. Pure display functions with no HermesCLI state dependency.
+- `hermes-agent/hermes_cli/callbacks.py` — """Interactive prompt callbacks for terminal_tool integration. These bridge terminal_tool's interactive prompts (clarify, sudo, approval)
+- `hermes-agent/hermes_cli/claw.py` — """hermes claw — OpenClaw migration commands. Usage:
+- `hermes-agent/hermes_cli/cli_output.py` — """Shared CLI output helpers for Hermes CLI modules. Extracts the identical ``print_info/success/warning/error`` and ``prompt()``
+- `hermes-agent/hermes_cli/clipboard.py` — """Clipboard image extraction for macOS, Windows, Linux, and WSL2. Provides a single function `save_clipboard_image(dest)` that checks the
+- `hermes-agent/hermes_cli/codex_device_oauth.py` — """OpenAI Codex device OAuth — shared by Hermes dashboard and ANIMUS setup API. Extracted from ``hermes_cli.web_server`` so hosts without FastAPI/uvicorn (e.g.…
+- `hermes-agent/hermes_cli/codex_models.py` — """Codex model discovery from API, local cache, and config.""" from __future__ import annotations
+- `hermes-agent/hermes_cli/colors.py` — """Shared ANSI color utilities for Hermes CLI modules.""" import os
+- `hermes-agent/hermes_cli/commands.py` — large file (57815 bytes)
+- `hermes-agent/hermes_cli/completion.py` — """Shell completion script generation for hermes CLI. Walks the live argparse parser tree to generate accurate, always-up-to-date
+- `hermes-agent/hermes_cli/config.py` — large file (167098 bytes)
+- `hermes-agent/hermes_cli/copilot_auth.py` — """GitHub Copilot authentication utilities. Implements the OAuth device code flow used by the Copilot CLI and handles
+- `hermes-agent/hermes_cli/cron.py` — """ Cron subcommand for hermes CLI.
+- `hermes-agent/hermes_cli/curses_ui.py` — """Shared curses-based UI components for Hermes CLI. Used by `hermes tools` and `hermes skills` for interactive checklists.
+- `hermes-agent/hermes_cli/debug.py` — """``hermes debug`` — debug tools for Hermes Agent. Currently supports:
+- `hermes-agent/hermes_cli/default_soul.py` — """Default SOUL.md template seeded into HERMES_HOME on first run.""" DEFAULT_SOUL_MD = (
+- `hermes-agent/hermes_cli/dingtalk_auth.py` — """ DingTalk Device Flow authorization.
+- `hermes-agent/hermes_cli/doctor.py` — large file (59486 bytes)
+- `hermes-agent/hermes_cli/dump.py` — """ Dump command for hermes CLI.
+- `hermes-agent/hermes_cli/env_loader.py` — """Helpers for loading Hermes .env files consistently across entrypoints.""" from __future__ import annotations
+- `hermes-agent/hermes_cli/gateway.py` — large file (172053 bytes)
+- `hermes-agent/hermes_cli/hooks.py` — """hermes hooks — inspect and manage shell-script hooks. Usage::
+- `hermes-agent/hermes_cli/logs.py` — """``hermes logs`` — view and filter Hermes log files. Supports tailing, following, session filtering, level filtering,
+- `hermes-agent/hermes_cli/main.py` — large file (343305 bytes)
+- `hermes-agent/hermes_cli/mcp_config.py` — """ MCP Server Management CLI — ``hermes mcp`` subcommand.
+- `hermes-agent/hermes_cli/memory_setup.py` — """hermes memory setup|status — configure memory provider plugins. Auto-detects installed memory providers via the plugin system.
+- `hermes-agent/hermes_cli/model_normalize.py` — """Per-provider model name normalization. Different LLM providers expect model identifiers in different formats:
+- `hermes-agent/hermes_cli/model_switch.py` — large file (55089 bytes)
+- `hermes-agent/hermes_cli/models.py` — large file (109859 bytes)
+- `hermes-agent/hermes_cli/nous_subscription.py` — """Helpers for Nous subscription managed-tool capabilities.""" from __future__ import annotations
+- `hermes-agent/hermes_cli/pairing.py` — """ CLI commands for the DM pairing system.
+- `hermes-agent/hermes_cli/platforms.py` — """ Shared platform registry for Hermes Agent.
+- `hermes-agent/hermes_cli/plugins.py` — """ Hermes Plugin System ====================
+- `hermes-agent/hermes_cli/plugins_cmd.py` — """``hermes plugins`` CLI subcommand — install, update, remove, and list plugins. Plugins are installed from Git repositories into ``~/.hermes/plugins/``.
+- `hermes-agent/hermes_cli/profiles.py` — """ Profile management for multiple isolated Hermes instances.
+- `hermes-agent/hermes_cli/project_workspace_cmd.py` — """Handlers for ``hermes project …``.""" from __future__ import annotations
+- `hermes-agent/hermes_cli/providers.py` — """ Single source of truth for provider identity in Hermes Agent.
+- `hermes-agent/hermes_cli/pty_bridge.py` — """PTY bridge for `hermes dashboard` chat tab. Wraps a child process behind a pseudo-terminal so its ANSI output can be
+- `hermes-agent/hermes_cli/runtime_provider.py` — """Shared runtime provider resolution for CLI, gateway, cron, and helpers.""" from __future__ import annotations
+- `hermes-agent/hermes_cli/setup.py` — large file (132668 bytes)
+- `hermes-agent/hermes_cli/skills_config.py` — """ Skills configuration for Hermes Agent. `hermes skills` enters this module.
+- `hermes-agent/hermes_cli/skills_hub.py` — large file (52423 bytes)
+- `hermes-agent/hermes_cli/skin_engine.py` — """Hermes CLI skin/theme engine. A data-driven skin system that lets users customize the CLI's visual appearance.
+- `hermes-agent/hermes_cli/stack.py` — """ Local Hermes stack: gateway (API + messaging) + optional Hermes Chat PWA.
+- `hermes-agent/hermes_cli/status.py` — """ Status command for hermes CLI.
+- `hermes-agent/hermes_cli/timeouts.py` — from __future__ import annotations
+- `hermes-agent/hermes_cli/tips.py` — """Random tips shown at CLI session start to help users discover features.""" import random
+- `hermes-agent/hermes_cli/tools_config.py` — large file (90555 bytes)
+- `hermes-agent/hermes_cli/uninstall.py` — """ Hermes Agent Uninstaller.
+- `hermes-agent/hermes_cli/voice.py` — """Process-wide voice recording + TTS API for the TUI gateway. Wraps ``tools.voice_mode`` (recording/transcription) and ``tools.tts_tool``
+- `hermes-agent/hermes_cli/web_dist/assets/filler-bg0-Dc7xVfma.jpg` — large file (3871968 bytes)
+- `hermes-agent/hermes_cli/web_dist/assets/index-DDdPF_Zn.js` — large file (931233 bytes)
+- `hermes-agent/hermes_cli/web_dist/assets/index-LGKsUH4R.css` — large file (87972 bytes)
+- `hermes-agent/hermes_cli/web_dist/ds-assets/filler-bg0.jpg` — large file (3871968 bytes)
+- `hermes-agent/hermes_cli/web_dist/favicon.ico` — binary (.ico)
+- `hermes-agent/hermes_cli/web_dist/fonts-terminal/JetBrainsMono-Bold.woff2` — large file (94628 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts-terminal/JetBrainsMono-Italic.woff2` — large file (96428 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts-terminal/JetBrainsMono-Regular.woff2` — large file (92380 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-Bold.woff2` — large file (59144 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-BoldItalic.woff2` — large file (62096 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-Italic.woff2` — large file (64412 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-Light.woff2` — large file (63184 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-LightItalic.woff2` — large file (64604 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-Regular.woff2` — large file (62816 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-Thin.woff2` — large file (60132 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Collapse-ThinItalic.woff2` — large file (61240 bytes)
+- `hermes-agent/hermes_cli/web_dist/fonts/Mondwest-Regular.woff2` — binary (.woff2)
+- `hermes-agent/hermes_cli/web_dist/fonts/Neuebit-Bold.woff2` — binary (.woff2)
+- `hermes-agent/hermes_cli/web_dist/fonts/RulesCompressed-Medium.woff2` — binary (.woff2)
+- `hermes-agent/hermes_cli/web_dist/fonts/RulesCompressed-Regular.woff2` — binary (.woff2)
+- `hermes-agent/hermes_cli/web_dist/fonts/RulesExpanded-Bold.woff2` — binary (.woff2)
+- `hermes-agent/hermes_cli/web_dist/fonts/RulesExpanded-Regular.woff2` — binary (.woff2)
+- `hermes-agent/hermes_cli/web_dist/index.html` — <!doctype html> <html lang="en"> <head>
+- `hermes-agent/hermes_cli/web_server.py` — large file (113970 bytes)
+- `hermes-agent/hermes_cli/webhook.py` — """hermes webhook — manage dynamic webhook subscriptions from the CLI. Usage:
+- `hermes-agent/hermes_constants.py` — """Shared constants for Hermes Agent. Import-safe module with no dependencies — can be imported from anywhere
+- `hermes-agent/hermes_logging.py` — """Centralized logging setup for Hermes Agent. Provides a single ``setup_logging()`` entry point that both the CLI and
+- `hermes-agent/hermes_state.py` — large file (68482 bytes)
+- `hermes-agent/hermes_time.py` — """ Timezone-aware clock for Hermes.
+- `hermes-agent/LICENSE` — MIT License Copyright (c) 2025 Nous Research
+- `hermes-agent/localhost+4-key.pem` — -----BEGIN PRIVATE KEY----- MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDwQPXikE+J3Te7 bguwMrxMh0DRPvgtYImpMo0PSo0zwYp2Oa2aHptkYov9ZNFBBWZEh18+ZtzVqovH
+- `hermes-agent/localhost+4.pem` — -----BEGIN CERTIFICATE----- MIIEFjCCAn6gAwIBAgIQbwnMYPFEekdShkG0EYb1yTANBgkqhkiG9w0BAQsFADBV MR4wHAYDVQQKExVta2NlcnQgZGV2ZWxvcG1lbnQgQ0ExFTATBgNVBAsMDHNrZXRj
+- `hermes-agent/localhost+5-key.pem` — -----BEGIN PRIVATE KEY----- MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDg62/0eigfUjfT kQTtuTNHg4LKcGFeN/aAKekpjLW3Qm6S357jesnfsqyOnA5UixVxS3BcnMyzxswp
+- `hermes-agent/localhost+5.pem` — -----BEGIN CERTIFICATE----- MIIEHTCCAoWgAwIBAgIRAJcTSKVMYoe9YRpIKJl4+J8wDQYJKoZIhvcNAQELBQAw VTEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMRUwEwYDVQQLDAxza2V0
+- `hermes-agent/MANIFEST.in` — graft skills graft optional-skills global-exclude __pycache__
+- `hermes-agent/mcp_serve.py` — """ Hermes MCP Server — expose messaging conversations as MCP tools.
+- `hermes-agent/mini_swe_runner.py` — #!/usr/bin/env python3 """ SWE Runner with Hermes Trajectory Format
+- `hermes-agent/model_tools.py` — #!/usr/bin/env python3 """ Model Tools Module
+- `hermes-agent/nix/checks.nix` — # nix/checks.nix — Build-time verification tests # # Checks are Linux-only: the full Python venv (via uv2nix) includes
+- `hermes-agent/nix/configMergeScript.nix` — # nix/configMergeScript.nix — Deep-merge Nix settings into existing config.yaml # # Used by the NixOS module activation script and by checks.nix tests.
+- `hermes-agent/nix/devShell.nix` — # nix/devShell.nix — Dev shell that delegates setup to each package # # Each package in inputsFrom exposes passthru.devShellHook — a bash snippet
+- `hermes-agent/nix/lib.nix` — # nix/lib.nix — Shared helpers for nix stuff { pkgs, npm-lockfile-fix }: {
+- `hermes-agent/nix/nixosModules.nix` — # nix/nixosModules.nix — NixOS module for hermes-agent # # Two modes:
+- `hermes-agent/nix/packages.nix` — # nix/packages.nix — Hermes Agent package built with uv2nix { inputs, ... }: {
+- `hermes-agent/nix/python.nix` — # nix/python.nix — uv2nix virtual environment builder { python312,
+- `hermes-agent/nix/tui.nix` — # nix/tui.nix — Hermes TUI (Ink/React) compiled with tsc and bundled { pkgs, hermesNpmLib, ... }: let
+- `hermes-agent/nix/web.nix` — # nix/web.nix — Hermes Web Dashboard (Vite/React) frontend build { pkgs, hermesNpmLib, ... }: let
+- `hermes-agent/optional-skills/autonomous-ai-agents/blackbox/SKILL.md` — --- name: blackbox description: Delegate coding tasks to Blackbox AI CLI agent. Multi-model agent with built-in judge that runs tasks through multiple LLMs and…
+- `hermes-agent/optional-skills/autonomous-ai-agents/DESCRIPTION.md` — Optional autonomous AI agent integrations — external coding agent CLIs that can be delegated to for independent coding tasks.
+- `hermes-agent/optional-skills/autonomous-ai-agents/honcho/SKILL.md` — --- name: honcho description: Configure and use Honcho memory with Hermes -- cross-session user modeling, multi-profile peer isolation, observation config, dia…
+- `hermes-agent/optional-skills/blockchain/base/scripts/base_client.py` — #!/usr/bin/env python3 """ Base Blockchain CLI Tool for Hermes Agent
+- `hermes-agent/optional-skills/blockchain/base/SKILL.md` — --- name: base description: Query Base (Ethereum L2) blockchain data with USD pricing — wallet balances, token info, transaction details, gas analysis, contrac…
+- `hermes-agent/optional-skills/blockchain/solana/scripts/solana_client.py` — #!/usr/bin/env python3 """ Solana Blockchain CLI Tool for Hermes Agent
+- `hermes-agent/optional-skills/blockchain/solana/SKILL.md` — --- name: solana description: Query Solana blockchain data with USD pricing — wallet balances, token portfolios with values, transaction details, NFTs, whale d…
+- `hermes-agent/optional-skills/communication/DESCRIPTION.md` — Communication and decision-making frameworks — structured response formats for proposals, trade-off analysis, and stakeholder-ready recommendations.
+- `hermes-agent/optional-skills/communication/one-three-one-rule/SKILL.md` — --- name: one-three-one-rule description: >
+- `hermes-agent/optional-skills/creative/blender-mcp/SKILL.md` — --- name: blender-mcp description: Control Blender directly from Hermes via socket connection to the blender-mcp addon. Create 3D objects, materials, animation…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/apartment-floor-plan-conversion.md` — # Apartment Floor Plan: 3 BHK to 4 BHK Conversion An architectural floor plan showing a 1,500 sq ft apartment with proposed modifications to convert from 3 BHK…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/automated-password-reset-flow.md` — # Automated Password Reset Flow A two-section flowchart tracing the full user journey for a web application password reset: the initial request phase (forgot p…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/autonomous-llm-research-agent-flow.md` — # Autonomous LLM Research Agent Flow A multi-section flowchart showing Karpathy's autoresearch framework: human-agent handoff, the autonomous experiment loop w…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/banana-journey-tree-to-smoothie.md` — # Journey of a Banana: From Tree to Smoothie A narrative journey diagram following a single banana across 3,000 miles and 3 weeks, from harvest in Costa Rica t…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/commercial-aircraft-structure.md` — # Commercial Aircraft Structure A physical/structural diagram showing an aircraft side profile using appropriate SVG shapes beyond rectangles - paths, polygons…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/cpu-ooo-microarchitecture.md` — # Out-of-Order CPU Core Microarchitecture A structural diagram showing the internal pipeline stages of a modern superscalar out-of-order CPU core. Demonstrates…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/electricity-grid-flow.md` — # Electricity Grid: Generation to Consumption A left-to-right flow diagram showing electricity from multiple generation sources through transmission and distri…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/feature-film-production-pipeline.md` — # Feature Film Production Pipeline A phased workflow showing the five stages of filmmaking, using containers with inner nodes and horizontal sub-flows within a…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/hospital-emergency-department-flow.md` — # Hospital Emergency Department Flow A multi-path flowchart showing patient journey through an emergency department with priority-based routing using semantic …
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/ml-benchmark-grouped-bar-chart.md` — # ML Benchmark Grouped Bar Chart with Dual Axis A quantitative data visualization comparing LLM inference speed across quantization levels with dual Y-axes, th…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/place-order-uml-sequence.md` — # Place Order — UML Sequence Diagram A UML sequence diagram for the 'Place Order' use case in an e-commerce system. Six lifelines (:Customer, :ShoppingCart, :O…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/smart-city-infrastructure.md` — # Smart City Infrastructure A multi-system integration diagram showing interconnected city infrastructure (power, water, transport) connected through a central…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/smartphone-layer-anatomy.md` — # Smartphone Layer Anatomy An exploded view diagram showing all internal layers of a smartphone from front glass to back, with alternating left/right labels to…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/sn2-reaction-mechanism.md` — # SN2 Reaction Mechanism A chemistry diagram showing the bimolecular nucleophilic substitution (SN2) mechanism between hydroxide ion and methyl bromide. Demons…
+- `hermes-agent/optional-skills/creative/concept-diagrams/examples/wind-turbine-structure.md` — # Modern Onshore Wind Turbine Structure A physical/structural cross-section diagram showing all major components of a modern wind turbine from underground foun…
+- `hermes-agent/optional-skills/creative/concept-diagrams/references/dashboard-patterns.md` — # Dashboard Patterns Building blocks for UI/dashboard mockups inside a concept diagram — admin panels, monitoring dashboards, control interfaces, status displa…
+- `hermes-agent/optional-skills/creative/concept-diagrams/references/infrastructure-patterns.md` — # Infrastructure Patterns Reusable shapes and line styles for infrastructure / systems-integration diagrams (smart cities, IoT networks, industrial systems, mu…
+- `hermes-agent/optional-skills/creative/concept-diagrams/references/physical-shape-cookbook.md` — # Physical Shape Cookbook Guidance for drawing physical objects (vehicles, buildings, hardware, mechanical systems, anatomy) — when rectangles aren't enough.
+- `hermes-agent/optional-skills/creative/concept-diagrams/SKILL.md` — --- name: concept-diagrams description: Generate flat, minimal light/dark-aware SVG diagrams as standalone HTML files, using a unified educational visual langu…
+- `hermes-agent/optional-skills/creative/concept-diagrams/templates/template.html` — <!DOCTYPE html> <html lang="en"> <head>
+- `hermes-agent/optional-skills/creative/meme-generation/EXAMPLES.md` — # Meme Generation Examples ## Example 1: Debugging at 2 AM
+- `hermes-agent/optional-skills/creative/meme-generation/scripts/.gitignore` — .cache/
+- `hermes-agent/optional-skills/creative/meme-generation/scripts/generate_meme.py` — #!/usr/bin/env python3 """Generate a meme image by overlaying text on a template.
+- `hermes-agent/optional-skills/creative/meme-generation/scripts/templates.json` — { "this-is-fine": { "name": "This is Fine",
+- `hermes-agent/optional-skills/creative/meme-generation/SKILL.md` — --- name: meme-generation description: Generate real meme images by picking a template and overlaying text with Pillow. Produces actual .png meme files.
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/references/mcp-tools.md` — # twozero MCP Tools Reference 36 tools from twozero MCP v2.774+ (April 2026).
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/references/network-patterns.md` — # TouchDesigner Network Patterns Complete network recipes for common creative coding tasks. Each pattern shows the operator chain, MCP tool calls to build it, …
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/references/operators.md` — # TouchDesigner Operator Reference ## Operator Families Overview
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/references/pitfalls.md` — # TouchDesigner MCP — Pitfalls & Lessons Learned Hard-won knowledge from real TD sessions. Read this before building anything.
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/references/python-api.md` — # TouchDesigner Python API Reference ## The td Module
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/references/troubleshooting.md` — # TouchDesigner Troubleshooting (twozero MCP) > See `references/pitfalls.md` for the comprehensive lessons-learned list.
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/scripts/setup.sh` — #!/usr/bin/env bash # setup.sh — Automated setup for twozero MCP plugin for TouchDesigner # Idempotent: safe to run multiple times.
+- `hermes-agent/optional-skills/creative/touchdesigner-mcp/SKILL.md` — --- name: touchdesigner-mcp description: "Control a running TouchDesigner instance via twozero MCP — create operators, set parameters, wire connections, execut…
+- `hermes-agent/optional-skills/DESCRIPTION.md` — # Optional Skills Official skills maintained by Nous Research that are **not activated by default**.
+- `hermes-agent/optional-skills/devops/cli/references/app-discovery.md` — # Discovering Apps ## List All Apps
+- `hermes-agent/optional-skills/devops/cli/references/authentication.md` — # Authentication & Setup ## Install the CLI
+- `hermes-agent/optional-skills/devops/cli/references/cli-reference.md` — # CLI Reference ## Installation
+- `hermes-agent/optional-skills/devops/cli/references/running-apps.md` — # Running Apps ## Basic Run
+- `hermes-agent/optional-skills/devops/cli/SKILL.md` — --- name: inference-sh-cli description: "Run 150+ AI apps via inference.sh CLI (infsh) — image generation, video creation, LLMs, search, 3D, social automation.…
+- `hermes-agent/optional-skills/devops/docker-management/SKILL.md` — --- name: docker-management description: Manage Docker containers, images, volumes, networks, and Compose stacks — lifecycle ops, debugging, cleanup, and Docke…
+- `hermes-agent/optional-skills/dogfood/adversarial-ux-test/SKILL.md` — --- name: adversarial-ux-test description: Roleplay the most difficult, tech-resistant user for your product. Browse the app as that persona, find every UX pai…
+- `hermes-agent/optional-skills/dogfood/DESCRIPTION.md` — # Dogfood — Advanced QA & Testing Skills Specialized QA workflows that go beyond basic bug-finding. These skills use structured methodologies to surface UX fri…
+- `hermes-agent/optional-skills/email/agentmail/SKILL.md` — --- name: agentmail description: Give the agent its own dedicated email inbox via AgentMail. Send, receive, and manage email autonomously using agent-owned ema…
+- `hermes-agent/optional-skills/health/DESCRIPTION.md` — Health, wellness, and biometric integration skills — BCI wearables, neurofeedback, sleep tracking, and cognitive state monitoring.
+- `hermes-agent/optional-skills/health/fitness-nutrition/references/FORMULAS.md` — # Formulas Reference Scientific references for all calculators used in the fitness-nutrition skill.
+- `hermes-agent/optional-skills/health/fitness-nutrition/scripts/body_calc.py` — #!/usr/bin/env python3 """ body_calc.py — All-in-one fitness calculator.
+- `hermes-agent/optional-skills/health/fitness-nutrition/scripts/nutrition_search.py` — #!/usr/bin/env python3 """ nutrition_search.py — Search USDA FoodData Central for nutrition info.
+- `hermes-agent/optional-skills/health/fitness-nutrition/SKILL.md` — --- name: fitness-nutrition description: >
+- `hermes-agent/optional-skills/health/neuroskill-bci/references/api.md` — # NeuroSkill WebSocket & HTTP API Reference NeuroSkill runs a local server (default port **8375**) discoverable via mDNS
+- `hermes-agent/optional-skills/health/neuroskill-bci/references/metrics.md` — # NeuroSkill Metric Definitions & Interpretation Guide > **⚠️ Research Use Only:** All metrics are experimental and derived from
+- `hermes-agent/optional-skills/health/neuroskill-bci/references/protocols.md` — # NeuroSkill Guided Protocols Over 70 mind-body practices triggered by specific biometric (EXG) signals. These
+- `hermes-agent/optional-skills/health/neuroskill-bci/SKILL.md` — --- name: neuroskill-bci description: >
+- `hermes-agent/optional-skills/mcp/DESCRIPTION.md` — # MCP Skills for building, testing, and deploying MCP (Model Context Protocol) servers.
+- `hermes-agent/optional-skills/mcp/fastmcp/references/fastmcp-cli.md` — # FastMCP CLI Reference Use this file when the task needs exact FastMCP CLI workflows rather than the higher-level guidance in `SKILL.md`.
+- `hermes-agent/optional-skills/mcp/fastmcp/scripts/scaffold_fastmcp.py` — #!/usr/bin/env python3 """Copy a FastMCP starter template into a working file."""
+- `hermes-agent/optional-skills/mcp/fastmcp/SKILL.md` — --- name: fastmcp description: Build, test, inspect, install, and deploy MCP servers with FastMCP in Python. Use when creating a new MCP server, wrapping an AP…
+- `hermes-agent/optional-skills/mcp/fastmcp/templates/api_wrapper.py` — from __future__ import annotations import os
+- `hermes-agent/optional-skills/mcp/fastmcp/templates/database_server.py` — from __future__ import annotations import os
+- `hermes-agent/optional-skills/mcp/fastmcp/templates/file_processor.py` — from __future__ import annotations from pathlib import Path
+- `hermes-agent/optional-skills/mcp/mcporter/SKILL.md` — --- name: mcporter description: Use the mcporter CLI to list, configure, auth, and call MCP servers/tools directly (HTTP or stdio), including ad-hoc servers, c…
+- `hermes-agent/optional-skills/migration/DESCRIPTION.md` — Optional migration workflows for importing user state and customizations from other agent systems into Hermes Agent.
+- `hermes-agent/optional-skills/migration/openclaw-migration/scripts/openclaw_to_hermes.py` — large file (128500 bytes)
+- `hermes-agent/optional-skills/migration/openclaw-migration/SKILL.md` — --- name: openclaw-migration description: Migrate a user's OpenClaw customization footprint into Hermes Agent. Imports Hermes-compatible memories, SOUL.md, com…
+- `hermes-agent/optional-skills/mlops/accelerate/references/custom-plugins.md` — # Custom Plugins for Accelerate ## Overview
+- `hermes-agent/optional-skills/mlops/accelerate/references/megatron-integration.md` — # Megatron Integration with Accelerate ## Overview
+- `hermes-agent/optional-skills/mlops/accelerate/references/performance.md` — # Accelerate Performance Tuning ## Profiling
+- `hermes-agent/optional-skills/mlops/accelerate/SKILL.md` — --- name: huggingface-accelerate description: Simplest distributed training API. 4 lines to add distributed support to any PyTorch script. Unified API for Deep…
+- `hermes-agent/optional-skills/mlops/chroma/references/integration.md` — # Chroma Integration Guide Integration with LangChain, LlamaIndex, and frameworks.
+- `hermes-agent/optional-skills/mlops/chroma/SKILL.md` — --- name: chroma description: Open-source embedding database for AI applications. Store embeddings and metadata, perform vector and full-text search, filter by…
+- `hermes-agent/optional-skills/mlops/clip/references/applications.md` — # CLIP Applications Guide Practical applications and use cases for CLIP.
+- `hermes-agent/optional-skills/mlops/clip/SKILL.md` — --- name: clip description: OpenAI's model connecting vision and language. Enables zero-shot image classification, image-text matching, and cross-modal retriev…
+- `hermes-agent/optional-skills/mlops/faiss/references/index_types.md` — # FAISS Index Types Guide Complete guide to choosing and using FAISS index types.
+- `hermes-agent/optional-skills/mlops/faiss/SKILL.md` — --- name: faiss description: Facebook's library for efficient similarity search and clustering of dense vectors. Supports billions of vectors, GPU acceleration…
+- `hermes-agent/optional-skills/mlops/flash-attention/references/benchmarks.md` — # Performance Benchmarks ## Contents
+- `hermes-agent/optional-skills/mlops/flash-attention/references/transformers-integration.md` — # HuggingFace Transformers Integration ## Contents
+- `hermes-agent/optional-skills/mlops/flash-attention/SKILL.md` — --- name: optimizing-attention-flash description: Optimizes transformer attention with Flash Attention for 2-4x speedup and 10-20x memory reduction. Use when t…
+- `hermes-agent/optional-skills/mlops/guidance/references/backends.md` — # Backend Configuration Guide Complete guide to configuring Guidance with different LLM backends.
+- `hermes-agent/optional-skills/mlops/guidance/references/constraints.md` — # Comprehensive Constraint Patterns Guide to regex constraints, grammar-based generation, and token healing in Guidance.
+- `hermes-agent/optional-skills/mlops/guidance/references/examples.md` — # Production-Ready Examples Real-world examples of using Guidance for structured generation, agents, and workflows.
+- `hermes-agent/optional-skills/mlops/guidance/SKILL.md` — --- name: guidance description: Control LLM output with regex and grammars, guarantee valid JSON/XML/code generation, enforce structured formats, and build mul…
+- `hermes-agent/optional-skills/mlops/hermes-atropos-environments/references/agentresult-fields.md` — # AgentResult Fields Reference `AgentResult` is defined in `environments/agent_loop.py` as a dataclass.
+- `hermes-agent/optional-skills/mlops/hermes-atropos-environments/references/atropos-base-env.md` — # Atropos BaseEnv Reference Source: `atroposlib/envs/base.py` (~2124 lines)
+- `hermes-agent/optional-skills/mlops/hermes-atropos-environments/references/usage-patterns.md` — # Usage Patterns — Testing Environments and Evaluating Models ## Pattern 1: Test Your Environment Works (process mode)
+- `hermes-agent/optional-skills/mlops/hermes-atropos-environments/SKILL.md` — --- name: hermes-atropos-environments description: Build, test, and debug Hermes Agent RL environments for Atropos training. Covers the HermesAgentBaseEnv inte…
+- `hermes-agent/optional-skills/mlops/huggingface-tokenizers/references/algorithms.md` — # Tokenization Algorithms Deep Dive Comprehensive explanation of BPE, WordPiece, and Unigram algorithms.
+- `hermes-agent/optional-skills/mlops/huggingface-tokenizers/references/integration.md` — # Transformers Integration Complete guide to using HuggingFace Tokenizers with the Transformers library.
+- `hermes-agent/optional-skills/mlops/huggingface-tokenizers/references/pipeline.md` — # Tokenization Pipeline Components Complete guide to normalizers, pre-tokenizers, models, post-processors, and decoders.
+- `hermes-agent/optional-skills/mlops/huggingface-tokenizers/references/training.md` — # Training Custom Tokenizers Complete guide to training tokenizers from scratch.
+- `hermes-agent/optional-skills/mlops/huggingface-tokenizers/SKILL.md` — --- name: huggingface-tokenizers description: Fast tokenizers optimized for research and production. Rust-based implementation tokenizes 1GB in <20 seconds. Su…
+- `hermes-agent/optional-skills/mlops/instructor/references/examples.md` — # Real-World Examples Practical examples of using Instructor for structured data extraction.
+- `hermes-agent/optional-skills/mlops/instructor/references/providers.md` — # Provider Configuration Guide to using Instructor with different LLM providers.
+- `hermes-agent/optional-skills/mlops/instructor/references/validation.md` — # Advanced Validation Patterns Complete guide to validation in Instructor using Pydantic.
+- `hermes-agent/optional-skills/mlops/instructor/SKILL.md` — --- name: instructor description: Extract structured data from LLM responses with Pydantic validation, retry failed extractions automatically, parse complex JS…
+- `hermes-agent/optional-skills/mlops/lambda-labs/references/advanced-usage.md` — # Lambda Labs Advanced Usage Guide ## Multi-Node Distributed Training
+- `hermes-agent/optional-skills/mlops/lambda-labs/references/troubleshooting.md` — # Lambda Labs Troubleshooting Guide ## Instance Launch Issues
+- `hermes-agent/optional-skills/mlops/lambda-labs/SKILL.md` — --- name: lambda-labs-gpu-cloud description: Reserved and on-demand GPU cloud instances for ML training and inference. Use when you need dedicated GPU instance…
+- `hermes-agent/optional-skills/mlops/llava/references/training.md` — # LLaVA Training Guide Guide to training and fine-tuning LLaVA models.
+- `hermes-agent/optional-skills/mlops/llava/SKILL.md` — --- name: llava description: Large Language and Vision Assistant. Enables visual instruction tuning and image-based conversations. Combines CLIP vision encoder…
+- `hermes-agent/optional-skills/mlops/modal/references/advanced-usage.md` — # Modal Advanced Usage Guide ## Multi-GPU Training
+- `hermes-agent/optional-skills/mlops/modal/references/troubleshooting.md` — # Modal Troubleshooting Guide ## Installation Issues
+- `hermes-agent/optional-skills/mlops/modal/SKILL.md` — --- name: modal-serverless-gpu description: Serverless GPU cloud platform for running ML workloads. Use when you need on-demand GPU access without infrastructu…
+- `hermes-agent/optional-skills/mlops/nemo-curator/references/deduplication.md` — # Deduplication Guide Complete guide to exact, fuzzy, and semantic deduplication.
+- `hermes-agent/optional-skills/mlops/nemo-curator/references/filtering.md` — # Quality Filtering Guide Complete guide to NeMo Curator's 30+ quality filters.
+- `hermes-agent/optional-skills/mlops/nemo-curator/SKILL.md` — --- name: nemo-curator description: GPU-accelerated data curation for LLM training. Supports text/image/video/audio. Features fuzzy deduplication (16× faster),…
+- `hermes-agent/optional-skills/mlops/peft/references/advanced-usage.md` — # PEFT Advanced Usage Guide ## Advanced LoRA Variants
+- `hermes-agent/optional-skills/mlops/peft/references/troubleshooting.md` — # PEFT Troubleshooting Guide ## Installation Issues
+- `hermes-agent/optional-skills/mlops/peft/SKILL.md` — --- name: peft-fine-tuning description: Parameter-efficient fine-tuning for LLMs using LoRA, QLoRA, and 25+ methods. Use when fine-tuning large models (7B-70B)…
+- `hermes-agent/optional-skills/mlops/pinecone/references/deployment.md` — # Pinecone Deployment Guide Production deployment patterns for Pinecone.
+- `hermes-agent/optional-skills/mlops/pinecone/SKILL.md` — --- name: pinecone description: Managed vector database for production AI applications. Fully managed, auto-scaling, with hybrid search (dense + sparse), metad…
+- `hermes-agent/optional-skills/mlops/pytorch-fsdp/references/index.md` — # Pytorch-Fsdp Documentation Index ## Categories
+- `hermes-agent/optional-skills/mlops/pytorch-fsdp/references/other.md` — large file (337500 bytes)
+- `hermes-agent/optional-skills/mlops/pytorch-fsdp/SKILL.md` — large file (160170 bytes)
+- `hermes-agent/optional-skills/mlops/pytorch-lightning/references/callbacks.md` — # PyTorch Lightning Callbacks ## Overview
+- `hermes-agent/optional-skills/mlops/pytorch-lightning/references/distributed.md` — # PyTorch Lightning Distributed Training ## Distributed Strategies
+- `hermes-agent/optional-skills/mlops/pytorch-lightning/references/hyperparameter-tuning.md` — # Hyperparameter Tuning with PyTorch Lightning ## Integration with Tuning Frameworks
+- `hermes-agent/optional-skills/mlops/pytorch-lightning/SKILL.md` — --- name: pytorch-lightning description: High-level PyTorch framework with Trainer class, automatic distributed training (DDP/FSDP/DeepSpeed), callbacks system…
+- `hermes-agent/optional-skills/mlops/qdrant/references/advanced-usage.md` — # Qdrant Advanced Usage Guide ## Distributed Deployment
+- `hermes-agent/optional-skills/mlops/qdrant/references/troubleshooting.md` — # Qdrant Troubleshooting Guide ## Installation Issues
+- `hermes-agent/optional-skills/mlops/qdrant/SKILL.md` — --- name: qdrant-vector-search description: High-performance vector similarity search engine for RAG and semantic search. Use when building production RAG syst…
+- `hermes-agent/optional-skills/mlops/saelens/references/api.md` — # SAELens API Reference ## SAE Class
+- `hermes-agent/optional-skills/mlops/saelens/references/README.md` — # SAELens Reference Documentation This directory contains comprehensive reference materials for SAELens.
+- `hermes-agent/optional-skills/mlops/saelens/references/tutorials.md` — # SAELens Tutorials ## Tutorial 1: Loading and Analyzing Pre-trained SAEs
+- `hermes-agent/optional-skills/mlops/saelens/SKILL.md` — --- name: sparse-autoencoder-training description: Provides guidance for training and analyzing Sparse Autoencoders (SAEs) using SAELens to decompose neural ne…
+- `hermes-agent/optional-skills/mlops/simpo/references/datasets.md` — # Datasets Complete guide to preference datasets for SimPO training.
+- `hermes-agent/optional-skills/mlops/simpo/references/hyperparameters.md` — # Hyperparameters Complete guide to SimPO hyperparameter selection and tuning.
+- `hermes-agent/optional-skills/mlops/simpo/references/loss-functions.md` — # Loss Functions Complete guide to SimPO loss functions and mathematical formulations.
+- `hermes-agent/optional-skills/mlops/simpo/SKILL.md` — --- name: simpo-training description: Simple Preference Optimization for LLM alignment. Reference-free alternative to DPO with better performance (+6.4 points …
+- `hermes-agent/optional-skills/mlops/slime/references/api-reference.md` — # slime API Reference ## Architecture Overview
+- `hermes-agent/optional-skills/mlops/slime/references/troubleshooting.md` — # slime Troubleshooting Guide ## Common Issues and Solutions
+- `hermes-agent/optional-skills/mlops/slime/SKILL.md` — --- name: slime-rl-training description: Provides guidance for LLM post-training with RL using slime, a Megatron+SGLang framework. Use when training GLM models…
+- `hermes-agent/optional-skills/mlops/stable-diffusion/references/advanced-usage.md` — # Stable Diffusion Advanced Usage Guide ## Custom Pipelines
+- `hermes-agent/optional-skills/mlops/stable-diffusion/references/troubleshooting.md` — # Stable Diffusion Troubleshooting Guide ## Installation Issues
+- `hermes-agent/optional-skills/mlops/stable-diffusion/SKILL.md` — --- name: stable-diffusion-image-generation description: State-of-the-art text-to-image generation with Stable Diffusion models via HuggingFace Diffusers. Use …
+- `hermes-agent/optional-skills/mlops/tensorrt-llm/references/multi-gpu.md` — # Multi-GPU Deployment Guide Comprehensive guide to scaling TensorRT-LLM across multiple GPUs and nodes.
+- `hermes-agent/optional-skills/mlops/tensorrt-llm/references/optimization.md` — # TensorRT-LLM Optimization Guide Comprehensive guide to optimizing LLM inference with TensorRT-LLM.
+- `hermes-agent/optional-skills/mlops/tensorrt-llm/references/serving.md` — # Production Serving Guide Comprehensive guide to deploying TensorRT-LLM in production environments.
+- `hermes-agent/optional-skills/mlops/tensorrt-llm/SKILL.md` — --- name: tensorrt-llm description: Optimizes LLM inference with NVIDIA TensorRT for maximum throughput and lowest latency. Use for production deployment on NV…
+- `hermes-agent/optional-skills/mlops/torchtitan/references/checkpoint.md` — # Checkpointing in TorchTitan TorchTitan uses PyTorch Distributed Checkpoint (DCP) for fault-tolerant, interoperable checkpointing.
+- `hermes-agent/optional-skills/mlops/torchtitan/references/custom-models.md` — # Adding Custom Models to TorchTitan This guide explains how to add a new model to TorchTitan following the established patterns.
+- `hermes-agent/optional-skills/mlops/torchtitan/references/float8.md` — # Float8 Training in TorchTitan Float8 training provides substantial speedups for models where GEMMs are large enough that the FP8 tensorcore speedup outweighs…
+- `hermes-agent/optional-skills/mlops/torchtitan/references/fsdp.md` — # FSDP2 in TorchTitan ## Why FSDP2?
+- `hermes-agent/optional-skills/mlops/torchtitan/SKILL.md` — --- name: distributed-llm-pretraining-torchtitan description: Provides PyTorch-native distributed LLM pretraining using torchtitan with 4D parallelism (FSDP2, …
+- `hermes-agent/optional-skills/mlops/whisper/references/languages.md` — # Whisper Language Support Guide Complete guide to Whisper's multilingual capabilities.
+- `hermes-agent/optional-skills/mlops/whisper/SKILL.md` — --- name: whisper description: OpenAI's general-purpose speech recognition model. Supports 99 languages, transcription, translation to English, and language id…
+- `hermes-agent/optional-skills/productivity/canvas/scripts/canvas_api.py` — #!/usr/bin/env python3 """Canvas LMS API CLI for Hermes Agent.
+- `hermes-agent/optional-skills/productivity/canvas/SKILL.md` — --- name: canvas description: Canvas LMS integration — fetch enrolled courses and assignments using API token authentication.
+- `hermes-agent/optional-skills/productivity/memento-flashcards/scripts/memento_cards.py` — #!/usr/bin/env python3 """Memento card storage, spaced-repetition engine, and CSV I/O.
+- `hermes-agent/optional-skills/productivity/memento-flashcards/scripts/youtube_quiz.py` — #!/usr/bin/env python3 """Fetch YouTube transcripts for Memento quiz generation.
+- `hermes-agent/optional-skills/productivity/memento-flashcards/SKILL.md` — --- name: memento-flashcards description: >-
+- `hermes-agent/optional-skills/productivity/siyuan/SKILL.md` — --- name: siyuan description: SiYuan Note API for searching, reading, creating, and managing blocks and documents in a self-hosted knowledge base via curl.
+- `hermes-agent/optional-skills/productivity/telephony/scripts/telephony.py` — #!/usr/bin/env python3 """Telephony helper for the Hermes optional telephony skill.
+- `hermes-agent/optional-skills/productivity/telephony/SKILL.md` — --- name: telephony description: Give Hermes phone capabilities without core tool changes. Provision and persist a Twilio number, send and receive SMS/MMS, mak…
+- `hermes-agent/optional-skills/research/bioinformatics/SKILL.md` — --- name: bioinformatics description: Gateway to 400+ bioinformatics skills from bioSkills and ClawBio. Covers genomics, transcriptomics, single-cell, variant …
+- `hermes-agent/optional-skills/research/domain-intel/scripts/domain_intel.py` — #!/usr/bin/env python3 """ Domain Intelligence — Passive OSINT via Python stdlib.
+- `hermes-agent/optional-skills/research/domain-intel/SKILL.md` — --- name: domain-intel description: Passive domain reconnaissance using Python stdlib. Subdomain discovery, SSL certificate inspection, WHOIS lookups, DNS reco…
+- `hermes-agent/optional-skills/research/drug-discovery/references/ADMET_REFERENCE.md` — # ADMET Reference Guide Comprehensive reference for Absorption, Distribution, Metabolism, Excretion, and Toxicity (ADMET) analysis in drug discovery.
+- `hermes-agent/optional-skills/research/drug-discovery/scripts/chembl_target.py` — #!/usr/bin/env python3 """ chembl_target.py — Search ChEMBL for a target and retrieve top active compounds.
+- `hermes-agent/optional-skills/research/drug-discovery/scripts/ro5_screen.py` — #!/usr/bin/env python3 """ ro5_screen.py — Batch Lipinski Ro5 + Veber screening via PubChem API.
+- `hermes-agent/optional-skills/research/drug-discovery/SKILL.md` — --- name: drug-discovery description: >
+- `hermes-agent/optional-skills/research/duckduckgo-search/scripts/duckduckgo.sh` — #!/bin/bash # DuckDuckGo Search Helper Script # Wrapper around ddgs CLI with sensible defaults
+- `hermes-agent/optional-skills/research/duckduckgo-search/SKILL.md` — --- name: duckduckgo-search description: Free web search via DuckDuckGo — text, news, images, videos. No API key needed. Prefer the `ddgs` CLI when installed; …
+- `hermes-agent/optional-skills/research/gitnexus-explorer/scripts/proxy.mjs` — /** * GitNexus reverse proxy — serves production web UI + proxies /api/* to backend. * Zero dependencies, Node.js built-ins only.
+- `hermes-agent/optional-skills/research/gitnexus-explorer/SKILL.md` — --- name: gitnexus-explorer description: Index a codebase with GitNexus and serve an interactive knowledge graph via web UI + Cloudflare tunnel.
+- `hermes-agent/optional-skills/research/parallel-cli/SKILL.md` — --- name: parallel-cli description: Optional vendor skill for Parallel CLI — agent-native web search, extraction, deep research, enrichment, FindAll, and monit…
+- `hermes-agent/optional-skills/research/qmd/SKILL.md` — --- name: qmd description: Search personal knowledge bases, notes, docs, and meeting transcripts locally using qmd — a hybrid retrieval engine with BM25, vecto…
+- `hermes-agent/optional-skills/research/scrapling/SKILL.md` — --- name: scrapling description: Web scraping with Scrapling - HTTP fetching, stealth browser automation, Cloudflare bypass, and spider crawling via CLI and Py…
+- `hermes-agent/optional-skills/security/1password/references/cli-examples.md` — # op CLI examples ## Sign-in and identity
+- `hermes-agent/optional-skills/security/1password/references/get-started.md` — # 1Password CLI get-started (summary) Official docs: https://developer.1password.com/docs/cli/get-started/
+- `hermes-agent/optional-skills/security/1password/SKILL.md` — --- name: 1password description: Set up and use 1Password CLI (op). Use when installing the CLI, enabling desktop app integration, signing in, and reading/inje…
+- `hermes-agent/optional-skills/security/DESCRIPTION.md` — # Security Skills for secrets management, credential handling, and security tooling integrations.
+- `hermes-agent/optional-skills/security/oss-forensics/references/evidence-types.md` — # Evidence Types Reference Taxonomy of all evidence types, IOC types, GitHub event types, and observation types
+- `hermes-agent/optional-skills/security/oss-forensics/references/github-archive-guide.md` — # GitHub Archive Query Guide (BigQuery) GitHub Archive records every public event on GitHub as immutable JSON records. This data is accessible via Google BigQu…
+- `hermes-agent/optional-skills/security/oss-forensics/references/investigation-templates.md` — # Investigation Templates Pre-built hypothesis and investigation templates for common supply chain attack scenarios.
+- `hermes-agent/optional-skills/security/oss-forensics/references/recovery-techniques.md` — # Deleted Content Recovery Techniques ## Key Insight: GitHub Never Fully Deletes Force-Pushed Commits
+- `hermes-agent/optional-skills/security/oss-forensics/scripts/evidence-store.py` — #!/usr/bin/env python3 """ OSS Forensics Evidence Store Manager
+- `hermes-agent/optional-skills/security/oss-forensics/SKILL.md` — --- name: oss-forensics description: |
+- `hermes-agent/optional-skills/security/oss-forensics/templates/forensic-report.md` — # Forensic Investigation Report > **Instructions**: Fill in all sections. Every factual claim must cite at least one `[EV-XXXX]` evidence ID.
+- `hermes-agent/optional-skills/security/oss-forensics/templates/malicious-package-report.md` — # Malicious Package Investigation Report ---
+- `hermes-agent/optional-skills/security/sherlock/SKILL.md` — --- name: sherlock description: OSINT username search across 400+ social networks. Hunt down social media accounts by username.
+- `hermes-agent/optional-skills/web-development/DESCRIPTION.md` — # Web Development Optional skills for client-side web development workflows — embedding agents, copilots, and AI-native UX patterns into user-facing web apps.
+- `hermes-agent/optional-skills/web-development/page-agent/SKILL.md` — --- name: page-agent description: Embed alibaba/page-agent into your own web application — a pure-JavaScript in-page GUI agent that ships as a single <script> …
+- `hermes-agent/package-lock.json` — large file (94861 bytes)
+- `hermes-agent/package.json` — { "name": "hermes-agent", "version": "1.0.0",
+- `hermes-agent/packaging/homebrew/hermes-agent.rb` — class HermesAgent < Formula include Language::Python::Virtualenv
+- `hermes-agent/packaging/homebrew/README.md` — Homebrew packaging notes for Hermes Agent. Use `packaging/homebrew/hermes-agent.rb` as a tap or `homebrew-core` starting point.
+- `hermes-agent/plans/gemini-oauth-provider.md` — # Gemini OAuth Provider — Implementation Plan ## Goal
+- `hermes-agent/plugins/__init__.py` — # Hermes plugins package
+- `hermes-agent/plugins/context_engine/__init__.py` — """Context engine plugin discovery. Scans ``plugins/context_engine/<name>/`` directories for context engine
+- `hermes-agent/plugins/disk-cleanup/__init__.py` — """disk-cleanup plugin — auto-cleanup of ephemeral Hermes session files. Wires three behaviours:
+- `hermes-agent/plugins/disk-cleanup/disk_cleanup.py` — """disk_cleanup — ephemeral file cleanup for Hermes Agent. Library module wrapping the deterministic cleanup rules written by
+- `hermes-agent/plugins/disk-cleanup/plugin.yaml` — name: disk-cleanup version: 2.0.0 description: "Auto-track and clean up ephemeral files (test scripts, temp outputs, cron logs) created during Hermes sessions.…
+- `hermes-agent/plugins/disk-cleanup/README.md` — # disk-cleanup Auto-tracks and cleans up ephemeral files created during Hermes Agent
+- `hermes-agent/plugins/example-dashboard/dashboard/manifest.json` — { "name": "example", "label": "Example",
+- `hermes-agent/plugins/example-dashboard/dashboard/plugin_api.py` — """Example dashboard plugin — backend API routes. Mounted at /api/plugins/example/ by the dashboard plugin system.
+- `hermes-agent/plugins/image_gen/openai-codex/__init__.py` — """OpenAI image generation backend — ChatGPT/Codex OAuth variant. Identical model catalog and tier semantics to the ``openai`` image-gen plugin
+- `hermes-agent/plugins/image_gen/openai-codex/plugin.yaml` — name: openai-codex version: 1.0.0 description: "OpenAI image generation backed by ChatGPT/Codex OAuth (gpt-image-2 via the Responses image_generation tool). Sa…
+- `hermes-agent/plugins/image_gen/openai/__init__.py` — """OpenAI image generation backend. Exposes OpenAI's ``gpt-image-2`` model at three quality tiers as an
+- `hermes-agent/plugins/image_gen/openai/plugin.yaml` — name: openai version: 1.0.0 description: "OpenAI image generation backend (gpt-image-2). Saves generated images to $HERMES_HOME/cache/images/."
+- `hermes-agent/plugins/image_gen/xai/__init__.py` — """xAI image generation backend. Exposes xAI's ``grok-imagine-image`` model as an
+- `hermes-agent/plugins/image_gen/xai/plugin.yaml` — name: xai version: 1.0.0 description: "xAI image generation backend (grok-imagine-image). Text-to-image."
+- `hermes-agent/plugins/memory/__init__.py` — """Memory provider plugin discovery. Scans two directories for memory provider plugins:
+- `hermes-agent/plugins/memory/byterover/__init__.py` — """ByteRover memory plugin — MemoryProvider interface. Persistent memory via the ByteRover CLI (``brv``). Organizes knowledge into
+- `hermes-agent/plugins/memory/byterover/plugin.yaml` — name: byterover version: 1.0.0 description: "ByteRover — persistent knowledge tree with tiered retrieval via the brv CLI."
+- `hermes-agent/plugins/memory/byterover/README.md` — # ByteRover Memory Provider Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered retrieval (fuzzy text → LLM-driven search).
+- `hermes-agent/plugins/memory/hindsight/__init__.py` — large file (58427 bytes)
+- `hermes-agent/plugins/memory/hindsight/plugin.yaml` — name: hindsight version: 1.0.0 description: "Hindsight — long-term memory with knowledge graph, entity resolution, and multi-strategy retrieval."
+- `hermes-agent/plugins/memory/hindsight/README.md` — # Hindsight Memory Provider Long-term memory with knowledge graph, entity resolution, and multi-strategy retrieval. Supports cloud, local embedded, and local e…
+- `hermes-agent/plugins/memory/holographic/__init__.py` — """hermes-memory-store — holographic memory plugin using MemoryProvider interface. Registers as a MemoryProvider plugin, giving the agent structured fact stora…
+- `hermes-agent/plugins/memory/holographic/holographic.py` — """Holographic Reduced Representations (HRR) with phase encoding. HRRs are a vector symbolic architecture for encoding compositional structure
+- `hermes-agent/plugins/memory/holographic/plugin.yaml` — name: holographic version: 0.1.0 description: "Holographic memory — local SQLite fact store with FTS5 search, trust scoring, and HRR-based compositional retrie…
+- `hermes-agent/plugins/memory/holographic/README.md` — # Holographic Memory Provider Local SQLite fact store with FTS5 search, trust scoring, entity resolution, and HRR-based compositional retrieval.
+- `hermes-agent/plugins/memory/holographic/retrieval.py` — """Hybrid keyword/BM25 retrieval for the memory store. Ported from KIK memory_agent.py — combines FTS5 full-text search with
+- `hermes-agent/plugins/memory/holographic/store.py` — """ SQLite-backed fact store with entity resolution and trust scoring. Single-user Hermes memory store plugin.
+- `hermes-agent/plugins/memory/honcho/__init__.py` — large file (54470 bytes)
+- `hermes-agent/plugins/memory/honcho/cli.py` — large file (57439 bytes)
+- `hermes-agent/plugins/memory/honcho/client.py` — """Honcho client initialization and configuration. Resolution order for config file:
+- `hermes-agent/plugins/memory/honcho/plugin.yaml` — name: honcho version: 1.0.0 description: "Honcho AI-native memory — cross-session user modeling with dialectic Q&A, semantic search, and persistent conclusions…
+- `hermes-agent/plugins/memory/honcho/README.md` — # Honcho Memory Provider AI-native cross-session user modeling with multi-pass dialectic reasoning, session summaries, bidirectional peer tools, and persistent…
+- `hermes-agent/plugins/memory/honcho/session.py` — large file (48251 bytes)
+- `hermes-agent/plugins/memory/mem0/__init__.py` — """Mem0 memory plugin — MemoryProvider interface. Server-side LLM fact extraction, semantic search with reranking, and
+- `hermes-agent/plugins/memory/mem0/plugin.yaml` — name: mem0 version: 1.0.0 description: "Mem0 — server-side LLM fact extraction with semantic search, reranking, and automatic deduplication."
+- `hermes-agent/plugins/memory/mem0/README.md` — # Mem0 Memory Provider Server-side LLM fact extraction with semantic search, reranking, and automatic deduplication.
+- `hermes-agent/plugins/memory/openviking/__init__.py` — """OpenViking memory plugin — full bidirectional MemoryProvider interface. Context database by Volcengine (ByteDance) that organizes agent knowledge
+- `hermes-agent/plugins/memory/openviking/plugin.yaml` — name: openviking version: 2.0.0 description: "OpenViking context database — session-managed memory with automatic extraction, tiered retrieval, and filesystem-…
+- `hermes-agent/plugins/memory/openviking/README.md` — # OpenViking Memory Provider Context database by Volcengine (ByteDance) with filesystem-style knowledge hierarchy, tiered retrieval, and automatic memory extra…
+- `hermes-agent/plugins/memory/retaindb/__init__.py` — """RetainDB memory plugin — MemoryProvider interface. Cross-session memory via RetainDB cloud API.
+- `hermes-agent/plugins/memory/retaindb/plugin.yaml` — name: retaindb version: 1.0.0 description: "RetainDB — cloud memory API with hybrid search and 7 memory types."
+- `hermes-agent/plugins/memory/retaindb/README.md` — # RetainDB Memory Provider Cloud memory API with hybrid search (Vector + BM25 + Reranking) and 7 memory types.
+- `hermes-agent/plugins/memory/supermemory/__init__.py` — """Supermemory memory plugin using the MemoryProvider interface. Provides semantic long-term memory with profile recall, semantic search,
+- `hermes-agent/plugins/memory/supermemory/README.md` — # Supermemory Memory Provider Semantic long-term memory with profile recall, semantic search, explicit memory tools, and session-end conversation ingest.
+- `hermes-agent/pyproject.toml` — [build-system] requires = ["setuptools>=61.0"] build-backend = "setuptools.build_meta"
+- `hermes-agent/README.md` — <p align="center"> <img src="assets/banner.png" alt="Hermes Agent" width="100%"> </p>
+- `hermes-agent/RELEASE_v0.10.0.md` — # Hermes Agent v0.10.0 (v2026.4.16) **Release Date:** April 16, 2026
+- `hermes-agent/RELEASE_v0.11.0.md` — # Hermes Agent v0.11.0 (v2026.4.23) **Release Date:** April 23, 2026
+- `hermes-agent/RELEASE_v0.2.0.md` — # Hermes Agent v0.2.0 (v2026.3.12) **Release Date:** March 12, 2026
+- `hermes-agent/RELEASE_v0.3.0.md` — # Hermes Agent v0.3.0 (v2026.3.17) **Release Date:** March 17, 2026
+- `hermes-agent/RELEASE_v0.4.0.md` — # Hermes Agent v0.4.0 (v2026.3.23) **Release Date:** March 23, 2026
+- `hermes-agent/RELEASE_v0.5.0.md` — # Hermes Agent v0.5.0 (v2026.3.28) **Release Date:** March 28, 2026
+- `hermes-agent/RELEASE_v0.6.0.md` — # Hermes Agent v0.6.0 (v2026.3.30) **Release Date:** March 30, 2026
+- `hermes-agent/RELEASE_v0.7.0.md` — # Hermes Agent v0.7.0 (v2026.4.3) **Release Date:** April 3, 2026
+- `hermes-agent/RELEASE_v0.8.0.md` — # Hermes Agent v0.8.0 (v2026.4.8) **Release Date:** April 8, 2026
+- `hermes-agent/RELEASE_v0.9.0.md` — # Hermes Agent v0.9.0 (v2026.4.13) **Release Date:** April 13, 2026
+- `hermes-agent/rl_cli.py` — #!/usr/bin/env python3 """ RL Training CLI Runner
+- `hermes-agent/run_agent.py` — large file (652839 bytes)
+- `hermes-agent/SECURITY.md` — # Hermes Agent Security Policy This document outlines the security protocols, trust model, and deployment hardening guidelines for the **Hermes Agent** project.
+- `hermes-agent/setup-hermes.sh` — #!/bin/bash # ============================================================================ # Hermes Agent Setup Script
+- `hermes-agent/toolset_distributions.py` — #!/usr/bin/env python3 """ Toolset Distributions Module
+- `hermes-agent/toolsets.py` — #!/usr/bin/env python3 """ Toolsets Module
+- `hermes-agent/trajectory_compressor.py` — large file (65305 bytes)
+- `hermes-agent/url_host_preflight.py` — """Patch a stale ``utils`` module with URL hostname helpers before other imports. Stale ``~/.hermes/hermes-agent`` trees sometimes ship an older ``utils.py`` t…
+- `hermes-agent/url_host_utils.py` — """Hostname-safe URL matching for provider routing (split out for partial deploys). Cron and gateways occasionally run from a ``~/.hermes/hermes-agent`` tree t…
+- `hermes-agent/utils.py` — """Shared utility functions for hermes-agent.""" import json
+- `hermes-agent/uv.lock` — large file (1048678 bytes)
+- `INSTALL.md` — # Installing ANIMUS ## Requirements
+- `LICENSE` — MIT License Copyright (c) ANIMUS contributors
+- `notes.md` — # Notes Operator notes for this project (Markdown). Edited in Hermes Chat under **Project workspace → Notes**.
+- `project_goal.md` — large file (140753 bytes)
+- `project_history.md` — large file (58983 bytes)
+- `project_history.md.flock` — empty file
+- `project_knowledge.md` — large file (64342 bytes)
+- `project_status.md` — # Project status (animus) ## Current state
+- `README.md` — # ANIMUS ANIMUS is a distributable bundle: the **animus-chat** web app (Starlette + PWA) and a full **hermes-agent** checkout, so local customisations (gateway…
+- `repo_map.md` — # Repo map (animus) Quick navigation for agents. Update when layout, entrypoints, or roles change.
+- `setup_repo.md` — # Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo…
+- `START_HERE.txt` — ANIMUS — START HERE ===================
+- `VERSION` — 1.0.8
 
-## Application
-
-| Path | Purpose |
-|------|---------|
-| `animus-chat/server.py` | Starlette app: **`CHAT_HOST`** unset/blank → **`::`**; **`__main__`**: pre-bound IPv6 socket **`IPV6_V6ONLY=0`** + **`UvicornServer.run(sockets=[…])`** when host **`::`** (avoids IPv6-only bind); on import (after ``HERMES_AGENT`` on ``sys.path``), calls ``tools.skills_sync.sync_skills()`` once so bundled ``hermes-agent/skills/`` seed into ``HERMES_HOME/skills`` (CLI did this on every ``hermes`` launch; ANIMUS-only starts left the dir empty); gateway proxy (optional **`HERMES_API_KEY`** via ``hermes_runner.gateway_upstream_headers``), workspace APIs, static PWA, **`GET /api/version`** includes **`chat_server_rev`** + **`chat_proxy_blocks_on_missing_hermes_api_key`**, `GET/POST /api/animus/client-config` (wake lock, `projects_dir`, `inference_models`, **`tts_backend`**, **`animus_chat_stt_source`** / **`animus_chat_stt_openai_*`** for mic STT prefs in `config.json`, **`cron_timezone`**, **`cron_overseer_prompt`**, Tailscale fields, wizard provider lists ↔ `config.json`), **`GET /api/animus/desktop-launcher`**, **`POST /api/models/refresh`** (curated + gateway **`/v1/models`** merge + provider alias normalize), **`claude-code`** model rows, chat SSE token logging via `token_usage.record_token_usage`, **`POST /api/animus/check-updates`** / **`apply-update`**, `projects_sync_root()` reads `projects_dir` from config; **`POST /api/stt/transcribe`** — **`HERMES_CHAT_STT_LOCAL_URL`** → **`HERMES_CHAT_STT_LOCAL_EMBEDDED`** or **`config.json`** **`embedded`** (faster-whisper via **`transcribe_audio_force_local_faster_whisper`**) → OpenAI Whisper |
-| `animus-chat/requirements.txt` | Includes **`python-multipart`** (multipart **`POST /api/stt/transcribe`**, attachments) and **`faster-whisper`** for embedded local STT |
-| `animus-chat/token_usage.py` | `record_token_usage`, `GET /api/tokens/usage` merges Hermes dashboard **`GET /api/analytics/usage`** as **`hermes_analytics`** when token set; `POST /api/tokens/record` → `token_usage.jsonl` |
-| `animus-chat/integrations_slack.py` | `GET/POST /api/integrations/slack/{status,save,test}` — reads/writes repo-root `animus.env` for `SLACK_*` |
-| `animus-chat/ssh_routes.py` | `GET/POST/PUT/DELETE /api/ssh/hosts`, `POST /api/ssh/test` — `ssh_hosts.json` + `SSH_PASSWORD_*` in `animus.env`; password probe uses **`BatchMode=no`**, **`PubkeyAuthentication=no`**, **`PreferredAuthentications=password,keyboard-interactive`** ( **`BatchMode=yes`** breaks **`sshpass`** ) |
-| `animus-chat/help_routes.py` | **`GET /api/help/guide`** — `topics_markdown`, `faq_markdown`, `topics[]` (+ full `markdown`); **`POST /api/help/ask`** — guide-grounded Help bot (non-stream; `source: "help"` in token log) |
-| `animus-chat/tts_routes.py` | `GET /api/tts/backends`, `GET /api/tts/piper/voices` (+ **`fetching`** / **`fetch_error`**), `POST /api/tts/piper/speak` (WAV); **background HF download** of default Piper voices (**first:** `en_GB-alan-medium`) when binary present and no `.onnx` models; `PIPER_VOICES_DIR` / `~/.local/share/piper` |
-| `animus-chat/app/` | PWA (`index.html`): sidebar **icon tabs** Chats / Skills / Cron (**collapsible overseer**; job row **SVG icon** actions + purple **+** add; **project scope** + composed prompt; accent **prompt optimizer** + load state; **timezone `<dialog>`** picker; deliver list from messaging **`cron_deliver_home_ready`**) / Plan (**play/stop**; saved plan row **stamp + idea summary** + **✎ / ▶ / −**; clarification **modal** per-question answers + **Stop pipeline** / Submit / Cancel — **`requestPlanPipelineStop()`** shared with toolbar) / **Tokens** / **Settings** (collapsible **Notifications** + **Read aloud** + **Inference** + **Messaging**; **Conversation mode (Beta)** toggle in Read aloud with mic-toggle hands-free loop: TTS reply then VAD/STT auto-send; **Local vs Online STT** radios → **`postAnimusChatSttSource`** / Save / Clear key → **`POST /api/animus/client-config`**; **`refreshSttBackendFromMeta()`** before Read aloud render + mic click so **`stt_backend`** matches server after **`animus.env`** changes; **Settings hint** when STT still **`none`**; empty/error STT turns auto-retry listening while active; **SSH host** modal; **Screen wake** row: title + **ⓘ** + toggle only) / **Help**; wizard, TTS, cron, **`sw.js`** **`animus-v34`**; **Projects** list **drag rows** reorder (persisted in **`projects.json`**); **`visibilitychange`** refetch **projects** + convs + **`client-config`** (**`ui_settings`** prefs sync); sidebar ANIMUS **ghost** 2×; main top bar **no** ghost; empty-state ghost 2×; init opens **`general`** project once per browser session when present; assistant **`.msg-inference-footer`** |
-| `animus-chat/hermes_runner.py` | `hermes` CLI subprocess helper; `chat_data_dir()` matches chat `DATA_DIR`; **`gateway_api_bearer()`** / **`gateway_upstream_headers()`** / **`gateway_bearer_source()`** — proxy auth: **`HERMES_API_KEY`** else **`API_SERVER_KEY`** from **`~/.hermes/.env`** (mtime-cached); omit `Authorization` only when both absent (gateway no-key mode) |
-| `animus-chat/cron_routes.py` | `/api/cron/*` → Hermes gateway HTTP **`/api/jobs`** (Bearer via ``hermes_runner``); forwards **`workdir`**; **`POST /api/cron/optimize-prompt`** (non-stream chat rewrite); in-process **``cron.jobs``** fallback when gateway unreachable; status still **``hermes cron status``** |
-| `animus-chat/hermes_service_client.py` | httpx to **`HERMES_API_URL`** + optional **`HERMES_DASHBOARD_URL`** with **`HERMES_DASHBOARD_SESSION_TOKEN`** (**`X-Hermes-Session-Token`**) for dashboard REST |
-| `animus-chat/messaging_routes.py` | **`GET /api/messaging/gateway-status`**, **`/api/messaging/overview`** (rows include **`cron_deliver_home_ready`** when platform enabled+connected+home channel), **`POST /api/messaging/import-animus-slack`** (copy **`SLACK_BOT_TOKEN`** / optional **`SLACK_DEFAULT_CHANNEL`** from repo **`animus.env`** into **`~/.hermes/.env`** + enable Slack in **`config.yaml`** when Hermes has no bot token yet), **`GET/POST /api/messaging/platform/{id}`**; legacy **`GET /api/integrations/hermes-gateway/{status,platforms}`** aliases |
-| `animus-chat/skills_routes.py` | `/api/skills/*`; list tries Hermes dashboard **`GET /api/skills`** when session token set; enable/disable uses **`PUT /api/skills/toggle`** or in-process **`hermes_cli.skills_config`**; **`POST /api/skills/create`** writes `SKILL.md`; **Update All** + **`sync_skills`** as before |
-| `animus-chat/setup_wizard/wizard_routes.py` | `/api/setup/*` onboarding: **`cfg_still_first_run()`** for status + client-config alignment, `POST /complete` sets `first_run: false` + **`setup_completed_at`**; provider checklist + auth, `tailscale-check`, `check-path`, **`provider-status`** (includes Hermes **`hermes_active_provider`** / **`hermes_default_model`** / **`hermes_active_animus_id`** from `~/.hermes/config.yaml`), **`POST /sync-hermes-model`** (Hermes `config.yaml`: API-key providers + Codex + **cursor-agent** / **claude-code** (→anthropic) / **copilot-acp** with CLI checks; URL fallbacks for mistral/groq/togetherai/cohere; missing base **422**), `cursor-login-start`, **`claude-code-login-start`** (spawn **`claude setup-token`** on host), **Codex OAuth** via **`hermes_cli.codex_device_oauth`** (`codex-auth-start` / `codex-auth-status/{poll_id}` — same device flow as Hermes dashboard, not `hermes auth` subprocess) + `codex-auth-session`, `save-config` (`projects_dir`, Tailscale, wizard provider lists) |
-| `animus-chat/requirements.txt` | Python deps; use `animus-chat/.venv/` |
-
-## Hermes Agent bundle
-
-| Path | Purpose |
-|------|---------|
-| `hermes-agent/` | Full Hermes Agent source used by gateway + CLI; **`gateway/platforms/api_server.py`** `_run_agent` builds streamed finish `usage` from **`run_conversation`** result token fields; **`/api/jobs`** passes **`workdir`** + larger **`prompt`** cap; **`run_agent.py`** Codex **`responses.stream()`** merges terminal SSE **`usage`** when **`get_final_response()`** omits it; **`cron/hermes_chat_delivery.py`** appends cron output into Hermes Chat threads; **`agent/project_workspace.py`** resolves chat data dirs + workspace markdown; **`hermes_cli/main.py`** registers **`hermes project`** (init / history-append / repo-map-refresh / repo-maps-refresh-all / show / write) → **`hermes_cli/project_workspace_cmd.py`**; **`hermes_cli/codex_device_oauth.py`** OpenAI Codex device OAuth (shared by **`hermes_cli/web_server.py`** dashboard routes and ANIMUS **`setup_wizard/wizard_routes.py`** Codex start/poll — no FastAPI required for ANIMUS import) |
-
-## Packaging
-
-| Path | Purpose |
-|------|---------|
-| `installer/install.sh` | End-user install (venv + editable agent); runs **`installer/ensure-sshpass.sh`** (interactive prompt: **`sshpass`** for Settings → SSH password test); runs **`installer/create-desktop-launcher.sh`** on Linux/macOS GUI hosts; optional Piper voice bundle via **`installer/fetch-piper-voices.sh`** when `curl` present; runs **`installer/merge-hermes-gateway-auth.py`** so **`HERMES_API_KEY`** is filled from **`~/.hermes/.env`** **`API_SERVER_KEY`** when blank |
-| `installer/ensure-sshpass.sh` | Buyer helper: if **`sshpass`** missing on Linux/macOS, prompts to install via apt/dnf/pacman/zypper or **Homebrew**; non-interactive shells print one-line install hints; skip with **`SKIP_ANIMUS_SSHPASS=1`** |
-| `installer/merge-hermes-gateway-auth.py` | Buyer helper: if **`animus.env`** has empty **`HERMES_API_KEY`** and **`~/.hermes/.env`** has **`API_SERVER_KEY`**, copy into **`animus.env`** (keeps systemd **`EnvironmentFile`** self-contained) |
-| `installer/sync-animus-chat-from-zip.sh` | Wrapper that runs **`animus-chat/sync-from-release-zip.sh`**; use from unzip root when **`installer/`** exists |
-| `animus-chat/sync-from-release-zip.sh` | **Buyer zip:** patch this **`animus-chat/`** tree from **`animus-vX.Y.Z.zip`** (no **`installer/`** required — run **inside** **`animus-chat/`**); auto-finds zip in parent dir, **`../animus`**, or **`~/animus`** if no arg; see **`START_HERE.txt`** |
-| `installer/create-desktop-launcher.sh` | Post-`animus.env`: Linux `.desktop` (menu + Desktop) / macOS `.webloc`; honors `HERMES_CHAT_PUBLIC_URL`, `SKIP_ANIMUS_DESKTOP_LAUNCHER`, Docker/CI/headless skip |
-| `installer/fetch-piper-voices.sh` | Downloads six default Piper `.onnx` + `.json` models (EN US/GB + `de_DE-thorsten`) into `~/.local/share/piper` or **`PIPER_VOICES_DIR`** |
-| `installer/preflight.sh` | Environment checks; creates **`animus.env`** from **`animus.env.example`** when missing (same as **`install.sh`**) |
-| `docker/` | Dockerfile + compose for container runs; image includes **`/app/animus.env`** copied from **`animus.env.example`** at build time |
-| `systemd/` | `animus.service` / `animus-agent.service` templates |
-
-## Docs
-
-| Path | Purpose |
-|------|---------|
-| `docs/hermes-agent-patches.md` | Upstream diff / patch notes; **top banner** — bundled Hermes version, upstream drift, no `hermes update` inside ANIMUS |
-| `docs/models.md` | Model cache and providers |
-| `docs/tailscale.md` | Remote access |
-| `docs/tts.md` | Piper + browser TTS setup, voice dirs, troubleshooting |
-| `docs/animus-user-guide.md` | In-app **HELP** content and sole knowledge source for **`/api/help/ask`** |
-| `docs/ssh.md` | SSH hosts, keys vs passwords, remote project path / `_ssh_mounts` convention, troubleshooting |
-| `docs/GUMROAD.md` | Gumroad packaging checklist, listing copy, buyer zip expectations |
-| `docs/BUYER_UPDATES.md` | In-app git updates, private GitHub, SSH / PAT, Gumroad-only path |
-
-## Tests
-
-- **None yet** for ANIMUS wiring; validate with `./animus-chat/.venv/bin/python -c "import server"` and `./build-release.sh`.
-
-## Generated / runtime
-
-| Path | Purpose |
-|------|---------|
-| `animus-chat/data/` | `DATA_DIR` default; chats, `config.json`, caches (gitignored) |
-| `animus-chat/.venv/` | Local venv (gitignored) |
+*Listed 650 files (cap 650).*

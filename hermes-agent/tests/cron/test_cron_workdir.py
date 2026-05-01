@@ -342,6 +342,31 @@ class TestRunJobTerminalCwd:
         # And it was restored to the original value in finally.
         assert os.environ["TERMINAL_CWD"] == "/original/cwd"
 
+    def test_workdir_enforces_workspace_policy_files(self, tmp_path, monkeypatch):
+        import cron.scheduler as sched
+        from agent import project_workspace as pw
+
+        observed: dict = {}
+        self._install_stubs(monkeypatch, observed)
+        ensure_calls: list[tuple[str, bool]] = []
+
+        def _fake_ensure(root, generate_repo_map_if_missing=True):
+            ensure_calls.append((str(root), bool(generate_repo_map_if_missing)))
+            return {"created": [], "updated": [], "project_root": str(root)}
+
+        monkeypatch.setattr(pw, "ensure_workspace_files", _fake_ensure)
+
+        job = {
+            "id": "wd-policy",
+            "name": "wd-policy-job",
+            "workdir": str(tmp_path),
+            "schedule_display": "manual",
+        }
+
+        success, *_ = sched.run_job(job)
+        assert success is True
+        assert ensure_calls == [(str(tmp_path.resolve()), False)]
+
     def test_no_workdir_leaves_terminal_cwd_untouched(self, monkeypatch):
         """When workdir is absent, run_job must not touch TERMINAL_CWD at all —
         whatever value was present before the call should be present after.

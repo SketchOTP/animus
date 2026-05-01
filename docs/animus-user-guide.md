@@ -22,7 +22,7 @@ Finish the wizard to reach the main **Chats** UI. You can change many options la
 ## Chats vs projects
 
 - **Chats** (default sidebar): conversations **without** a project. Good for quick questions.
-- **Projects**: each project has a **name**, **color**, and **path** (workspace on disk). Opening a project filters the sidebar to that project’s chats and adds **project tools** (workspace files: `project_goal.md`, `repo_map.md`, `project_history.md`, `notes.md` when configured).
+- **Projects**: each project has a **name**, **color**, and **path** (workspace on disk). Opening a project filters the sidebar to that project’s chats and adds **project tools** (workspace files: `project_goal.md`, `project_status.md`, `project_knowledge.md`, `repo_map.md`, `project_history.md`, `notes.md` when configured).
 
 **New chat** creates a conversation. The purple **New chat** button uses your **active inference provider and model** from Settings.
 
@@ -74,9 +74,20 @@ If chat fails with **configuration** or **upstream** errors, check `animus.env` 
 
 ANIMUS can list and manage **cron jobs** tied to Hermes on the gateway host. Jobs can deliver output into a project’s **Cron updates** notification thread. Each project can show **cron** controls and a **delivery / project ID** hint for external schedulers.
 
+If a cron job has a project **workdir**, Hermes runs it from that directory and auto-checks the project continuity files before the job starts. This keeps scheduled runs aligned with the same project rules used by normal chat/project refresh flows.
+
 If delivery is **Slack**, that path uses the **webhook** in **`animus.env`** (**`SLACK_WEBHOOK_URL`**), not the Messaging bot token—configure the webhook in **`animus.env`** and restart ANIMUS. Use **Settings → Messaging → Slack** for the Hermes **bot**.
 
 Timezone for cron UI may be stored as **`cron_timezone`** in client config.
+
+## Project continuity system (memory + map)
+
+When a project folder is added, updated, or refreshed, ANIMUS/Hermes ensures a continuity set exists under that project root:
+
+- Governance mirrors: **`AGENTS.md`**, **`CLAUDE.md`**, **`.cursorrules`** (kept synchronized to the same policy text)
+- Project memory/map docs: **`project_goal.md`**, **`project_status.md`**, **`project_knowledge.md`**, **`project_history.md`**, **`repo_map.md`**, **`notes.md`**
+
+Project workspace **Refresh** re-checks this set, repairs missing/stale files, and regenerates **`repo_map.md`**. The intended outcome is faster, lower-token navigation in project conversations because agents can rely on concise per-project goal/status/knowledge/map files instead of broad repo scans.
 
 ## Skills
 

@@ -20,11 +20,16 @@ HISTORY_FILENAME = "project_history.md"
 REPO_MAP_FILENAME = "repo_map.md"
 NOTES_FILENAME = "notes.md"
 GOAL_FILENAME = "project_goal.md"
+STATUS_FILENAME = "project_status.md"
+KNOWLEDGE_FILENAME = "project_knowledge.md"
 SETUP_REPO_FILENAME = "setup_repo.md"
 AGENTS_MD_FILENAME = "AGENTS.md"
+CLAUDE_MD_FILENAME = "CLAUDE.md"
+CURSOR_RULES_FILENAME = ".cursorrules"
 # Optional: absolute path to a ``setup_repo.md`` template Hermes Chat copies into each
 # registered project root when that file is missing (see ``ensure_workspace_files``).
 HERMES_CHAT_SETUP_REPO_MD_ENV = "HERMES_CHAT_SETUP_REPO_MD"
+HERMES_CHAT_POLICY_TEMPLATE_ENV = "HERMES_CHAT_POLICY_TEMPLATE"
 
 _AGENT_BOOTSTRAP_SENTINEL = "<!-- hermes-chat-setup-repo-bootstrap -->"
 
@@ -53,6 +58,44 @@ GOAL_HEADER = """# Project goal
 
 North-star intent for this repository. Keep it short and revisable. Edited in Hermes Chat under **Project workspace → Goal**.
 
+"""
+
+STATUS_HEADER = """# Project status
+
+Current snapshot for this repository:
+- current state
+- active goal
+- in-progress work
+- blockers / risks
+- latest validation status
+
+"""
+
+KNOWLEDGE_HEADER = """# Project knowledge
+
+Durable lessons for future agents. Keep this short and practical. Avoid task logs; record conventions, pitfalls, and reusable validation tips.
+
+"""
+
+_DEFAULT_POLICY_TEMPLATE = """---
+description: Mandatory operating rules for AI coding agents in this repository.
+alwaysApply: true
+---
+
+Before changing code, read:
+- `project_goal.md`
+- `project_status.md`
+- `project_history.md`
+- `project_knowledge.md`
+- `repo_map.md`
+
+After meaningful work, update:
+- `project_status.md`
+- `project_history.md` (append one entry with files touched)
+- `project_knowledge.md`
+- `repo_map.md` (when structure/ownership changes)
+
+Keep changes minimal, avoid unrelated edits, and do not run destructive commands without explicit approval.
 """
 
 _SKIP_DIR_NAMES = frozenset(
@@ -452,11 +495,24 @@ def write_repo_map(root: Path, content: str) -> None:
     tmp.replace(path)
 
 
-def refresh_repo_map(root: Path) -> dict[str, Any]:
+def refresh_repo_map(
+    root: Path,
+    *,
+    ensure_workspace: bool = True,
+) -> dict[str, Any]:
     root = normalize_project_root(root)
+    ensured: dict[str, Any] = {"created": [], "updated": []}
+    if ensure_workspace:
+        ensured = ensure_workspace_files(root, generate_repo_map_if_missing=False)
     body = generate_repo_map_markdown(root)
     write_repo_map(root, body)
-    return {"path": str(root), "file": REPO_MAP_FILENAME, "bytes": len(body.encode("utf-8"))}
+    return {
+        "path": str(root),
+        "file": REPO_MAP_FILENAME,
+        "bytes": len(body.encode("utf-8")),
+        "created": list(ensured.get("created") or []),
+        "updated": list(ensured.get("updated") or []),
+    }
 
 
 def refresh_all_hermes_chat_repo_maps(
@@ -494,7 +550,7 @@ def refresh_all_hermes_chat_repo_maps(
             "repo_map_refreshed": False,
         }
         if not missing_only:
-            map_info = refresh_repo_map(root)
+            map_info = refresh_repo_map(root, ensure_workspace=False)
             row["repo_map_refreshed"] = True
             row["file"] = map_info.get("file")
             row["bytes"] = map_info.get("bytes")
@@ -544,6 +600,61 @@ def _maybe_install_setup_repo_and_agent_bootstrap_note(root: Path, created: list
         logger.warning("notes.md bootstrap reminder append failed for %s: %s", root, exc)
 
 
+def _write_text_atomic(path: Path, content: str) -> None:
+    tmp = path.parent / (path.name + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    tmp.replace(path)
+
+
+def _read_text_if_file(path: Path) -> Optional[str]:
+    if not path.is_file():
+        return None
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def _project_policy_template(root: Path) -> str:
+    for name in (AGENTS_MD_FILENAME, CLAUDE_MD_FILENAME, CURSOR_RULES_FILENAME):
+        text = _read_text_if_file(root / name)
+        if text and text.strip():
+            return text
+    env_raw = (os.environ.get(HERMES_CHAT_POLICY_TEMPLATE_ENV) or "").strip()
+    if env_raw:
+        try:
+            text = _read_text_if_file(Path(env_raw).expanduser().resolve())
+        except OSError:
+            text = None
+        if text and text.strip():
+            return text
+    module_path = Path(__file__).resolve()
+    for parent in module_path.parents:
+        text = _read_text_if_file(parent / AGENTS_MD_FILENAME)
+        if text and text.strip():
+            return text
+    return _DEFAULT_POLICY_TEMPLATE
+
+
+def _sync_project_policy_files(
+    root: Path,
+    *,
+    created: list[str],
+    updated: list[str],
+) -> None:
+    template = _project_policy_template(root)
+    for name in (AGENTS_MD_FILENAME, CLAUDE_MD_FILENAME, CURSOR_RULES_FILENAME):
+        dest = root / name
+        current = _read_text_if_file(dest)
+        if current is None:
+            _write_text_atomic(dest, template)
+            created.append(str(dest))
+            continue
+        if current != template:
+            _write_text_atomic(dest, template)
+            updated.append(str(dest))
+
+
 def ensure_workspace_files(
     root: Path,
     *,
@@ -552,13 +663,14 @@ def ensure_workspace_files(
     """Create standard workspace markdown files when missing."""
     root = normalize_project_root(root)
     created: list[str] = []
+    updated: list[str] = []
     hist = root / HISTORY_FILENAME
     if not hist.exists():
         hist.write_text(HISTORY_HEADER, encoding="utf-8")
         created.append(str(hist))
     repo = root / REPO_MAP_FILENAME
     if not repo.exists() and generate_repo_map_if_missing:
-        refresh_repo_map(root)
+        refresh_repo_map(root, ensure_workspace=False)
         created.append(str(repo))
     notes = root / NOTES_FILENAME
     if not notes.exists():
@@ -568,8 +680,17 @@ def ensure_workspace_files(
     if not goal.exists():
         goal.write_text(GOAL_HEADER, encoding="utf-8")
         created.append(str(goal))
+    status = root / STATUS_FILENAME
+    if not status.exists():
+        status.write_text(STATUS_HEADER, encoding="utf-8")
+        created.append(str(status))
+    knowledge = root / KNOWLEDGE_FILENAME
+    if not knowledge.exists():
+        knowledge.write_text(KNOWLEDGE_HEADER, encoding="utf-8")
+        created.append(str(knowledge))
+    _sync_project_policy_files(root, created=created, updated=updated)
     _maybe_install_setup_repo_and_agent_bootstrap_note(root, created)
-    return {"path": str(root), "created": created}
+    return {"path": str(root), "created": created, "updated": updated}
 
 
 def read_workspace_file(root: Path, name: str, *, ensure: bool = False) -> str:
@@ -584,8 +705,15 @@ def read_workspace_file(root: Path, name: str, *, ensure: bool = False) -> str:
         fn = NOTES_FILENAME
     elif name == "project_goal":
         fn = GOAL_FILENAME
+    elif name == "project_status":
+        fn = STATUS_FILENAME
+    elif name == "project_knowledge":
+        fn = KNOWLEDGE_FILENAME
     else:
-        raise ValueError("name must be project_history, repo_map, notes, or project_goal")
+        raise ValueError(
+            "name must be project_history, repo_map, notes, project_goal, "
+            "project_status, or project_knowledge"
+        )
     path = root / fn
     if not path.is_file():
         return ""
@@ -602,11 +730,16 @@ def write_workspace_file(root: Path, name: str, content: str) -> None:
         fn = NOTES_FILENAME
     elif name == "project_goal":
         fn = GOAL_FILENAME
+    elif name == "project_status":
+        fn = STATUS_FILENAME
+    elif name == "project_knowledge":
+        fn = KNOWLEDGE_FILENAME
     else:
-        raise ValueError("name must be project_history, repo_map, notes, or project_goal")
+        raise ValueError(
+            "name must be project_history, repo_map, notes, project_goal, "
+            "project_status, or project_knowledge"
+        )
     if not isinstance(content, str):
         raise TypeError("content must be str")
     path = root / fn
-    tmp = path.parent / (path.name + ".tmp")
-    tmp.write_text(content, encoding="utf-8")
-    tmp.replace(path)
+    _write_text_atomic(path, content)

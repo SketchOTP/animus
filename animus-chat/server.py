@@ -230,7 +230,7 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260430-chat-host-dualstack-v36"
+CHAT_SERVER_REV = "20260430-projects-order-sync-v37"
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
 # Filled in lifespan: GET /v1/models against HERMES_API with gateway_upstream_headers().
@@ -1572,6 +1572,37 @@ def _usage_counts_for_log(usage: dict) -> tuple[Optional[int], Optional[int]]:
     return inp_i, out_i
 
 
+_ANIMUS_SKILLS_GUIDANCE = (
+    "ANIMUS capability note: skill tools are available in this chat session. "
+    "Reuse existing skills with skills_list/skill_view when relevant, and when a "
+    "workflow repeats across requests, create or update a reusable skill with skill_manage."
+)
+
+
+def _inject_animus_skills_guidance(chat_body: dict) -> None:
+    """Add model-agnostic skill guidance for ANIMUS chat turns when requested by the UI."""
+    if not isinstance(chat_body, dict):
+        return
+    if not bool(chat_body.get("animus_skill_mode")):
+        return
+    chat_body.pop("animus_skill_mode", None)
+    msgs = chat_body.get("messages")
+    if not isinstance(msgs, list):
+        return
+    for msg in msgs:
+        if not isinstance(msg, dict):
+            continue
+        if str(msg.get("role") or "").strip().lower() != "system":
+            continue
+        content = msg.get("content")
+        if isinstance(content, str):
+            if _ANIMUS_SKILLS_GUIDANCE in content:
+                return
+            msg["content"] = f"{content.rstrip()}\n\n{_ANIMUS_SKILLS_GUIDANCE}"
+            return
+    msgs.insert(0, {"role": "system", "content": _ANIMUS_SKILLS_GUIDANCE})
+
+
 async def chat(req: Request) -> Response:
     body = await req.body()
     codex_auto_resolved_model: Optional[str] = None
@@ -1579,6 +1610,7 @@ async def chat(req: Request) -> Response:
     try:
         _pb = json.loads(body.decode("utf-8")) if body else {}
         parsed_body = _pb if isinstance(_pb, dict) else {}
+        _inject_animus_skills_guidance(parsed_body)
         if (
             str(parsed_body.get("hermes_provider") or "").strip().lower() == "openai-codex"
             and str(parsed_body.get("model") or "").strip().lower() == "auto"
@@ -2521,7 +2553,7 @@ async def project_sync_exclusions_post(req: Request) -> Response:
     return JSONResponse({"ok": True, "count": len(cur)})
 
 
-# ─── Project workspace files (project_history, repo_map, notes, project_goal) ─
+# ─── Project workspace files (history/map/goal/status/knowledge/notes) ─
 
 
 def _registered_project_roots() -> set[Path]:
@@ -2603,12 +2635,23 @@ def _validate_single_repo_workspace_root(pr: Path) -> Path:
 _WORKSPACE_FILE_ALIASES = {
     "project_history.md": "project_history",
     "project_goal.md": "project_goal",
+    "project_status.md": "project_status",
+    "project_knowledge.md": "project_knowledge",
     "repo_map.md": "repo_map",
     "notes.md": "notes",
     "history": "project_history",
     "goal": "project_goal",
+    "status": "project_status",
+    "knowledge": "project_knowledge",
 }
-_VALID_WORKSPACE_FILES = {"project_history", "repo_map", "notes", "project_goal"}
+_VALID_WORKSPACE_FILES = {
+    "project_history",
+    "repo_map",
+    "notes",
+    "project_goal",
+    "project_status",
+    "project_knowledge",
+}
 
 
 def _normalize_workspace_file_name(raw: str) -> str:
@@ -2686,7 +2729,9 @@ async def project_workspace_file_get(req: Request) -> Response:
         name = _normalize_workspace_file_name(raw_name)
         if name not in _VALID_WORKSPACE_FILES:
             return JSONResponse(
-                {"error": "file must be project_history, repo_map, notes, or project_goal"},
+                {
+                    "error": "file must be project_history, repo_map, notes, project_goal, project_status, or project_knowledge"
+                },
                 status_code=400,
             )
         from agent.project_workspace import read_workspace_file
@@ -2710,7 +2755,9 @@ async def project_workspace_file_put(req: Request) -> Response:
         name = _normalize_workspace_file_name(raw_name)
         if name not in _VALID_WORKSPACE_FILES:
             return JSONResponse(
-                {"error": "file must be project_history, repo_map, notes, or project_goal"},
+                {
+                    "error": "file must be project_history, repo_map, notes, project_goal, project_status, or project_knowledge"
+                },
                 status_code=400,
             )
         content = body.get("content")

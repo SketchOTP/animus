@@ -21,6 +21,11 @@ def test_ensure_and_append_history(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
     info = pw.ensure_workspace_files(root)
     assert (root / pw.HISTORY_FILENAME).is_file()
+    assert (root / pw.STATUS_FILENAME).is_file()
+    assert (root / pw.KNOWLEDGE_FILENAME).is_file()
+    assert (root / pw.AGENTS_MD_FILENAME).is_file()
+    assert (root / pw.CLAUDE_MD_FILENAME).is_file()
+    assert (root / pw.CURSOR_RULES_FILENAME).is_file()
     assert "created" in info
     line = pw.append_project_history_line(root, "hello world", source="test")
     assert "— hello world" in line
@@ -130,6 +135,29 @@ def test_refresh_repo_map_writes_file(tmp_path: Path) -> None:
     assert "sub/b.txt" in text
 
 
+def test_refresh_repo_map_ensures_and_mirrors_policy_files(tmp_path: Path) -> None:
+    from agent import project_workspace as pw
+
+    root = tmp_path / "proj"
+    root.mkdir()
+    (root / "main.py").write_text("print('ok')\n", encoding="utf-8")
+    canonical = "# Canonical agent rules\n- mirrored on refresh\n"
+    (root / pw.AGENTS_MD_FILENAME).write_text(canonical, encoding="utf-8")
+    (root / pw.CLAUDE_MD_FILENAME).write_text("# stale\n", encoding="utf-8")
+    (root / pw.CURSOR_RULES_FILENAME).write_text("# stale\n", encoding="utf-8")
+    (root / pw.STATUS_FILENAME).unlink(missing_ok=True)
+    (root / pw.KNOWLEDGE_FILENAME).unlink(missing_ok=True)
+
+    info = pw.refresh_repo_map(root)
+    assert info["file"] == pw.REPO_MAP_FILENAME
+    assert str(root / pw.STATUS_FILENAME) in info.get("created", [])
+    assert str(root / pw.KNOWLEDGE_FILENAME) in info.get("created", [])
+    assert str(root / pw.CLAUDE_MD_FILENAME) in info.get("updated", [])
+    assert str(root / pw.CURSOR_RULES_FILENAME) in info.get("updated", [])
+    assert (root / pw.CLAUDE_MD_FILENAME).read_text(encoding="utf-8") == canonical
+    assert (root / pw.CURSOR_RULES_FILENAME).read_text(encoding="utf-8") == canonical
+
+
 def test_iter_hermes_chat_project_roots_dedupes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from agent import project_workspace as pw
 
@@ -227,7 +255,10 @@ def test_ensure_workspace_copies_setup_repo_and_appends_agent_note(
     assert (root / pw.SETUP_REPO_FILENAME).is_file()
     assert str(root / pw.SETUP_REPO_FILENAME) in info.get("created", [])
     notes = (root / pw.NOTES_FILENAME).read_text(encoding="utf-8")
-    assert "hermes-chat-setup-repo-bootstrap" in notes
+    assert "hermes-chat-setup-repo-bootstrap" not in notes
+    assert (root / pw.AGENTS_MD_FILENAME).is_file()
+    assert (root / pw.CLAUDE_MD_FILENAME).is_file()
+    assert (root / pw.CURSOR_RULES_FILENAME).is_file()
     assert "Bootstrap guide" in (root / pw.SETUP_REPO_FILENAME).read_text(encoding="utf-8")
 
 
@@ -246,6 +277,23 @@ def test_ensure_workspace_skips_agent_note_when_agents_md_exists(
     pw.ensure_workspace_files(root, generate_repo_map_if_missing=False)
     notes = (root / pw.NOTES_FILENAME).read_text(encoding="utf-8")
     assert "hermes-chat-setup-repo-bootstrap" not in notes
+
+
+def test_policy_files_mirror_agents_md(tmp_path: Path) -> None:
+    from agent import project_workspace as pw
+
+    root = tmp_path / "proj"
+    root.mkdir()
+    canonical = "# Canonical agent rules\n- keep mirrored\n"
+    (root / pw.AGENTS_MD_FILENAME).write_text(canonical, encoding="utf-8")
+    (root / pw.CLAUDE_MD_FILENAME).write_text("# old\n", encoding="utf-8")
+    (root / pw.CURSOR_RULES_FILENAME).write_text("# stale\n", encoding="utf-8")
+
+    info = pw.ensure_workspace_files(root, generate_repo_map_if_missing=False)
+    assert str(root / pw.CLAUDE_MD_FILENAME) in info.get("updated", [])
+    assert str(root / pw.CURSOR_RULES_FILENAME) in info.get("updated", [])
+    assert (root / pw.CLAUDE_MD_FILENAME).read_text(encoding="utf-8") == canonical
+    assert (root / pw.CURSOR_RULES_FILENAME).read_text(encoding="utf-8") == canonical
 
 
 def test_refresh_all_missing_only_creates_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

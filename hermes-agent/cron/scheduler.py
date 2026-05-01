@@ -941,6 +941,18 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
     if _job_workdir:
         os.environ["TERMINAL_CWD"] = _job_workdir
         logger.info("Job '%s': using workdir %s", job_id, _job_workdir)
+        try:
+            from agent.project_workspace import ensure_workspace_files
+
+            # Keep workdir-backed cron runs lightweight while still enforcing
+            # governance/continuity files (AGENTS/CLAUDE/.cursorrules + docs).
+            ensure_workspace_files(Path(_job_workdir), generate_repo_map_if_missing=False)
+        except Exception:
+            logger.debug(
+                "Job '%s': ensure_workspace_files for cron workdir failed",
+                job_id,
+                exc_info=True,
+            )
 
     try:
         # Re-read .env and config.yaml fresh every run so provider/key

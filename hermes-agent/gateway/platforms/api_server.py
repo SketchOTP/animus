@@ -826,6 +826,9 @@ class APIServerAdapter(BasePlatformAdapter):
 
         user_config = _load_gateway_config()
         enabled_toolsets = sorted(_get_platform_tools(user_config, "api_server"))
+        # ANIMUS requires skills to be available across all model backends.
+        if "skills" not in enabled_toolsets:
+            enabled_toolsets = sorted(set(enabled_toolsets) | {"skills"})
 
         max_iterations = int(os.getenv("HERMES_MAX_ITERATIONS", "90"))
 

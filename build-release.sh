@@ -182,6 +182,7 @@ ZIP="${ROOT}/animus-v${V}.zip"
 rm -f "${ZIP}"
 
 # Ship tree trims (v1.0 ≤55MB zip cap, no ANIMUS / core hermes runtime impact):
+# - hermes-agent/.venv: local dev virtualenv (distinct from venv/); never ship — blows zip past cap.
 # - Ghost3D: optional GLB assets; PWA does not load them yet.
 # - hermes-agent/tests: pytest only; not imported at runtime.
 # - hermes-agent/website: docs site source; not used by `hermes` CLI or ANIMUS chat.
@@ -207,7 +208,10 @@ zip -qr "${ZIP}" . \
   -x"./data/*" \
   -x"./animus-chat/data/*" \
   -x"./animus-chat/.venv/*" \
+  -x'./animus-chat/${HOME}/*' \
+  -x"./animus-chat/whoami" \
   -x"./hermes-agent/venv/*" \
+  -x"./hermes-agent/.venv/*" \
   -x"./hermes-agent/node_modules/*" \
   -x"./hermes-agent/web/node_modules/*" \
   -x"./hermes-agent/.git/*" \

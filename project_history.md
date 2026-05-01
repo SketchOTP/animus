@@ -2107,3 +2107,8 @@ Files touched:
 - VERSION
 - (release: animus-v1.1.1.zip via build-release.sh; manifest via publish script)
 - project_history.md
+
+1025 010526 - Shipped v1.1.1: pushed main 583e75f; animus-v1.1.1.zip; animus-site deploy + alias animusai.vercel.app; manifest publish OK.
+Files touched:
+- scripts/release-and-publish.sh (npx vercel)
+- project_history.md

@@ -30,7 +30,7 @@ echo "[release-and-publish] Copied ${ZIP} → ${SITE}/releases/"
 
 (
   cd "${SITE}"
-  vercel --prod ${VERCEL_ARGS:-}
+  npx vercel --prod ${VERCEL_ARGS:-}
 )
 
 echo "[release-and-publish] Vercel deploy finished."

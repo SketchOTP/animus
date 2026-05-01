@@ -2121,3 +2121,8 @@ Files touched:
 - project_knowledge.md
 - repo_map.md
 - project_history.md
+
+1215 010526 - E2E proof: gateway + SQLite verify ANIMUS digest not persisted in sessions.system_prompt; artifact artifacts/animus_digest_token_inflation_fix.md.
+Files touched:
+- artifacts/animus_digest_token_inflation_fix.md
+- project_history.md

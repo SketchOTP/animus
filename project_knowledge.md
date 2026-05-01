@@ -459,3 +459,4 @@ DDMMYY — No new durable knowledge (routine doc-only / trivial change).
 290426 — No new durable knowledge (animus-site visual brand/layout tweak only).
 290426 — No new durable knowledge (animus-site Gumroad URL swap only).
 300426 — No new durable knowledge (VERSION 1.0.7 + `./build-release.sh` zip only).
+010526 — No new durable knowledge (release 1.1.3 build/deploy/publish runbook execution only).

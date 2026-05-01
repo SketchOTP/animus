@@ -2258,3 +2258,10 @@ Files touched:
 Files touched:
 - project_knowledge.md
 - project_history.md
+
+1839 010526 - Released v1.1.3: bumped VERSION, built buyer zip, deployed animus-site, aliased animusai hostname, and published latest manifest.
+Files touched:
+- VERSION
+- project_status.md
+- project_knowledge.md
+- project_history.md

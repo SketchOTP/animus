@@ -2056,3 +2056,7 @@ Files touched:
 - project_knowledge.md
 - project_history.md
 
+0845 010526 - After v1.1.0 Vercel deploy: vercel alias set production deployment → animusai.vercel.app so /releases/animus-v1.1.0.zip matches manifest download_url.
+Files touched:
+- (Vercel alias only; no repo files)
+

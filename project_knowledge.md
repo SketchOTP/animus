@@ -7,6 +7,7 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 ## Release zip size (010526)
 
 - **`hermes-agent/.e2e-venv/`** is gitignored but still lives on disk; **`build-release.sh`** must **`zip -x`** it or the buyer zip balloons past the **55MB** cap (symptom: ~77MB). **`artifacts/`** is gitignored and excluded from zip so internal QA markdown does not ship to buyers.
+- **`version archive/`** (or any folder of local **`animus-v*.zip`** copies under the repo root) is **not** gitignored; if present, **`build-release.sh`** must **`zip -x "./version archive/*"`** or the ship zip can exceed **~290MB** (nested old zips). The script also fails the zip leak check if **`version archive/`** appears inside the archive.
 
 ## Tokens tab (300426)
 

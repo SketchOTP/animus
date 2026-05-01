@@ -2126,3 +2126,16 @@ Files touched:
 Files touched:
 - artifacts/animus_digest_token_inflation_fix.md
 - project_history.md
+
+1628 010526 - v1.1.2 release: VERSION bump; cursor-agent HERMES_OVERLAYS + tests; build-release excludes version archive/; Vercel prod + animusai alias + manifest publish.
+Files touched:
+- VERSION
+- build-release.sh
+- docs/hermes-agent-patches.md
+- hermes-agent/hermes_cli/auth.py
+- hermes-agent/hermes_cli/providers.py
+- hermes-agent/tests/hermes_cli/test_provider_registry_external_shims.py
+- project_status.md
+- project_knowledge.md
+- repo_map.md
+- project_history.md

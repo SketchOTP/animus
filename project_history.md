@@ -1676,3 +1676,8 @@ Files touched:
 - (commit: index.html, sw.js, server.py, docs, hermes-agent, repo_map, project_history)
 - animus-v1.0.9.zip (artifact, gitignored)
 - project_history.md
+
+2118 010526 - Published animus-v1.0.9.zip: release-and-publish.sh + publish-animus-manifest (animusai).
+Files touched:
+- /home/sketch/animus-site/releases/animus-v1.0.9.zip (sibling deploy)
+- project_history.md

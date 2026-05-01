@@ -2265,3 +2265,26 @@ Files touched:
 - project_status.md
 - project_knowledge.md
 - project_history.md
+
+1845 010526 - Moved full prompt-capture artifacts from /tmp into repo reports folder for durable analysis and documented the persistence rule.
+Files touched:
+- reports/prompt-captures/1777675422199_api_anthropic_com.pretty.json
+- reports/prompt-captures/1777675422199_api_anthropic_com.raw.txt
+- reports/prompt-captures/index.jsonl
+- project_knowledge.md
+- project_history.md
+
+1851 010526 - Captured first-chat and followup provider prompts for Claude, Codex, and Cursor into reports/* provider folders and documented Cursor capture method.
+Files touched:
+- reports/claude/first_provider_payload.pretty.json
+- reports/claude/first_provider_payload.raw.txt
+- reports/claude/followup_provider_payload.pretty.json
+- reports/claude/followup_provider_payload.raw.txt
+- reports/codex/first_provider_payload.pretty.json
+- reports/codex/first_provider_payload.raw.txt
+- reports/codex/followup_provider_payload.pretty.json
+- reports/codex/followup_provider_payload.raw.txt
+- reports/cursor/first_provider_prompt.txt
+- reports/cursor/followup_provider_prompt.txt
+- project_knowledge.md
+- project_history.md

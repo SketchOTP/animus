@@ -1666,3 +1666,13 @@ Files touched:
 - project_knowledge.md
 - repo_map.md
 - project_history.md
+
+1420 300426 - VERSION 1.0.9; build-release excludes hermes-agent/.venv + animus-chat stray paths; animus-v1.0.9.zip ~28MB; git push main (e37aa96).
+Files touched:
+- VERSION
+- build-release.sh
+- project_status.md
+- project_knowledge.md
+- (commit: index.html, sw.js, server.py, docs, hermes-agent, repo_map, project_history)
+- animus-v1.0.9.zip (artifact, gitignored)
+- project_history.md

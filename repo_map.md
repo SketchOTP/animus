@@ -322,7 +322,7 @@ Root: `/home/sketch/animus`
 - `hermes-agent/hermes_cli/plugins_cmd.py` — """``hermes plugins`` CLI subcommand — install, update, remove, and list plugins. Plugins are installed from Git repositories into ``~/.hermes/plugins/``.
 - `hermes-agent/hermes_cli/profiles.py` — """ Profile management for multiple isolated Hermes instances.
 - `hermes-agent/hermes_cli/project_workspace_cmd.py` — """Handlers for ``hermes project …``.""" from __future__ import annotations
-- `hermes-agent/hermes_cli/providers.py` — """ Single source of truth for provider identity in Hermes Agent.
+- `hermes-agent/hermes_cli/providers.py` — Provider registry: **`HERMES_OVERLAYS`** includes **`cursor-agent`** (external_process + `cursor-agent://hermes`) so **`resolve_provider_full`** / gateway **`hermes_provider`** match **`run_agent`** / **`cursor_agent_client`**. Regression: **`tests/hermes_cli/test_provider_registry_external_shims.py`** (every **`PROVIDER_REGISTRY`** **`external_process`** id must have an overlay).
 - `hermes-agent/hermes_cli/pty_bridge.py` — """PTY bridge for `hermes dashboard` chat tab. Wraps a child process behind a pseudo-terminal so its ANSI output can be
 - `hermes-agent/hermes_cli/runtime_provider.py` — """Shared runtime provider resolution for CLI, gateway, cron, and helpers.""" from __future__ import annotations
 - `hermes-agent/hermes_cli/setup.py` — large file (132668 bytes)
@@ -636,7 +636,8 @@ Root: `/home/sketch/animus`
 - `hermes-agent/RELEASE_v0.8.0.md` — # Hermes Agent v0.8.0 (v2026.4.8) **Release Date:** April 8, 2026
 - `hermes-agent/RELEASE_v0.9.0.md` — # Hermes Agent v0.9.0 (v2026.4.13) **Release Date:** April 13, 2026
 - `hermes-agent/rl_cli.py` — #!/usr/bin/env python3 """ RL Training CLI Runner
-- `hermes-agent/run_agent.py` — Core agent loop; `run_conversation` loads merged `sessions.system_prompt` from SQLite whenever non-blank (not gated on `conversation_history`), so gateway-per-message agents reuse the stored snapshot. Large file (659449 bytes).
+- `hermes-agent/animus_chat_digest_persist.py` — Strip ANIMUS in-chat ``context_digest`` from gateway ephemeral before first SQLite ``sessions.system_prompt`` persist (avoids digest duplication + token inflation on later turns).
+- `hermes-agent/run_agent.py` — Core agent loop; `run_conversation` loads merged `sessions.system_prompt` from SQLite whenever non-blank (not gated on `conversation_history`); first-turn persist uses stripped ANIMUS digest helper. Large file.
 - `hermes-agent/SECURITY.md` — # Hermes Agent Security Policy This document outlines the security protocols, trust model, and deployment hardening guidelines for the **Hermes Agent** project.
 - `hermes-agent/setup-hermes.sh` — #!/bin/bash # ============================================================================ # Hermes Agent Setup Script
 - `hermes-agent/toolset_distributions.py` — #!/usr/bin/env python3 """ Toolset Distributions Module

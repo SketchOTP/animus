@@ -77,6 +77,8 @@ from tools.tool_result_storage import maybe_persist_tool_result, enforce_turn_bu
 from tools.interrupt import set_interrupt as _set_interrupt
 from tools.browser_tool import cleanup_browser
 
+from animus_chat_digest_persist import strip_animus_transient_chat_digest_for_session_persist
+
 
 # Agent internals extracted to agent/ package for modularity
 from agent.memory_manager import build_memory_context_block, sanitize_context
@@ -9423,7 +9425,9 @@ class AIAgent:
                     try:
                         _persist_sys = (self._cached_system_prompt or "").strip()
                         if self.ephemeral_system_prompt:
-                            _ep = str(self.ephemeral_system_prompt).strip()
+                            _ep = strip_animus_transient_chat_digest_for_session_persist(
+                                str(self.ephemeral_system_prompt).strip()
+                            )
                             if _ep:
                                 _persist_sys = (
                                     (_persist_sys + "\n\n" + _ep).strip() if _persist_sys else _ep

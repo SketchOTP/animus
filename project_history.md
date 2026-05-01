@@ -2112,31 +2112,6 @@ Files touched:
 Files touched:
 - scripts/release-and-publish.sh (npx vercel)
 - project_history.md
-1138 050126 — Chat: This is just a test → No reply text was received. Try another **inference backend** in Settings, and confirm the Hermes API URL this Chat serv (hermes-chat)
-1142 050126 — Chat: Test → No reply text was received. Try another **inference backend** in Settings, and confirm the Hermes API URL this Chat serv (hermes-chat)
-
-1148 010526 - Diagnosed ANIMUS "No reply text was received": gateway SSE can finish with zero delta.content when Settings inference sends an unsupported `hermes_provider` (e.g. cursor-agent); non-stream `/v1/chat/completions` often returns a clearer JSON error. Operator: align Settings → Inference Active row with Hermes `config.yaml` / `hermes doctor`; restart gateway after agent checkout updates.
-Files touched:
-- project_history.md
-- project_knowledge.md
-
-1155 010526 - Hermes: register cursor-agent in HERMES_OVERLAYS + ALIASES (providers.py) so gateway resolve_provider_full matches Cursor subprocess support; docs Patch 11; project_knowledge/repo_map updates.
-Files touched:
-- hermes-agent/hermes_cli/providers.py
-- docs/hermes-agent-patches.md
-- project_knowledge.md
-- repo_map.md
-- project_history.md
-
-1156 010526 - Hardening: pytest hermes_cli/test_provider_registry_external_shims (PROVIDER_REGISTRY external_process vs HERMES_OVERLAYS); module comments in providers.py + auth.py; docs Patch 11 verify line; repo_map + project_knowledge.
-Files touched:
-- hermes-agent/tests/hermes_cli/test_provider_registry_external_shims.py
-- hermes-agent/hermes_cli/providers.py
-- hermes-agent/hermes_cli/auth.py
-- docs/hermes-agent-patches.md
-- project_knowledge.md
-- repo_map.md
-- project_history.md
 
 1035 010526 - Fix duplicate ANIMUS context_digest in SQLite system_prompt (strip before persist); animus_chat_digest_persist + tests.
 Files touched:

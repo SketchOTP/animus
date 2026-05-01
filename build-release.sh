@@ -240,7 +240,8 @@ zip -qr "${ZIP}" . \
   -x"./scripts/*" \
   -x"./seller-private/*" \
   -x"./artifacts/*" \
-  -x"./animus-v*.zip"
+  -x"./animus-v*.zip" \
+  -x"./version archive/*"
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"
 echo "Created ${ZIP} (${SZ} MB)"
@@ -281,6 +282,10 @@ if unzip -l "${ZIP}" | grep -q '\.flock$'; then
 fi
 if unzip -l "${ZIP}" | grep -q 'seller-private/'; then
   echo "FAIL: seller-private/ present in zip — remove it" >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -qF 'version archive/'; then
+  echo "FAIL: version archive/ present in zip (local zip history — exclude in build-release.sh)" >&2
   exit 1
 fi
 echo "  animus-update-server/ not in zip — OK"

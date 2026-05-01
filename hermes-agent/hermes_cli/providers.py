@@ -43,6 +43,10 @@ class HermesOverlay:
     base_url_env_var: str = ""            # env var for user-custom base URL
 
 
+# Every ``auth_type="external_process"`` entry in ``hermes_cli.auth.PROVIDER_REGISTRY``
+# MUST have a matching key here. Otherwise ``resolve_provider_full`` returns None and
+# gateway ``POST /v1/chat/completions`` with ``hermes_provider`` fails (regression test:
+# ``tests/hermes_cli/test_provider_registry_external_shims.py``).
 HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
     "openrouter": HermesOverlay(
         transport="openai_chat",
@@ -76,6 +80,16 @@ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
         auth_type="external_process",
         base_url_override="acp://copilot",
         base_url_env_var="COPILOT_ACP_BASE_URL",
+    ),
+    # Cursor CLI headless shim (OpenAI-compatible). ANIMUS / gateway send
+    # ``hermes_provider: cursor-agent``; must resolve here or ``resolve_provider_full``
+    # returns None → "Unknown provider 'cursor-agent'" on /v1/chat/completions.
+    "cursor-agent": HermesOverlay(
+        transport="openai_chat",
+        auth_type="external_process",
+        extra_env_vars=("CURSOR_API_KEY",),
+        base_url_override="cursor-agent://hermes",
+        base_url_env_var="HERMES_CURSOR_AGENT_BASE_URL",
     ),
     "github-copilot": HermesOverlay(
         transport="openai_chat",
@@ -271,6 +285,9 @@ ALIASES: Dict[str, str] = {
     "gemini-cli": "google-gemini-cli",
     "gemini-oauth": "google-gemini-cli",
 
+    # Cursor CLI (headless agent subprocess)
+    "cursor": "cursor-agent",
+    "cursor-cli": "cursor-agent",
 
     # huggingface
     "hf": "huggingface",
@@ -311,6 +328,7 @@ _LABEL_OVERRIDES: Dict[str, str] = {
     "nous": "Nous Portal",
     "openai-codex": "OpenAI Codex",
     "copilot-acp": "GitHub Copilot ACP",
+    "cursor-agent": "Cursor Agent (CLI)",
     "stepfun": "StepFun Step Plan",
     "xiaomi": "Xiaomi MiMo",
     "local": "Local endpoint",

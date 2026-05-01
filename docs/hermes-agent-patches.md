@@ -118,6 +118,15 @@ git diff origin/main --stat
 **Risk if removed:** ANIMUS would need to duplicate faster-whisper wiring or call private `_transcribe_local`.  
 **Test to verify:** With embedded flag on, `curl` multipart to **`/api/stt/transcribe`** returns JSON **`text`** without **`OPENAI_API_KEY`**.
 
+## Patch 11 — `cursor-agent` in `HERMES_OVERLAYS` (gateway provider resolution)
+
+**File(s):** `hermes-agent/hermes_cli/providers.py`  
+**Type:** bugfix — provider registry parity with `run_agent` / `cursor_agent_client`  
+**What it does:** Registers **`cursor-agent`** in **`HERMES_OVERLAYS`** (transport **`openai_chat`**, **`external_process`**, base **`cursor-agent://hermes`**, env hint **`CURSOR_API_KEY`**) plus **`ALIASES`** (`cursor`, `cursor-cli` → **`cursor-agent`**) and **`_LABEL_OVERRIDES`**.  
+**Why it exists:** Cursor subprocess support lived in **`agent/`** and **`auth.py`**, but **`resolve_provider_full("cursor-agent", …)`** returned **None** because **`get_provider`** had no overlay / models.dev row — gateway **`/v1/chat/completions`** with **`hermes_provider: cursor-agent`** failed with **Unknown provider** (non-stream) or empty streamed deltas (ANIMUS **“No reply text…”**).  
+**Risk if removed:** ANIMUS Settings → Cursor as active backend breaks again even when **`cursor-agent`** is installed and authenticated.  
+**Test to verify:** `cd hermes-agent && ./scripts/run_tests.sh tests/hermes_cli/test_provider_registry_external_shims.py -q` (asserts every **`auth_type=external_process`** row in **`PROVIDER_REGISTRY`** has **`HERMES_OVERLAYS`** + **`resolve_provider_full`**); restart **`hermes-gateway`** and send a chat with Cursor active (still requires working Cursor CLI / **`CURSOR_API_KEY`**).
+
 ## Maintenance
 
 Before merging new upstream Hermes Agent commits into ANIMUS:

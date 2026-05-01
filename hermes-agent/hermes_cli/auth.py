@@ -167,6 +167,8 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         api_key_env_vars=("COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"),
         base_url_env_var="COPILOT_API_BASE_URL",
     ),
+    # external_process: must exist in hermes_cli.providers.HERMES_OVERLAYS (see tests
+    # test_provider_registry_external_shims.py).
     "copilot-acp": ProviderConfig(
         id="copilot-acp",
         name="GitHub Copilot ACP",
@@ -177,6 +179,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     "cursor-agent": ProviderConfig(
         id="cursor-agent",
         name="Cursor Agent (CLI)",
+        # external_process: must exist in hermes_cli.providers.HERMES_OVERLAYS
         auth_type="external_process",
         inference_base_url="cursor-agent://hermes",
         base_url_env_var="HERMES_CURSOR_AGENT_BASE_URL",

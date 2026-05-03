@@ -1,0 +1,9 @@
+[Unit]
+Description=ANIMUS + Hermes hourly health check
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/animus
+ExecStart=%h/animus/scripts/check-animus-hermes.sh
+EnvironmentFile=-%h/animus/animus.env

@@ -1,0 +1,7 @@
+{
+  "captured_at_utc": "2026-05-03T20:29:09Z",
+  "scenario": "all_skills_tools_on",
+  "capture_scope": "skills_tools_matrix",
+  "animus_payload_file": "/home/sketch/animus/prompt_captures/animus_all_skills_tools_on.json",
+  "hermes_internal_file": "/home/sketch/animus/prompt_captures/hermes_internal_all_skills_tools_on.json"
+}

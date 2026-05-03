@@ -1,0 +1,8 @@
+# Cursor rules (root)
+
+Canonical policy lives in **`AGENTS.md`**. This file exists for editors that read `.cursorrules` at the repo root.
+
+- Read **`AGENTS.md`** first, then **`project_status.md`**, then **`project_memory/index.json`** as described there.
+- **Enforcement and layering:** `.cursor/rules/00-project-contract.mdc` (and other `.cursor/rules/*.mdc`).
+
+Do not duplicate the full `AGENTS.md` body here — keep a single source of truth.

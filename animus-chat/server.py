@@ -1598,6 +1598,28 @@ _ANIMUS_SKILLS_GUIDANCE = (
 )
 
 
+def _animus_disabled_tools_from_cfg(cfg: Optional[dict] = None) -> list[str]:
+    if cfg is None:
+        cfg = _read_animus_client_config()
+    if not isinstance(cfg, dict):
+        return []
+    ui = cfg.get("animus_ui_settings")
+    if not isinstance(ui, dict):
+        return []
+    raw = ui.get("disabled_tools")
+    if not isinstance(raw, list):
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        nm = str(item or "").strip()
+        if not nm or nm in seen:
+            continue
+        seen.add(nm)
+        out.append(nm)
+    return out
+
+
 _CONTEXT_SUMMARY_SYSTEM = """You maintain a single cumulative IN-CHAT digest for one ANIMUS conversation thread (not project files).
 
 Input shape (from the client):
@@ -1664,6 +1686,17 @@ def _inject_animus_skills_guidance(chat_body: dict) -> None:
     msgs.insert(0, {"role": "system", "content": _ANIMUS_SKILLS_GUIDANCE})
 
 
+def _inject_animus_disabled_tools(chat_body: dict) -> None:
+    """Attach ANIMUS tool policy so disabled tools are hard-blocked in Hermes."""
+    if not isinstance(chat_body, dict):
+        return
+    disabled = _animus_disabled_tools_from_cfg()
+    if disabled:
+        chat_body["hermes_disabled_tools"] = disabled
+    else:
+        chat_body.pop("hermes_disabled_tools", None)
+
+
 async def chat(req: Request) -> Response:
     body = await req.body()
     codex_auto_resolved_model: Optional[str] = None
@@ -1672,6 +1705,8 @@ async def chat(req: Request) -> Response:
         _pb = json.loads(body.decode("utf-8")) if body else {}
         parsed_body = _pb if isinstance(_pb, dict) else {}
         _inject_animus_skills_guidance(parsed_body)
+        _inject_animus_disabled_tools(parsed_body)
+        body = json.dumps(parsed_body).encode("utf-8")
         if (
             str(parsed_body.get("hermes_provider") or "").strip().lower() == "openai-codex"
             and str(parsed_body.get("model") or "").strip().lower() == "auto"

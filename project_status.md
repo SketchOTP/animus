@@ -1,4 +1,78 @@
-# Project status (animus)
+# Project Status
+
+Short current-state file. Full read allowed.
+
+Last updated: 2026-05-03
+Current focus: documentation information architecture and navigation hardening for agent-first bounded reads
+Current branch: unknown
+
+## Quick Navigation
+
+- Runtime snapshot: `## Current state`
+- Active delivery targets: `## Current priorities`
+- Recent shipped work: `## Recently completed work`
+- In-flight work and blockers: `## In-progress work` / `## Blockers`
+- Validation evidence: `## Validation status` / `## Last validation run`
+- Legacy bootstrap template: `## Bootstrap Template (Legacy)`
+
+
+## Bootstrap Template (Legacy)
+
+Working:
+
+- unknown
+
+In progress:
+
+- unknown
+
+Blocked:
+
+- none known
+
+### Project Docs (Template)
+
+Required docs:
+
+- `project_status.md`
+- `project_history.md`
+- `project_knowledge.md`
+- `repo_map.md`
+- `project_memory/index.json`
+
+Doc state:
+
+- unknown
+
+### Next Action (Template)
+
+1. Define next concrete task.
+
+### Recent Validation (Template)
+
+- Not yet recorded.
+
+### Active Risks (Template)
+
+- None recorded.
+
+### Usage Rules (Template)
+
+Agents must:
+
+- keep this file short
+- update after meaningful task progress
+- record blockers here
+- record latest validation result here
+- update doc state if required docs are created or changed
+- not use this as long-term history
+
+Do not:
+
+- paste long logs
+- duplicate `project_history.md`
+- duplicate `project_memory/index.json`
+- store old completed tasks here
 
 ## Current state
 
@@ -26,6 +100,24 @@ Ship ANIMUS v1.0.0 for Gumroad per `project_goal.md` once smoke + Docker are ver
 
 ## Recently completed work
 
+- **Profile preset hover help:** `animus-chat/app/index.html` now adds short tooltip summaries on `AI Coding`, `Debug`, and `Automation` buttons (in both Skills and Tools rows) explaining why each preset enables its selected set.
+- **Profile button state consistency fix:** `animus-chat/app/index.html` now keeps Skills/Tools profile buttons purple/white even while disabled during bulk actions, and locks clicked-button width while the refresh spinner runs so button sizing does not jitter.
+- **Skills/Tools profile-button expansion + styling:** `animus-chat/app/index.html` now uses purple/white profile buttons (matching the New chat accent style) for bulk presets in both tabs: `All off`, `All on`, `AI Coding`, plus two new presets (`Debug`, `Automation`). Added matching enable/disable profile logic for both skills and tools.
+- **Bare-minimum selector deep pass (skills + tools):** audited the full live catalog (`/api/skills/list`: 95 skills; `/api/tools/list`: 27 tools) and updated `animus-chat/app/index.html` selection logic so `Bare minimum (AI coding only)` now includes coding-relevant categories and coding-adjacent capabilities (software-dev, autonomous agents, GitHub, MLOps, MCP, DevOps, data-science, browser validation tools, memory/session/skill tools), while excluding clearly non-coding creative/media skills and the `image_generate` tool.
+- **Cron baseline cleanup + safe starter template:** removed six meaningless paused `test-job` cron entries (long `x...` prompts) via local API and seeded one paused weekly template job (`template-weekly-maintenance-check`, `deliver=local`) as a clean starting point for real scheduled automation.
+- **Skills/Tools bulk-action UX (no popups):** `animus-chat/app/index.html` now shows an inline spinning refresh glyph on the clicked Skills/Tools action button (off/on/bare-minimum/update/check-updates) while work runs, then restores the button label on completion. Removed success-path browser popups (`alert`/`confirm`) for these actions.
+- **Cron strict workdir enforcement:** `hermes-agent/cron/scheduler.py` now fails jobs immediately when a configured `workdir` path is missing at runtime (instead of running without scope), preventing accidental execution in the scheduler’s default cwd.
+- **Governance hardening for continuity-doc format:** added `Continuity Doc Format Invariants` policy in `AGENTS.md`, mirrored to `CLAUDE.md` / `.cursorrules`, and enforced in `.cursor/rules/00-project-contract.mdc` so future agents preserve navigation scaffolding, legacy labeling, and append-oriented history/knowledge behavior.
+- **Project-docs IA refactor (agent-first):** standardized navigation scaffolding across `project_goal.md`, `project_history.md`, `project_knowledge.md`, `project_status.md`, `repo_map.md`, and `project_memory/index.json` (quick indexes, legacy-template labeling, normalized history timestamps, and machine-readable read-order metadata) while preserving existing content.
+- **Skills/Tools list readability + parity fix:** `animus-chat/app/index.html` now renders Skills and Tools rows with the same card layout (name/description on the left, ON/OFF toggle on the right) and prevents the toggle container from forcing collapsed, vertical text wrapping. Rendering now also falls back to alternate fields (`id`/`title`, `summary`/`help`) so names/descriptions show even when payload shapes differ.
+- **Skills/Tools hard-blocking (verified):** ANIMUS now enforces tool toggles at prompt-schema level (`disabled_tools` from UI → `hermes_disabled_tools` request field → gateway/agent filtering). Hermes internal captures confirm expected counts: all tools off = 0 tools; some tools on = bare-minimum subset; all on = full set.
+- **Skills/Tools UI split:** `animus-chat/app/index.html` now exposes a Skills/Tools panel with sub-tabs and tool-level toggles + bulk actions.
+- **Project path/session hardening:** editing a project so its effective workspace path changes now rotates `session_id` for chats in that project and clears stored-prompt flags, forcing Hermes to rebuild project context cleanly.
+- **Service watchdog:** added `animus-hermes-healthcheck.service` + `.timer` and `scripts/check-animus-hermes.sh`; timer now runs on strict top-of-hour schedule (`OnCalendar=hourly`) with recovery verification.
+- **Docs sync (chat ID semantics):** `project_knowledge.md` now records that project-scoped chat IDs are derived from Hermes `session_id`, where they render (header + sidebar + tooltip), and why they only appear for existing chats.
+- **Sidebar project-scoped chat IDs for existing chats:** `animus-chat/app/index.html` now adds project-scoped chat IDs to chat sidebar rows (compact label) and row tooltips (full `<project path> ID<session_id>`) for chats that already exist, so users can identify session provenance before opening a thread.
+- **Project-scoped chat ID in header:** `animus-chat/app/index.html` now renders a project context chat ID line under the project path using the active Hermes `session_id` (`<project path> ID...`) so each new chat session is visibly tied to both its project root and unique session/chat identity.
+- **Skills tab toggle UX refresh:** `animus-chat/app/index.html` now uses Settings-style switch toggles per skill (replacing text `ON/OFF` mini buttons), adds top-row bulk actions (`Turn off all`, `Turn on all`, `Bare minimum (AI coding only)`), and applies bulk enable/disable changes in one refresh pass.
 - **Release v1.1.3 published:** bumped `VERSION` to **1.1.3**, built `animus-v1.1.3.zip` (~28 MB), deployed `animus-site` Production, aliased **`animusai.vercel.app`** to the new deployment, and published manifest via `scripts/publish-animus-manifest.sh` with buyer notes. Verification: `GET /api/latest.json` reports `1.1.3`; release URL returns HTTP 200.
 - **Claude Code provider override fix + live validation:** `hermes-agent/gateway/platforms/api_server.py` now re-resolves full runtime provider credentials (`provider`, `base_url`, `api_mode`, `api_key`, external-process args) when `hermes_provider`/`hermes_base_url` are overridden per request. This fixes alias providers like `claude-code` that were inheriting stale default runtime fields (e.g., Codex base URL) and hanging/failing despite valid Claude browser auth. Live smoke now passes for **`openai-codex`**, **`cursor-agent`**, and **`claude-code`** (`CODX_OK`, `CURSOR_OK`, `CLAUDE_OK`).
 - **Existing-project memory index auto-refresh:** `hermes-agent/agent/project_workspace.ensure_workspace_files()` now regenerates `project_memory/index.json` when the index is stale or invalid (schema/shape mismatch), so normal bootstrap/ensure automation keeps compact memory current for old projects too, not just new projects or manual map refresh runs.

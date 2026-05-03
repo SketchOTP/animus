@@ -52,6 +52,7 @@ Rules:
 - do not overwrite existing docs unless explicitly told
 - append the doc-creation event to `project_history.md`
 - update `project_status.md`
+- update `project_memory/index.json` when navigation or doc set changes
 
 ## Read Order
 
@@ -176,16 +177,6 @@ After meaningful changes:
 - Never rewrite full `project_history.md` just to add an entry.
 - Never regenerate `repo_map.md` unless requested.
 
-## Continuity Doc Format Invariants
-
-- Keep one canonical top-level title per continuity doc (`# ...`); if a historical alias remains, label it `Legacy Header Alias (Preserved)`.
-- Keep a navigation section near the top of each continuity doc (`Quick Navigation`, `Navigation Index`, or `Directive Navigation Index`).
-- Preserve legacy content when restructuring; re-home it under explicit legacy labels instead of deleting it.
-- `project_history.md` and `project_knowledge.md` remain append-oriented; do not rewrite or remove prior entries.
-- Keep template/bootstrap scaffolding explicitly separated from live state sections.
-- If duplicate headings are retained for compatibility, label later copies `Legacy duplicate (preserved)` and treat the earliest canonical section as source-of-truth for updates.
-- When continuity doc navigation changes, update `project_memory/index.json` (`agent_navigation`) in the same task.
-
 ## Final Response Must Include
 
 Completion-style report. Include each item; use “n/a” or one line when not applicable.
@@ -202,10 +193,8 @@ Completion-style report. Include each item; use “n/a” or one line when not a
 
 If the agent relied on a **large full-read** of a normally bounded doc, say which file and **why** the exception was needed.
 
-<!-- hermes-project-memory-v1 -->
-Compact project memory workflow:
-- Read `project_memory/index.json` first for token-light navigation.
-- Use `repo_map.md` as human-readable backup, not the primary full context payload.
-- Do not load full `project_history.md` by default; only recent tail entries when needed.
-- Keep `project_memory/index.json` current after structural changes.
+## Project memory (optional)
 
+- Prefer `project_memory/index.json` for lightweight navigation when populated.
+- Use `repo_map.md` for human-oriented layout; avoid full reads of `project_history.md` by default.
+- Keep `project_memory/index.json` aligned with the repo when structure or doc paths change.

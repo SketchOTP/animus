@@ -1,0 +1,12 @@
+[Unit]
+Description=Run ANIMUS + Hermes health check hourly
+
+[Timer]
+OnBootSec=5min
+OnCalendar=hourly
+RandomizedDelaySec=2min
+Unit=animus-hermes-healthcheck.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

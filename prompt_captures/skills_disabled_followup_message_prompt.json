@@ -1,0 +1,31 @@
+{
+  "model": "gpt-5.2-codex",
+  "hermes_provider": "openai-codex",
+  "stream": false,
+  "stream_options": {
+    "include_usage": true
+  },
+  "max_tokens": 64,
+  "conversation_id": "capture-skills_disabled_followup_message_prompt",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Give me a quick project status update."
+    },
+    {
+      "role": "assistant",
+      "content": "Status: services are aligned and config was normalized."
+    },
+    {
+      "role": "user",
+      "content": "Now list the remaining setup steps and risks in priority order."
+    }
+  ],
+  "_capture_meta": {
+    "captured_at_utc": "2026-05-03T20:06:04Z",
+    "capture_scope": "animus_to_hermes_request_payload",
+    "skills_enabled": false,
+    "followup_turn": true,
+    "note": "This capture reflects the ANIMUS request payload sent to Hermes. It does not include Hermes internal prompt compiler expansions."
+  }
+}

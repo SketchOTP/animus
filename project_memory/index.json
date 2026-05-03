@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-01T22:41:08Z",
+  "generated_at": "2026-05-03T20:55:00Z",
   "project_root": "/home/sketch/animus",
   "entrypoints": [
     {
@@ -1016,5 +1016,71 @@
     "Read project_memory/index.json first",
     "Read repo_map.md only for human-oriented backup detail",
     "Read only recent project_history.md lines when needed"
-  ]
+  ],
+  "agent_navigation": {
+    "purpose": "Compact machine-readable navigation for bounded-read agent workflows.",
+    "preferred_doc_read_order": [
+      "project_status.md",
+      "project_memory/index.json",
+      "repo_map.md (targeted sections)",
+      "project_knowledge.md (targeted sections)",
+      "project_history.md (recent tail/keyword hits)",
+      "project_goal.md (targeted directive sections)"
+    ],
+    "project_docs": [
+      {
+        "path": "project_status.md",
+        "purpose": "Current state, priorities, blockers, and latest validation outcomes.",
+        "quick_sections": [
+          "Quick Navigation",
+          "Current state",
+          "Current priorities",
+          "Validation status",
+          "Blockers"
+        ]
+      },
+      {
+        "path": "project_knowledge.md",
+        "purpose": "Durable lessons, operational gotchas, and repeatable conventions.",
+        "quick_sections": [
+          "Navigation Index",
+          "New Notes Inbox",
+          "Rules",
+          "Historical Notes Archive"
+        ]
+      },
+      {
+        "path": "project_history.md",
+        "purpose": "Append-only audit timeline with normalized timestamp headings.",
+        "quick_sections": [
+          "Navigation Index",
+          "Entries"
+        ]
+      },
+      {
+        "path": "repo_map.md",
+        "purpose": "Human-readable repository map and structure deltas.",
+        "quick_sections": [
+          "Quick Navigation",
+          "Conventional layout mapping",
+          "Repo Map Deltas",
+          "Files"
+        ]
+      },
+      {
+        "path": "project_goal.md",
+        "purpose": "Master product directive and phased implementation/go-live instructions.",
+        "quick_sections": [
+          "Directive Navigation Index",
+          "ANIMUS \u2014 Distributable Product Build Directive",
+          "ANIMUS \u2014 Phase 4: Go-Live Directive"
+        ]
+      }
+    ],
+    "bounded_read_patterns": [
+      "rg -n \"^## \" <doc>.md",
+      "rg -n -i \"keyword\" <doc>.md",
+      "ReadFile with offset/limit for target section only"
+    ]
+  }
 }

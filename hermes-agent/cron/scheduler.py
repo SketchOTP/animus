@@ -930,13 +930,11 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
     # (skip_context_files=True, tools use whatever cwd the scheduler has).
     _job_workdir = (job.get("workdir") or "").strip() or None
     if _job_workdir and not Path(_job_workdir).is_dir():
-        # Directory was removed between create-time validation and now.  Log
-        # and drop back to old behaviour rather than crashing the job.
-        logger.warning(
-            "Job '%s': configured workdir %r no longer exists — running without it",
-            job_id, _job_workdir,
-        )
-        _job_workdir = None
+        # Directory was removed between create-time validation and run-time.
+        # Fail fast rather than silently de-scoping the job to scheduler cwd.
+        err = f"configured workdir no longer exists: {_job_workdir}"
+        logger.error("Job '%s': %s", job_id, err)
+        return False, "", "", err
     _prior_terminal_cwd = os.environ.get("TERMINAL_CWD", "_UNSET_")
     if _job_workdir:
         os.environ["TERMINAL_CWD"] = _job_workdir

@@ -20,6 +20,7 @@ hermes-agent/.env
 # Runtime data
 data/
 animus-chat/data/
+.hermes/
 
 # Editor
 .idea/

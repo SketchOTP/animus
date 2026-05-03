@@ -5,12 +5,25 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UNIT_SRC="${ROOT}/systemd/animus.service"
 UNIT_DST="${HOME}/.config/systemd/user/animus.service"
+HEALTH_SVC_SRC="${ROOT}/systemd/animus-hermes-healthcheck.service"
+HEALTH_TIMER_SRC="${ROOT}/systemd/animus-hermes-healthcheck.timer"
+HEALTH_SVC_DST="${HOME}/.config/systemd/user/animus-hermes-healthcheck.service"
+HEALTH_TIMER_DST="${HOME}/.config/systemd/user/animus-hermes-healthcheck.timer"
 ENV_DST="${ROOT}/animus.env"
 ENV_EX="${ROOT}/animus.env.example"
 AGENT="${ROOT}/hermes-agent"
+HEALTH_SCRIPT="${ROOT}/scripts/check-animus-hermes.sh"
 
 if [[ ! -f "${UNIT_SRC}" ]]; then
   echo "Missing ${UNIT_SRC}" >&2
+  exit 1
+fi
+if [[ ! -f "${HEALTH_SVC_SRC}" ]]; then
+  echo "Missing ${HEALTH_SVC_SRC}" >&2
+  exit 1
+fi
+if [[ ! -f "${HEALTH_TIMER_SRC}" ]]; then
+  echo "Missing ${HEALTH_TIMER_SRC}" >&2
   exit 1
 fi
 if [[ ! -d "${AGENT}" ]]; then
@@ -21,6 +34,13 @@ fi
 mkdir -p "${HOME}/.config/systemd/user"
 cp -f "${UNIT_SRC}" "${UNIT_DST}"
 echo "Installed ${UNIT_DST}"
+cp -f "${HEALTH_SVC_SRC}" "${HEALTH_SVC_DST}"
+cp -f "${HEALTH_TIMER_SRC}" "${HEALTH_TIMER_DST}"
+echo "Installed ${HEALTH_SVC_DST}"
+echo "Installed ${HEALTH_TIMER_DST}"
+if [[ -f "${HEALTH_SCRIPT}" ]]; then
+  chmod +x "${HEALTH_SCRIPT}" 2>/dev/null || true
+fi
 
 # systemd EnvironmentFile does not expand ${HOME} the way a login shell does;
 # use an absolute path so Hermes profile/cron paths resolve correctly.
@@ -110,6 +130,7 @@ else
 fi
 
 systemctl --user daemon-reload
+systemctl --user enable --now animus-hermes-healthcheck.timer >/dev/null 2>&1 || true
 
 # CLI on PATH: animus start | stop | restart | status
 ANIMUS_CLI_SRC="${ROOT}/scripts/animus"
@@ -141,3 +162,4 @@ if [[ -x "${PYTHON_GATE}" ]]; then
   echo "Gateway: systemctl --user restart hermes-gateway.service"
   echo "Then:    curl -fsS -H \"Authorization: Bearer \$(grep -m1 '^HERMES_API_KEY=' ${ENV_DST} | cut -d= -f2-)\" http://127.0.0.1:8642/v1/models | head -c 200"
 fi
+echo "Hourly watchdog: systemctl --user status animus-hermes-healthcheck.timer --no-pager"

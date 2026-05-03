@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -12,11 +13,75 @@ from typing import Any
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from hermes_runner import append_audit, run_hermes
-from hermes_service_client import dashboard_get_skills, dashboard_put_skill_toggle, hermes_dashboard_session_token
+from hermes_runner import append_audit, chat_data_dir, run_hermes
+from hermes_service_client import (
+    dashboard_get_skills,
+    dashboard_put_skill_toggle,
+    gateway_http_json,
+    hermes_dashboard_session_token,
+)
 from skills_md import skills_raw_get, skills_raw_put
 
 log = logging.getLogger("animus.skills")
+
+_ANIMUS_BARE_MIN_TOOL_NAMES = [
+    "terminal",
+    "read_file",
+    "write_file",
+    "patch",
+    "search_files",
+    "process",
+    "execute_code",
+    "delegate_task",
+    "todo",
+]
+
+
+def _animus_client_config_path() -> Path:
+    return chat_data_dir() / "config.json"
+
+
+def _read_animus_client_config() -> dict:
+    p = _animus_client_config_path()
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_animus_client_config(cfg: dict) -> None:
+    p = _animus_client_config_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+
+
+def _animus_disabled_tools_from_cfg(cfg: dict) -> set[str]:
+    ui = cfg.get("animus_ui_settings")
+    if not isinstance(ui, dict):
+        return set()
+    raw = ui.get("disabled_tools")
+    if not isinstance(raw, list):
+        return set()
+    out: set[str] = set()
+    for item in raw:
+        nm = str(item or "").strip()
+        if nm:
+            out.add(nm)
+    return out
+
+
+def _set_animus_disabled_tools(disabled_tools: set[str]) -> None:
+    cfg = _read_animus_client_config()
+    ui = cfg.get("animus_ui_settings")
+    if not isinstance(ui, dict):
+        ui = {}
+    ui = dict(ui)
+    ui["disabled_tools"] = sorted(disabled_tools)
+    cfg["animus_ui_settings"] = ui
+    _write_animus_client_config(cfg)
 
 
 def _skills_tree_has_any_skill_md(skills_root: Path) -> bool:
@@ -105,6 +170,18 @@ def _normalize_skills_list(skills: list) -> list:
 async def skills_list_api(_req: Request) -> Response:
     try:
         _ensure_bundled_skills_seeded_if_needed()
+        # Prefer Hermes gateway skills service so the UI reflects runtime truth.
+        st_gw, data_gw = await gateway_http_json("GET", "/api/skills/list", timeout=30.0)
+        if st_gw == 200:
+            if isinstance(data_gw, list):
+                return JSONResponse(_normalize_skills_list(data_gw))
+            if isinstance(data_gw, dict):
+                rows = data_gw.get("skills")
+                if isinstance(rows, list):
+                    return JSONResponse(_normalize_skills_list(rows))
+        elif st_gw not in (0, 404, 401):
+            log.warning("gateway GET /api/skills/list returned %s: %s", st_gw, data_gw)
+
         if hermes_dashboard_session_token():
             st, data = await dashboard_get_skills()
             if st == 200 and isinstance(data, list):
@@ -371,6 +448,118 @@ async def skills_updates_available_api(_req: Request) -> Response:
     )
 
 
+def _tool_summary(desc: str) -> str:
+    s = str(desc or "").strip()
+    if not s:
+        return ""
+    first = s.splitlines()[0].strip()
+    if not first:
+        return s[:160]
+    if len(first) > 220:
+        first = first[:217].rstrip() + "..."
+    return first
+
+
+def _load_api_server_tools() -> list[dict[str, Any]]:
+    from gateway.run import _load_gateway_config
+    from hermes_cli.tools_config import _get_platform_tools
+    from model_tools import get_tool_definitions
+
+    cfg = _load_gateway_config()
+    enabled_toolsets = sorted(_get_platform_tools(cfg, "api_server"))
+    if "skills" not in enabled_toolsets:
+        enabled_toolsets = sorted(set(enabled_toolsets) | {"skills"})
+    defs = get_tool_definitions(enabled_toolsets=enabled_toolsets, quiet_mode=True)
+    rows: list[dict[str, Any]] = []
+    for td in defs:
+        fn = td.get("function") if isinstance(td, dict) else None
+        if not isinstance(fn, dict):
+            continue
+        name = str(fn.get("name") or "").strip()
+        if not name:
+            continue
+        rows.append(
+            {
+                "name": name,
+                "summary": _tool_summary(str(fn.get("description") or "")),
+                "description": str(fn.get("description") or ""),
+            }
+        )
+    rows.sort(key=lambda r: str(r.get("name") or ""))
+    return rows
+
+
+async def tools_list_api(_req: Request) -> Response:
+    try:
+        cfg = _read_animus_client_config()
+        disabled = _animus_disabled_tools_from_cfg(cfg)
+        rows: list[dict[str, Any]] = []
+        st_gw, data_gw = await gateway_http_json("GET", "/api/tools/list", timeout=30.0)
+        if st_gw == 200 and isinstance(data_gw, dict) and isinstance(data_gw.get("tools"), list):
+            for row in data_gw.get("tools") or []:
+                if not isinstance(row, dict):
+                    continue
+                nm = str(row.get("name") or "").strip()
+                if not nm:
+                    continue
+                desc = str(row.get("description") or "")
+                rows.append(
+                    {
+                        "name": nm,
+                        "summary": _tool_summary(desc),
+                        "description": desc,
+                    }
+                )
+        else:
+            rows = _load_api_server_tools()
+        rows.sort(key=lambda r: str(r.get("name") or ""))
+        for r in rows:
+            nm = str(r.get("name") or "")
+            r["enabled"] = nm not in disabled
+        return JSONResponse(
+            {
+                "tools": rows,
+                "disabled_tools": sorted(disabled),
+                "bare_minimum_tools": list(_ANIMUS_BARE_MIN_TOOL_NAMES),
+            }
+        )
+    except Exception as exc:
+        log.exception("tools_list_api failed")
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+def _set_tool_enabled(tool_id: str, enabled: bool) -> tuple[bool, str]:
+    try:
+        nm = str(tool_id or "").strip()
+        if not nm:
+            return False, "tool id required"
+        current = _animus_disabled_tools_from_cfg(_read_animus_client_config())
+        if enabled:
+            current.discard(nm)
+        else:
+            current.add(nm)
+        _set_animus_disabled_tools(current)
+        return True, ""
+    except Exception as exc:
+        return False, str(exc)
+
+
+async def tools_enable_api(req: Request) -> Response:
+    tid = urllib.parse.unquote(req.path_params["tool_id"])
+    ok, err = _set_tool_enabled(tid, True)
+    if ok:
+        return JSONResponse({"ok": True})
+    return JSONResponse({"ok": False, "error": err or "toggle failed"}, status_code=400)
+
+
+async def tools_disable_api(req: Request) -> Response:
+    tid = urllib.parse.unquote(req.path_params["tool_id"])
+    ok, err = _set_tool_enabled(tid, False)
+    if ok:
+        return JSONResponse({"ok": True})
+    return JSONResponse({"ok": False, "error": err or "toggle failed"}, status_code=400)
+
+
 async def skills_capabilities_api(_req: Request) -> Response:
     out = {
         "enable_disable_supported": True,
@@ -407,6 +596,9 @@ def skills_route_table():
     from starlette.routing import Route
 
     return [
+        Route("/api/tools/list", tools_list_api, methods=["GET"]),
+        Route("/api/tools/enable/{tool_id}", tools_enable_api, methods=["POST"]),
+        Route("/api/tools/disable/{tool_id}", tools_disable_api, methods=["POST"]),
         Route("/api/skills/capabilities", skills_capabilities_api, methods=["GET"]),
         Route("/api/skills/list", skills_list_api, methods=["GET"]),
         Route("/api/skills/detail/{skill_id}", skills_detail_api, methods=["GET"]),

@@ -8,6 +8,7 @@ Type=simple
 WorkingDirectory=%h/animus/hermes-agent
 ExecStart=%h/animus/hermes-agent/.venv/bin/hermes gateway run
 EnvironmentFile=-%h/animus/animus.env
+Environment=HERMES_HOME=%h/animus/.hermes
 Restart=on-failure
 RestartSec=5
 

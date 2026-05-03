@@ -1,0 +1,23 @@
+{
+  "model": "gpt-5.2-codex",
+  "hermes_provider": "openai-codex",
+  "stream": false,
+  "stream_options": {
+    "include_usage": true
+  },
+  "max_tokens": 64,
+  "conversation_id": "capture-skills_disabled_first_session_prompt",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Give me a concise status summary and immediate next steps."
+    }
+  ],
+  "_capture_meta": {
+    "captured_at_utc": "2026-05-03T20:06:04Z",
+    "capture_scope": "animus_to_hermes_request_payload",
+    "skills_enabled": false,
+    "followup_turn": false,
+    "note": "This capture reflects the ANIMUS request payload sent to Hermes. It does not include Hermes internal prompt compiler expansions."
+  }
+}

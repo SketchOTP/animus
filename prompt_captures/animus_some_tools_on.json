@@ -1,0 +1,18 @@
+{
+  "model": "gpt-5.2-codex",
+  "hermes_provider": "openai-codex",
+  "stream": false,
+  "max_tokens": 48,
+  "conversation_id": "matrix-some_tools_on",
+  "animus_skill_mode": true,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Respond in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "Capture scenario marker: some_tools_on. Reply with exactly this marker."
+    }
+  ]
+}

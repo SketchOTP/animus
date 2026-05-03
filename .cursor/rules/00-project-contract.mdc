@@ -1,0 +1,130 @@
+---
+description: Unified governance — source-of-truth split, priority order, Cursor enforcement vs markdown.
+alwaysApply: true
+---
+
+# Project Contract (Updated)
+
+This file is the **single** Cursor-side directive for how project instructions layer. It replaces the older “root markdown only” model.
+
+## Source of Truth
+
+Split by **role** (not a single folder):
+
+- **Governance rules** → root markdown (`AGENTS.md`, `CLAUDE.md`, and other agreed policy docs in the repo).
+- **Machine state** → `.project_intel/` (tool output, caches, derived machine artifacts). **State only** — not policy.
+- **Architecture / enforcement** → `.cursor/rules/*.mdc` (hard rules the editor applies).
+
+## Priority Order
+
+When instructions **conflict**, the **higher** row wins:
+
+1. **`.cursor/rules/*.mdc`** — hard enforcement.
+2. **`AGENTS.md`** — governance for all coding agents.
+3. **`CLAUDE.md`** — Claude adapter / execution defaults (where applicable).
+4. **`project_index.md`** if the repo defines it; **else** **`project_memory/index.json`** — compact navigation.
+5. **`project_status.md`**, **`project_knowledge.md`**, **`project_history.md`** — continuity (bounded reads by default).
+6. **`.project_intel/`** — machine state only; **never** overrides 1–3.
+
+## Critical Rule (conflicts)
+
+- **Enforcement** (`.cursor/rules`) overrides **governance markdown** when they disagree.
+- **`AGENTS.md`** overrides **`CLAUDE.md`** when those two disagree **and** no `.cursor/rules` entry resolves it.
+
+**Do not** treat `.project_intel/` as the authority for **what the policy is** — only for **stored state** (tier 6).
+
+## Required Docs
+
+Required project docs:
+
+- `project_status.md`
+- `project_history.md`
+- `project_knowledge.md`
+- `repo_map.md`
+- `project_memory/index.json`
+
+## Missing Project Docs Rule
+
+If required project docs are missing, create them before continuing.
+
+Rules:
+
+- create only missing files
+- create `project_memory/` if missing
+- initialize empty files with the standard minimal template
+- do not overwrite existing docs unless explicitly told
+- append the doc-creation event to `project_history.md`
+- update `project_status.md`
+- update `project_memory/index.json`
+
+## Read Order
+
+1. This contract and any other `.cursor/rules/*.mdc` that apply
+2. `AGENTS.md`
+3. `project_status.md`
+4. `project_memory/index.json` (or `project_index.md` if present)
+5. targeted sections only from `repo_map.md`
+6. targeted sections only from `project_knowledge.md`
+7. recent tail only from `project_history.md`
+
+## Do Not Full-Read By Default
+
+- `project_history.md`
+- `repo_map.md`
+- `project_knowledge.md`
+
+## Bounded Reads
+
+Use:
+
+```bash
+tail -n 80 project_history.md
+grep -n '^## ' repo_map.md
+grep -n '^## ' project_knowledge.md
+grep -n -i "keyword" repo_map.md
+grep -n -i "keyword" project_history.md
+sed -n 'START,ENDp' file.md
+```
+
+## Forbidden Unless Explicitly Needed
+
+- full-read `project_history.md`
+- full-read `repo_map.md`
+- full-read `project_knowledge.md`
+- rewrite history to add an entry
+- regenerate repo map
+- using `.project_intel/` **as governance** (policy source of truth for what agents must do)
+- delete `project_memory/index.json`
+
+## Write Policy
+
+- append new history only
+- append new knowledge only
+- append repo-map deltas only
+- update `project_status.md` because it is short
+- update `project_memory/index.json` after structural/doc navigation changes
+- keep `project_memory/index.json` compact and valid JSON
+
+## Continuity Doc Format Invariants
+
+- keep one canonical top-level title per continuity doc; if aliases remain, label them as preserved legacy headers
+- keep a navigation block near the top of each continuity doc
+- preserve legacy content with explicit legacy labels; do not delete for formatting-only refactors
+- keep template/bootstrap scaffolding separated from live state sections
+- treat `project_history.md` and `project_knowledge.md` as append-oriented docs
+- when doc navigation structure changes, update `project_memory/index.json` `agent_navigation` in the same task
+
+Cold-start and quality rules: `AGENTS.md` (Existing Repo Handling, Dependency Rule, Testing Rule, Schema Rule).
+
+## Final Response
+
+Before final response, include the full completion checklist from `AGENTS.md` (**Final Response Must Include**).
+
+## Dual chronology (anti-drift)
+
+- **`project_history.md`** — human / audit history.
+- **`.project_intel/`** — machine state ledger.
+
+**Correlation:** When both are updated for the **same** change, use the **same ISO date** and **same one-line summary** in each location (see `AGENTS.md` — **Dual chronology**). Small policy edits still require audit history when they affect agents.
+
+**CI (future, optional):** When checks exist, start **warn-only**, then enforce gradually (classification → core boundary → module structure). See `project_knowledge.md` for durable rollout notes.

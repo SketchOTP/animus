@@ -1,11 +1,318 @@
+# Bootstrap guide: agent continuity layout for `[repo]`
+
+This document describes **exactly** how to create the same repository documentation and agent-rule layout that exists alongside this file. Treat **`[repo]`** as a placeholder: substitute your repository or product display name everywhere `[repo]` appears (for example replace `[repo]` with `my-service`), or perform one global find-and-replace before committing.
+
+**Audience:** Humans and AI coding agents. An agent with only this file should be able to recreate the full structure and file contents.
+
+**Important:** Four files must be **byte-for-byte identical** after substitution (same text, same line endings). Any edit to the rules must be applied to all four:
+
+| Path | Role |
+|------|------|
+| `[repo-root]/AGENTS.md` | Primary copy; workflow step 1 refers to this file |
+| `[repo-root]/.cursorrules` | Cursor legacy root rules file |
+| `[repo-root]/CLAUDE.md` | Claude Code / Anthropic-style project rules |
+| `[repo-root]/.cursor/rules/operating_rules.md` | Cursor project rules (nested path) |
+
+Those mirrors (and **Appendix A** in this file) include **token discipline**: minimize reads/output, use `repo_map.md` before broad codebase exploration, enrich `project_knowledge.md` with navigation and token-saving tips, and **append-only** updates to `project_history.md` without full-file reads for logging.
+
 ---
-description: Mandatory operating rules for AI coding agents in the animus repository.
+
+## 1. Target directory layout
+
+After setup, the repository root (call it **`[repo-root]`** — the folder that contains `.git` or will contain it) should contain:
+
+```text
+[repo-root]/
+  AGENTS.md
+  CLAUDE.md
+  .cursorrules
+  setup_repo.md                    # optional but recommended: copy this guide for re-bootstrap elsewhere
+  project_goal.md
+  project_status.md
+  project_history.md
+  project_knowledge.md
+  repo_map.md
+  .cursor/
+    rules/
+      operating_rules.md
+```
+
+No other files are required by this layout. Application code, manifests, and CI may be added later.
+
+---
+
+## 2. Preconditions
+
+- You can create directories and files under `[repo-root]`.
+- Line endings: use **LF** (`\n`) for all text files unless your platform standard dictates otherwise; keep all four rule mirrors consistent.
+- Encoding: **UTF-8** without BOM for all Markdown files.
+
+---
+
+## 3. Step-by-step: directories
+
+1. `cd` to `[repo-root]`.
+2. Create the nested rules directory:
+   - `mkdir -p .cursor/rules`
+
+---
+
+## 4. Step-by-step: create the five project continuity files
+
+Create each file at `[repo-root]/<filename>` with the content in the subsection below. Replace `[repo]` in titles and body if you are not using a global replace later.
+
+### 4.1 `project_goal.md`
+
+```markdown
+# Project goal ([repo])
+
+## What we are building
+
+The **[repo]** repository is the home for this project’s software and documentation. The concrete product surface (libraries, apps, services) will be spelled out here as the codebase grows; until then, success means a maintainable repo with clear intent and agent-friendly continuity.
+
+## Who it serves
+
+Primary users and operators will be defined when the product direction is set. Contributors and AI agents are interim consumers of these project files.
+
+## Success
+
+- Code and docs match an agreed purpose and are easy to change safely.
+- `AGENTS.md` and the five project files stay accurate so sessions start with shared context.
+- Validation exists for the chosen stack and is run when behavior changes.
+
+## Non-goals
+
+- Using `project_goal.md` as a task backlog.
+- Storing secrets or credentials in any tracked doc.
+- Large speculative refactors without an explicit request.
+
+When the north star changes (product, audience, or definition of success), update this file before deep implementation continues.
+```
+
+### 4.2 `project_status.md`
+
+```markdown
+# Project status ([repo])
+
+## Current state
+
+Repository root contains agent continuity documentation (`AGENTS.md`, `project_*.md`, `repo_map.md`, `setup_repo.md`), Cursor/Claude rule mirrors (`.cursorrules`, `CLAUDE.md`, `.cursor/rules/operating_rules.md`). No application source tree or package manifest unless already added separately.
+
+## Active goal
+
+Establish and maintain accurate project documentation for multi-session work.
+
+## Current priorities
+
+1. Define stack and layout when implementation starts; then update `repo_map.md` and `project_knowledge.md` with validation commands.
+2. Keep status and history current after each meaningful change.
+
+## Recently completed work
+
+- Bootstrapped structure per `setup_repo.md`: continuity docs and mirrored agent rules.
+
+## In-progress work
+
+- None.
+
+## Known issues
+
+- None tracked.
+
+## Blockers
+
+- None.
+
+## Validation status
+
+- Not applicable until a build/test toolchain exists (or document your stack’s commands in `project_knowledge.md`).
+
+## Last validation run
+
+- N/A
+
+## Next recommended actions
+
+- Add the real project entrypoint (e.g. `package.json`, `Cargo.toml`, `pyproject.toml`) when work begins; document commands in `project_knowledge.md` and update this file.
+```
+
+### 4.3 `project_history.md`
+
+Create the file with the header and one initial entry. **Replace** `HHMM DDMMYY` with the output of:
+
+```bash
+date '+%H%M %d%m%y'
+```
+
+(use 24-hour local time as specified in `AGENTS.md`).
+
+```markdown
+# Project history ([repo])
+
+Chronological work log. Newest entries at the bottom.
+
+HHMM DDMMYY - Bootstrapped agent continuity docs and Cursor/Claude rule mirrors from setup_repo.md.
+Files touched:
+- AGENTS.md
+- CLAUDE.md
+- .cursorrules
+- .cursor/rules/operating_rules.md
+- project_goal.md
+- project_status.md
+- project_history.md
+- project_knowledge.md
+- repo_map.md
+- setup_repo.md
+```
+
+If you **omit** `setup_repo.md` from your clone of this layout, remove it from the list above and from `repo_map.md` § 4.5.
+
+**Logging efficiency:** After the file exists, agents should **append** new history entries at the bottom without reading the full file. At session start, skim **recent** entries only unless a full audit is required.
+
+### 4.4 `project_knowledge.md`
+
+```markdown
+# Project knowledge ([repo])
+
+Durable lessons for future agents. Not a backlog or duplicate of `project_history.md`.
+
+---
+
+## Conventions
+
+- **Session start:** Read `AGENTS.md` then `project_goal.md`, `project_status.md`, recent tail of `project_history.md` (not necessarily the full file), this file, and `repo_map.md` before code edits.
+- **Session end:** Append `project_history.md` at the bottom **without** full-file read for logging; update this file with new lessons or a no-new-knowledge note; refresh `project_status.md` / `repo_map.md` when state or layout changes.
+- **Token and navigation:** Add bullets here that help the next agent save time (e.g. smallest useful test command, which paths matter, what to skip, how to use `repo_map.md`).
+
+---
+
+## Stack and validation
+
+- **No toolchain yet** (unless you already added one). When a stack is added, record canonical install, build, test, and lint commands here so agents do not guess.
+
+---
+
+## Bootstrap
+
+- Agent rules are mirrored in four paths; keep them identical when changing policy (see `setup_repo.md`).
+
+---
+
+## No-new-knowledge template
+
+When a session adds nothing durable, append:
+
+```text
+DDMMYY — No new durable knowledge (routine doc-only / trivial change).
+```
+```
+
+### 4.5 `repo_map.md`
+
+```markdown
+# Repo map ([repo])
+
+Quick navigation for agents. Update when layout, entrypoints, or roles change.
+
+## Repository root
+
+| Path | Purpose |
+|------|---------|
+| `AGENTS.md` | Mandatory agent workflow and rules for this repo |
+| `CLAUDE.md` | Same rules as `AGENTS.md` (Claude Code) |
+| `.cursorrules` | Same rules as `AGENTS.md` (Cursor legacy) |
+| `setup_repo.md` | Instructions to reproduce this documentation layout |
+| `project_goal.md` | North star: purpose, success, non-goals |
+| `project_status.md` | Current snapshot: state, priorities, blockers |
+| `project_history.md` | Append-only session log |
+| `project_knowledge.md` | Lessons, commands, gotchas |
+| `repo_map.md` | This map |
+
+## Cursor rules
+
+| Path | Purpose |
+|------|---------|
+| `.cursor/rules/operating_rules.md` | Same body as `AGENTS.md` (Cursor nested rules) |
+
+## Application / library code
+
+- **None yet** (unless added separately). Add sections (e.g. `src/`, `apps/`, `packages/`) when code exists.
+
+## Tests
+
+- **None yet.**
+
+## Config and tooling
+
+- **None yet.** (e.g. CI, linters, env templates — document here when added.)
+
+## Generated / runtime (typical)
+
+- Not tracked until the project defines artifacts; then list paths and whether they are gitignored.
+
+## Deprecated / obsolete
+
+- None.
+```
+
+---
+
+## 5. Step-by-step: create the four identical rule files
+
+1. Open **Appendix A** below.
+2. Copy **everything** inside the appendix fence (from the first `---` of YAML through the final line of the Operating Principle section) into a new file **`[repo-root]/AGENTS.md`**.
+3. Copy the **same** bytes to:
+   - `[repo-root]/.cursorrules`
+   - `[repo-root]/CLAUDE.md`
+   - `[repo-root]/.cursor/rules/operating_rules.md`
+4. Verify identity (optional):
+
+```bash
+cmp AGENTS.md .cursorrules && cmp AGENTS.md CLAUDE.md && cmp AGENTS.md .cursor/rules/operating_rules.md && echo "OK: all four rule files identical"
+```
+
+---
+
+## 6. Step-by-step: add this bootstrap guide (optional)
+
+To allow the same propagation again later, copy **`setup_repo.md`** itself into `[repo-root]/setup_repo.md` (the file you are reading, or this project’s version). If you skip this, update `project_status.md`, `project_history.md`, and `repo_map.md` to remove references to `setup_repo.md`.
+
+---
+
+## 7. Verification checklist
+
+Before considering setup complete:
+
+- [ ] `project_goal.md`, `project_status.md`, `project_history.md`, `project_knowledge.md`, `repo_map.md` exist and use consistent `[repo]` (or your substituted name).
+- [ ] `project_history.md` has at least one entry with correct `HHMM DDMMYY` and a complete `Files touched:` list.
+- [ ] `AGENTS.md`, `.cursorrules`, `CLAUDE.md`, `.cursor/rules/operating_rules.md` exist and are identical.
+- [ ] `AGENTS.md` workflow still lists reading the five `project_*` / `repo_map` files before code edits.
+- [ ] If applicable, `setup_repo.md` is present and listed in `repo_map.md` / history.
+
+---
+
+## 8. After setup (agent behavior)
+
+Any AI agent working in `[repo-root]` should:
+
+1. Read `AGENTS.md` (and per `AGENTS.md`, read the five project files before editing code).
+2. Treat `project_goal.md` as the north star; keep `project_status.md`, `project_history.md`, `project_knowledge.md`, and `repo_map.md` current per the rules in Appendix A.
+
+---
+
+## Appendix A — Full canonical body for `AGENTS.md` and the three mirrors
+
+**Instruction:** Use the fenced block below whose first line is four backticks followed by `markdown`. The **entire** file body for each mirrored file is everything from the YAML opening `---` through the final inner closing fence of the Operating Principle section (the last ``` text block’s closing line), **excluding** the outer four-backtick open/close lines themselves. Do not add or remove lines except when doing a deliberate global policy change across all four.
+
+````markdown
+---
+description: Mandatory operating rules for AI coding agents in the [repo] repository.
 alwaysApply: true
 ---
 
 ## Purpose
 
-This file defines the mandatory operating rules for all AI coding agents working in the **animus** repository.
+This file defines the mandatory operating rules for all AI coding agents working in the **[repo]** repository.
 
 Agents must preserve project continuity by reading the local project goal, project status, project history, project knowledge, and repo map before starting work, then updating those records after work is complete.
 
@@ -416,3 +723,8 @@ What state the project is currently in.
 What durable lessons are known.
 What still needs attention.
 ```
+````
+
+---
+
+*End of `setup_repo.md`.*

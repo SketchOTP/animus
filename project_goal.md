@@ -2,7 +2,15 @@
 
 ## What we are building
 
-# ANIMUS — Distributable Product Build Directive
+## Directive Navigation Index
+
+- Primary directive and constraints: `## ANIMUS — Distributable Product Build Directive`, `## ⚠️ CRITICAL — READ BEFORE TOUCHING ANYTHING`
+- Build spec: sections `## 0` through `## 20`
+- Execution waves: `## ANIMUS — Phase 2 Build Directive` through `## ANIMUS — Phase 5 Build Directive`
+- Go-live operations: `## ANIMUS — Phase 4: Go-Live Directive` and launch checklist
+- Usage tip: prefer heading search + bounded section reads; avoid full-file scans unless required
+
+## ANIMUS — Distributable Product Build Directive
 
 **Product Name:** ANIMUS
 **Codename:** `animus`
@@ -1255,7 +1263,7 @@ When the north star changes (product, audience, or definition of success), updat
 
 
 
-# ANIMUS — Phase 2 Build Directive
+## ANIMUS — Phase 2 Build Directive
 
 **Follows from:** Phase 1 (monorepo scaffolding, backend API modules, branding pass)
 **Working directory:** `/home/sketch/animus/` — all work stays here, live instances untouched
@@ -1772,7 +1780,7 @@ Document each of these in `project_status.md` under a "Phase 3" section.
 
 
 
-# ANIMUS — Phase 3 Build Directive
+## ANIMUS — Phase 3 Build Directive
 
 **Follows from:** Phase 2 (UI wiring, wizard, cron hardening, release pipeline)
 **Working directory:** `/home/sketch/animus/` — live instances untouched
@@ -2214,7 +2222,7 @@ Document all of these in `project_status.md` under "v1.1 backlog" so they're tra
 
 *All tasks in this directive are required unless explicitly marked optional. Do not mark Phase 3 complete until the smoke test passes end-to-end and the release zip builds clean.*
 
-# ANIMUS — Phase 4: Go-Live Directive
+## ANIMUS — Phase 4: Go-Live Directive
 
 **Follows from:** Phase 3 (code complete, build passing, ~51MB zip)
 **Who runs this:** The owner, on their real machine with Docker, gateway, and API keys
@@ -2508,7 +2516,7 @@ That last one is important — install from the zip, not from your working direc
 *When the launch criteria checklist above is fully checked, ANIMUS v1.0.0 is live. Good luck.*
 
 
-# ANIMUS — Phase 5 Build Directive
+## ANIMUS — Phase 5 Build Directive
 
 **Follows from:** Phase 4 smoke test run (live walkthrough)
 **Working directory:** `/home/sketch/animus/` — live instances untouched, port 3001

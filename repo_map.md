@@ -1,7 +1,184 @@
 # Repository map
 
-Auto-generated index of files under this project (depth- and size-limited).
-Regenerate with ``hermes project repo-map-refresh --path …``, ``hermes project repo-maps-refresh-all`` (cron), or **↻ Map** in Hermes Chat.
+## Legacy Header Alias (Preserved)
+
+Token-light human navigation map.
+
+Do not full-read by default.
+
+Last updated: 2026-05-03
+
+## Quick Navigation
+
+- Structural entrypoints: `## Entry Points`, `## Core Modules`, `## Tests`, `## Config`
+- Architecture mapping: `## Conventional layout mapping`
+- Change log for structure: `## Repo Map Deltas`
+- Full inventory: `## Files`
+- Fast strategy: query this file by heading/path keywords before opening large code files
+
+
+## Related Docs
+
+Current state:
+
+- `project_status.md`
+
+History:
+
+- `project_history.md`
+
+Durable knowledge:
+
+- `project_knowledge.md`
+
+Machine-readable compact index:
+
+- `project_memory/index.json`
+
+## Read Policy
+
+Use:
+
+```bash
+grep -n '^## ' repo_map.md
+grep -n -i "keyword" repo_map.md
+sed -n 'START,ENDp' repo_map.md
+```
+
+## Navigation Index
+
+- `src/` — main source code
+- `tests/` — test suite
+- `docs/` — documentation
+- `scripts/` — utility scripts
+- `.cursor/rules/` — Cursor rules
+- `AGENTS.md` — canonical agent contract
+- `CLAUDE.md` — Claude adapter
+- `project_status.md` — current project state
+- `project_history.md` — append-only timeline
+- `project_knowledge.md` — durable project lessons
+- `repo_map.md` — human repo navigation
+- `project_memory/index.json` — compact machine-readable navigation index
+
+## Entry Points
+
+- unknown
+
+## Core Modules
+
+- unknown
+
+## Tests
+
+- unknown
+
+## Config
+
+- unknown
+
+## Conventional layout mapping
+
+When the repository already has a layout, **do not** rename or move folders to match a greenfield split. Record how existing paths map to these **conceptual** areas (append or edit this table):
+
+| Conceptual area | Existing path(s) |
+|---|---|
+| core | *populate when known* |
+| modules / plugins | *populate when known* |
+| adapters | *populate when known* |
+| schemas | *populate when known* |
+| tests | *populate when known* |
+
+Policy source: `AGENTS.md` — Existing Repo Handling.
+
+## Generated or Ignored
+
+- unknown
+
+## Repo Map Deltas
+
+Append structural changes here unless full regeneration is explicitly requested.
+
+Also update `project_memory/index.json` after structural changes.
+
+### 2026-05-03 16:55 — project documentation information architecture pass
+
+Changed:
+
+- `project_status.md` — added explicit quick navigation and separated bootstrap template block from live runtime sections.
+- `project_knowledge.md` — added navigation index and labeled repeated legacy section clusters as preserved duplicates.
+- `project_history.md` — converted legacy timestamp rows into normalized heading format for bounded section reads.
+- `repo_map.md` — added quick navigation section and clarified heading aliases.
+- `project_goal.md` — added directive navigation index and normalized top-level phase headings under one title hierarchy.
+- `project_memory/index.json` — added `agent_navigation` with preferred doc read-order and quick section map.
+
+### 2026-05-03 — conventional layout mapping section
+
+Added:
+
+- `repo_map.md` — "Conventional layout mapping" table placeholder for existing-repo onboarding (see `AGENTS.md`).
+
+### 2026-05-03 — governance layering (Cursor)
+
+Changed:
+
+- `.cursor/rules/00-project-contract.mdc` — single directive for enforcement vs markdown vs `.project_intel`; priority order documented.
+
+### 2026-05-03 — dual chronology policy
+
+Changed:
+
+- `AGENTS.md`, `00-project-contract.mdc` — `project_history.md` = human audit; `.project_intel/` = machine ledger; same date + one-line summary when both updated for one change.
+
+### 2026-05-03 16:48 — skills/tools enforcement + watchdog + project-session hardening
+
+Added:
+
+- `systemd/animus-hermes-healthcheck.service` — user-level oneshot health check for `animus.service` + `hermes-gateway.service`.
+- `systemd/animus-hermes-healthcheck.timer` — hourly watchdog trigger (`OnCalendar=hourly`, persistent).
+- `scripts/check-animus-hermes.sh` — restarts inactive services and verifies recovery via HTTP (`/api/version`, `/v1/models`).
+- `scripts/capture_skills_tools_matrix.py` — scenario harness that toggles skills/tools and captures ANIMUS + Hermes internal payloads.
+
+Changed:
+
+- `scripts/sync-dev-systemd.sh` — installs/enables the new health-check timer and script permissions.
+- `animus-chat/app/index.html` — Skills tab became Skills/Tools with tools sub-tab + toggles/bulk presets; removed duplicate project-path header line; rotates project chat `session_id` when effective workspace path changes.
+- `animus-chat/skills_routes.py` — added tools APIs (`/api/tools/list`, `/api/tools/enable/{id}`, `/api/tools/disable/{id}`) backed by persisted UI disabled-tools state.
+- `animus-chat/server.py` — injects `hermes_disabled_tools` into proxied chat body based on UI config.
+- `hermes-agent/gateway/platforms/api_server.py` — consumes `hermes_disabled_tools`, forwards to agent creation, and exposes `GET /api/tools/list`.
+- `hermes-agent/run_agent.py`, `hermes-agent/model_tools.py` — added per-tool disable filtering at schema build time.
+
+Format:
+
+```md
+### YYYY-MM-DD HH:MM — short title
+
+Added:
+- `path` — purpose
+
+Changed:
+- `path` — new purpose
+
+Removed:
+- `path` — reason
+```
+
+## Rules
+
+Agents must:
+
+- use heading lookup before reading sections
+- append deltas after structural changes
+- update `project_memory/index.json` after structural/doc navigation changes
+- avoid full regeneration unless requested
+- keep descriptions short
+
+Do not:
+
+- document every file if not useful
+- paste directory dumps
+- duplicate code comments
+- duplicate `project_memory/index.json`
+- use this as project history
 
 Root: `/home/sketch/animus`
 

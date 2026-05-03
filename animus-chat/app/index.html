@@ -310,12 +310,49 @@
       width:calc(100% - 20px)}
     .skills-search:focus{border-color:var(--accent)}
     .skills-search::placeholder{color:var(--muted)}
-    .skill-item-wrap{display:flex;align-items:stretch;gap:0;margin:1px 8px;border-radius:9px;border:1px solid var(--border);overflow:hidden;transition:border-color .1s,background .1s}
-    .skill-item-wrap:hover{background:var(--surface2);border-color:var(--accent)}
-    .skill-item-wrap .skill-item{flex:1;min-width:0;border:none;margin:0;border-radius:0}
-    .skill-item-wrap .skill-item:hover{background:transparent;border-color:transparent}
+    .skill-item-wrap,.tool-item-wrap{display:flex;align-items:stretch;gap:0;margin:1px 8px;border-radius:9px;border:1px solid var(--border);overflow:hidden;transition:border-color .1s,background .1s}
+    .skill-item-wrap:hover,.tool-item-wrap:hover{background:var(--surface2);border-color:var(--accent)}
+    .skill-item-wrap .skill-item,.tool-item-wrap .tool-item{flex:1;min-width:0;border:none;margin:0;border-radius:0}
+    .skill-item-wrap .skill-item:hover,.tool-item-wrap .tool-item:hover{background:transparent;border-color:transparent}
+    .skills-tools-subtabs{display:flex;gap:8px;padding:10px 14px 8px;border-bottom:1px solid var(--border)}
+    .skills-tools-subtab{border:1px solid var(--border);background:var(--surface2);color:var(--muted2);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+    .skills-tools-subtab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .skills-tools-panel{display:none;flex-direction:column;flex:1;min-height:0}
+    .skills-tools-panel.active{display:flex}
+    .skills-bulk-actions{padding:0 14px 10px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+    .skills-bulk-actions .btn{min-height:34px;padding:6px 12px;font-size:12px}
+    .skills-bulk-actions .btn.skills-profile-btn{
+      background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600
+    }
+    .skills-bulk-actions .btn.skills-profile-btn:hover{background:var(--accent2);border-color:var(--accent2)}
+    .skills-bulk-actions .btn.skills-profile-btn:disabled{
+      background:var(--accent);color:#fff;border-color:var(--accent);opacity:.82;cursor:wait
+    }
+    .skills-bulk-actions .btn.skills-profile-btn.is-spinning{
+      background:var(--accent);color:#fff;border-color:var(--accent);opacity:1
+    }
+    .skill-toggle-row{flex-shrink:0;width:auto;min-width:0;padding:0 12px;border-left:1px solid var(--border);background:var(--surface2)}
+    .skill-toggle-row .ssh-toggle-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+    .skill-toggle-row .ssh-toggle-ui{width:40px;height:22px}
+    .skill-toggle-row .ssh-toggle-knob{width:16px;height:16px;top:2px;left:2px}
+    .skill-toggle-row input:checked + .ssh-toggle-track .ssh-toggle-knob{left:20px}
+    .ssh-toggle-row.skill-toggle-row{
+      justify-content:flex-start;width:auto;min-width:110px;padding:0 12px;gap:8px;
+      border-left:1px solid var(--border);background:var(--surface2)
+    }
+    .ssh-toggle-row.skill-toggle-row .ssh-toggle-label{
+      flex:0 0 auto;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)
+    }
+    .ssh-toggle-row.skill-toggle-row .ssh-toggle-ui{width:40px;height:22px}
+    .ssh-toggle-row.skill-toggle-row .ssh-toggle-knob{width:16px;height:16px;top:2px;left:2px}
+    .ssh-toggle-row.skill-toggle-row input:checked + .ssh-toggle-track .ssh-toggle-knob{left:20px}
     .skill-edit-mini{flex-shrink:0;background:var(--surface2);border:none;border-left:1px solid var(--border);color:var(--muted2);cursor:pointer;padding:8px 14px;font-size:13px;font-weight:600;transition:background .1s,color .1s;align-self:stretch;display:flex;align-items:center;font-family:inherit}
     .skill-edit-mini:hover{color:var(--text);background:var(--surface3)}
+    .tool-item{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;margin:0;border-radius:0;border:none;background:transparent}
+    .tool-item-info{flex:1;min-width:0}
+    .tool-item-name{font-size:14px;font-weight:700}
+    .tool-item-summary{font-size:12px;color:var(--muted2);margin-top:3px;line-height:1.4}
+    .btn-spin-icon{display:inline-block;animation:cron-hourglass-spin .85s linear infinite;line-height:1}
     #skillEditText{width:100%;min-height:min(52vh,420px);resize:vertical;font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:13px;line-height:1.45;padding:12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
     .skill-pick-row{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;
       padding:12px 14px;margin:0 0 6px 0;border-radius:10px;border:1px solid var(--border);
@@ -496,13 +533,16 @@
       overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 
     /* Project context bar */
-    .proj-ctx-bar{display:none;align-items:center;gap:8px;padding:5px 14px;
+    .proj-ctx-bar{display:none;align-items:flex-start;gap:8px;padding:5px 14px;
       background:var(--surface);border-bottom:1px solid var(--border);
       font-size:12px;color:var(--muted2);flex-shrink:0;flex-wrap:wrap}
     .proj-ctx-bar.visible{display:flex}
     .proj-ctx-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .proj-ctx-main{min-width:0;display:flex;flex-direction:column;gap:2px;flex:1 1 auto}
     .proj-ctx-name{font-weight:600;color:var(--text)}
     .proj-ctx-path{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .proj-ctx-chat-id{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+      font-family:'SF Mono','Fira Code',ui-monospace,monospace;font-size:11px;color:var(--muted)}
     .proj-file-btn{display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto;
       min-width:min(100%,112px);min-height:44px;padding:11px 16px;border:none;border-radius:10px;cursor:pointer;font-family:inherit;
       background:var(--accent);color:#fff;font-size:14px;font-weight:600;
@@ -510,7 +550,7 @@
     .proj-file-btn:hover{background:var(--accent2);color:#fff}
     .proj-file-btn:active{transform:scale(.98)}
     .proj-file-btn:focus-visible{outline:2px solid rgba(255,255,255,.4);outline-offset:2px}
-    .proj-ctx-edit{margin-left:auto;background:none;border:none;color:var(--muted);
+    .proj-ctx-edit{margin-left:auto;align-self:center;background:none;border:none;color:var(--muted);
       cursor:pointer;font-size:12px;padding:2px 6px;border-radius:5px;
       transition:color .1s,background .1s;white-space:nowrap}
     .proj-ctx-edit:hover{color:var(--text);background:var(--surface2)}
@@ -802,6 +842,8 @@
     .help-chat-msg.bot{align-self:flex-start;background:var(--surface3);border:1px solid var(--border);max-width:96%}
     .help-chat-msg.bot.help-chat-err{border-color:var(--danger);color:var(--danger)}
     [data-enable-toggle="false"] .skill-enable-toggle{display:none !important}
+    [data-enable-toggle="false"] .skills-bulk-actions{display:none !important}
+    [data-enable-toggle="false"] .skill-toggle-row{display:none !important}
     .skills-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border)}
     .skill-detail-readme{font-size:13px;line-height:1.5;margin-top:10px}
     .skill-detail-readme code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;font-size:12px}
@@ -1194,7 +1236,7 @@
       <button type="button" class="stab stab--icon active" data-tab="chats" title="Chats" aria-label="Chats">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       </button>
-      <button type="button" class="stab stab--icon" data-tab="skills" title="Skills" aria-label="Skills">
+      <button type="button" class="stab stab--icon" data-tab="skills" title="Skills/Tools" aria-label="Skills/Tools">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
       </button>
       <button type="button" class="stab stab--icon" data-tab="cron" title="Cron" aria-label="Cron">
@@ -1303,21 +1345,49 @@
       </div>
     </div>
 
-    <!-- ── Skills tab ── -->
+    <!-- ── Skills/Tools tab ── -->
     <div class="tab-panel" id="tab-skills" style="flex-direction:column">
       <div id="skills-container" data-enable-toggle="false" style="display:flex;flex-direction:column;flex:1;min-height:0">
-        <div class="skills-toolbar">
-          <input class="skills-search" id="skillsSearch" placeholder="Search skills…" autocomplete="off" style="flex:1;min-width:140px;margin:0">
-          <button type="button" class="btn btn-ghost" id="skillsCheckUpdatesBtn">Check for updates</button>
-          <button type="button" class="btn btn-ghost" id="skillsUpdateAllBtn">Update all</button>
+        <div class="skills-tools-subtabs">
+          <button type="button" class="skills-tools-subtab active" id="skillsSubtabSkillsBtn">Skills</button>
+          <button type="button" class="skills-tools-subtab" id="skillsSubtabToolsBtn">Tools</button>
         </div>
-        <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <button type="button" class="btn btn-ghost" id="skillsCreateBtn" style="flex-shrink:0">Create skill</button>
-          <input type="text" class="skills-search" id="skillsInstallInput" placeholder="Install from URL, path, or name…" style="flex:1;min-width:160px;margin:0" autocomplete="off">
-          <button type="button" class="btn" id="skillsInstallBtn">Install</button>
+        <div id="skillsPanel" class="skills-tools-panel active">
+          <div class="skills-toolbar">
+            <input class="skills-search" id="skillsSearch" placeholder="Search skills…" autocomplete="off" style="flex:1;min-width:140px;margin:0">
+            <button type="button" class="btn btn-ghost" id="skillsCheckUpdatesBtn">Check for updates</button>
+            <button type="button" class="btn btn-ghost" id="skillsUpdateAllBtn">Update all</button>
+          </div>
+          <div class="skills-bulk-actions">
+            <button type="button" class="btn skills-profile-btn" id="skillsDisableAllBtn">All off</button>
+            <button type="button" class="btn skills-profile-btn" id="skillsEnableAllBtn">All on</button>
+            <button type="button" class="btn skills-profile-btn" id="skillsBareMinimumBtn" title="Coding-focused preset: core dev, agent, and repo skills.">AI Coding</button>
+            <button type="button" class="btn skills-profile-btn" id="skillsDebugProfileBtn" title="Debug preset: bug-finding, testing, tracing, and code review skills.">Debug</button>
+            <button type="button" class="btn skills-profile-btn" id="skillsAutomationProfileBtn" title="Automation preset: workflow, agent orchestration, and pipeline skills.">Automation</button>
+          </div>
+          <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <button type="button" class="btn btn-ghost" id="skillsCreateBtn" style="flex-shrink:0">Create skill</button>
+            <input type="text" class="skills-search" id="skillsInstallInput" placeholder="Install from URL, path, or name…" style="flex:1;min-width:160px;margin:0" autocomplete="off">
+            <button type="button" class="btn" id="skillsInstallBtn">Install</button>
+          </div>
+          <div style="flex:1;overflow-y:auto" id="skillsList">
+            <div class="cron-empty">Loading skills…</div>
+          </div>
         </div>
-        <div style="flex:1;overflow-y:auto" id="skillsList">
-          <div class="cron-empty">Loading skills…</div>
+        <div id="toolsPanel" class="skills-tools-panel">
+          <div class="skills-toolbar">
+            <input class="skills-search" id="toolsSearch" placeholder="Search tools…" autocomplete="off" style="flex:1;min-width:140px;margin:0">
+          </div>
+          <div class="skills-bulk-actions">
+            <button type="button" class="btn skills-profile-btn" id="toolsDisableAllBtn">All off</button>
+            <button type="button" class="btn skills-profile-btn" id="toolsEnableAllBtn">All on</button>
+            <button type="button" class="btn skills-profile-btn" id="toolsBareMinimumBtn" title="Coding-focused toolset: core file, terminal, browser, and task tools.">AI Coding</button>
+            <button type="button" class="btn skills-profile-btn" id="toolsDebugProfileBtn" title="Debug toolset: inspection, tracing, validation, and patching tools.">Debug</button>
+            <button type="button" class="btn skills-profile-btn" id="toolsAutomationProfileBtn" title="Automation toolset: orchestration, cron, process, and workflow tools.">Automation</button>
+          </div>
+          <div style="flex:1;overflow-y:auto" id="toolsList">
+            <div class="cron-empty">Loading tools…</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1345,6 +1415,15 @@
       <div class="section-label cron-jobs-section-label">
         <span>Scheduled Jobs</span>
         <button type="button" id="addCronBtn" class="add-project-btn" title="Add cron job" aria-label="Add cron job">+</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;padding:0 14px 8px;font-size:12px;color:var(--muted)">
+        <label class="ssh-toggle-row" style="padding:0;margin:0;width:auto;gap:8px">
+          <span class="ssh-toggle-label" style="font-size:12px;font-weight:500">Show test/system jobs</span>
+          <span class="ssh-toggle-ui">
+            <input type="checkbox" id="cronShowTestJobsToggle" />
+            <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+          </span>
+        </label>
       </div>
       <div style="flex:1;overflow-y:auto;padding-bottom:12px" id="cronList">
         <div class="cron-empty">Loading…</div>
@@ -1497,14 +1576,37 @@
           </div>
         </div>
 
-        <div class="settings-group" id="settingsNotifGroup">
-          <div class="settings-collapse-head" id="notifSettingsCollapseHead" role="button" tabindex="0" aria-expanded="false" aria-controls="notifSettingsCollapsePanel">
-            <div class="settings-group-title">Notifications</div>
-            <button type="button" class="settings-info" aria-label="About notifications" title="Run-finished: choose always on, only when the app is in the background (approximates screen off on Android), or off. Browser notifications need permission (HTTPS or localhost). Unread badge toggles the count next to Notifications in a project; threads still update when you open them.">i</button>
+        <div class="settings-group" id="settingsTailscaleGroup">
+          <div class="settings-collapse-head" id="tailscaleSettingsCollapseHead" role="button" tabindex="0" aria-expanded="false" aria-controls="tailscaleSettingsCollapsePanel">
+            <div class="settings-group-title">Tailscale</div>
+            <button type="button" class="settings-info" aria-label="About tailscale settings" title="Optional HTTPS tailnet access settings from setup wizard. Includes hostname verification, notification controls, and screen wake for mobile/PWA usage.">i</button>
             <span class="settings-collapse-chev" aria-hidden="true">▼</span>
           </div>
-          <div id="notifSettingsCollapsePanel" class="settings-collapse-panel">
+          <div id="tailscaleSettingsCollapsePanel" class="settings-collapse-panel">
             <div class="settings-collapse-inner">
+              <div class="settings-label-row" style="align-items:center;margin-top:2px;margin-bottom:10px">
+                <label class="ssh-toggle-row" style="flex:1;min-width:0;padding:0;margin:0" title="Enable Tailscale access settings">
+                  <span class="ssh-toggle-label">Enable Tailscale access</span>
+                  <span class="ssh-toggle-ui">
+                    <input type="checkbox" id="tailscaleEnabledToggle" />
+                    <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+                  </span>
+                </label>
+              </div>
+              <div class="field" style="margin-bottom:8px">
+                <label for="tailscaleHostInput">Tailscale hostname</label>
+                <input type="text" id="tailscaleHostInput" placeholder="your-machine.tail12345.ts.net" autocomplete="off" />
+              </div>
+              <div class="field" style="margin-bottom:8px">
+                <label for="tailscalePortInput">Serve port</label>
+                <input type="number" id="tailscalePortInput" min="1" step="1" />
+                <small style="display:block;margin-top:6px;color:var(--muted)">Local port ANIMUS uses (default 3001).</small>
+              </div>
+              <div id="tailscaleUrlPreview" style="font-size:12px;color:var(--muted);margin:0 0 8px">HTTPS URL preview: —</div>
+              <div class="settings-btn-row" style="margin-bottom:10px">
+                <button type="button" class="btn btn-ghost" id="tailscaleVerifyBtn" style="min-height:32px;padding:4px 10px;font-size:12px">Verify</button>
+                <span id="tailscaleVerifyStatus" style="font-size:12px;color:var(--muted);min-height:1em"></span>
+              </div>
               <div class="field" style="margin-bottom:8px">
                 <label for="notifyModeSelect">Run-finished mode</label>
                 <select id="notifyModeSelect">
@@ -1533,22 +1635,16 @@
                   </span>
                 </label>
               </div>
+              <div class="settings-label-row" style="align-items:center;margin-top:10px">
+                <label class="ssh-toggle-row" style="flex:1;min-width:0;padding:0;margin:0" title="Keep screen awake during generation">
+                  <span class="ssh-toggle-label">Screen wake while generating</span>
+                  <span class="ssh-toggle-ui">
+                    <input type="checkbox" id="wakeLockToggle" />
+                    <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+                  </span>
+                </label>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div class="settings-group">
-          <div class="settings-group-head">
-            <div class="settings-group-title">Screen wake</div>
-            <button type="button" class="settings-info" aria-label="About screen wake" title="Wake Lock API (Chrome, Edge, Android PWA): keeps the display from dimming while ANIMUS is actively generating. The lock is released when streaming ends. If the browser denies it, chat continues without the lock.">i</button>
-          </div>
-          <div class="settings-label-row" style="align-items:center;margin:0;justify-content:flex-end">
-            <label class="ssh-toggle-row" style="margin:0;padding:0;flex:0 0 auto">
-              <span class="ssh-toggle-ui">
-                <input type="checkbox" id="wakeLockToggle" />
-                <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
-              </span>
-            </label>
           </div>
         </div>
 
@@ -1730,7 +1826,7 @@
           <div class="help-center-panels">
             <div id="helpPanelHome" class="help-center-panel active" data-help-panel="home" role="tabpanel">
               <p class="help-home-lead">
-                Browse <b>Topics</b> for the full guide by section, <b>FAQ</b> for short answers, or <b>Ask ANIMUS</b> to query the guide with your active chat model (read-only; no changes on your system). Settings covers <b>Sidebar</b> (shrink vs collapse, width), <b>Notifications</b>, <b>Screen wake</b>, <b>Read aloud</b>, collapsible <b>Inference</b> and <b>Messaging</b> (gateway platforms including Slack), <b>SSH hosts</b>, and <b>Server</b> controls. The <b>Plan</b> tab runs a multi-step pipeline (play / stop; clarification in a modal; saved draft row with resume).
+                Browse <b>Topics</b> for the full guide by section, <b>FAQ</b> for short answers, or <b>Ask ANIMUS</b> to query the guide with your active chat model (read-only; no changes on your system). Settings covers <b>Sidebar</b> (shrink vs collapse, width), collapsible <b>Tailscale</b> (access, notifications, wake lock), <b>Read aloud</b>, collapsible <b>Inference</b> and <b>Messaging</b> (gateway platforms including Slack), <b>SSH hosts</b>, and <b>Server</b> controls. The <b>Plan</b> tab runs a multi-step pipeline (play / stop; clarification in a modal; saved draft row with resume).
               </p>
               <p class="help-home-load-err" style="margin:0 0 8px;font-size:13px;color:var(--danger);min-height:0"></p>
               <div class="help-topic-cards">
@@ -1803,8 +1899,10 @@
     <!-- Project context bar -->
     <div class="proj-ctx-bar" id="projCtxBar">
       <span class="proj-ctx-dot" id="projCtxDot"></span>
-      <span class="proj-ctx-name" id="projCtxName"></span>
-      <span class="proj-ctx-path" id="projCtxPath"></span>
+      <div class="proj-ctx-main">
+        <span class="proj-ctx-name" id="projCtxName"></span>
+        <span class="proj-ctx-chat-id" id="projCtxChatId"></span>
+      </div>
       <button type="button" class="proj-ctx-edit" id="projCtxEdit">Edit project</button>
     </div>
 
@@ -2534,8 +2632,10 @@ let pathValidTimer  = null;
 let workspacePathValidTimer = null;
 let fbCwd = '';
 let allSkills = [];
+let allTools = [];
 /** Snapshot for chat skill picker (may match ``allSkills`` after load). */
 let skillPickListLocal = [];
+let _skillsToolsActiveSubtab = 'skills';
 /** Pending file attachments for the next send: ``{ id, name, parts }`` (OpenAI-style content parts). */
 let pendingAttachments = [];
 let projWsKind = ''; // 'project_history' | 'project_status' | 'repo_map' | 'project_knowledge' | 'notes' | 'project_goal'
@@ -2554,6 +2654,27 @@ const uid     = () => crypto.randomUUID ? crypto.randomUUID()
       const r = Math.random() * 16 | 0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
     });
 const trunc   = (s, n=42) => s.replace(/\s+/g,' ').trim().slice(0,n) + (s.length>n?'…':'');
+
+function projectScopedChatId(pathRaw, sessionIdRaw) {
+  const projectPath = String(pathRaw || '').trim();
+  const sid = String(sessionIdRaw || '').trim();
+  if (!projectPath && !sid) return '';
+  if (!sid) return projectPath ? `${projectPath} ID(unset)` : 'ID(unset)';
+  const sidLabel = /^id[-_:]?/i.test(sid) ? sid : `ID${sid}`;
+  return projectPath ? `${projectPath} ${sidLabel}` : sidLabel;
+}
+
+function projectScopedChatIdRowLabel(pathRaw, sessionIdRaw) {
+  const scoped = projectScopedChatId(pathRaw, sessionIdRaw);
+  if (!scoped) return '';
+  const sid = String(sessionIdRaw || '').trim();
+  const sidLabel = sid ? (/^id[-_:]?/i.test(sid) ? sid : `ID${sid}`) : 'ID(unset)';
+  const path = String(pathRaw || '').trim();
+  if (!path) return sidLabel;
+  const maxPathChars = 34;
+  const shortPath = path.length > maxPathChars ? `${path.slice(0, maxPathChars - 1)}…` : path;
+  return `${shortPath} ${sidLabel}`;
+}
 
 /** Every chat must carry a unique ``session_id`` for ``X-Hermes-Session-Id``; legacy data omitted it and unrelated threads could share a gateway session. */
 function ensureHermesSessionIds(list) {
@@ -3111,6 +3232,24 @@ async function applyAnimusClientConfigFromJson(cj, opts = {}) {
       settings.wake_lock_enabled = cj.wake_lock;
       changed = true;
     }
+    if (typeof cj.tailscale_enabled === 'boolean' && settings.tailscale_enabled !== cj.tailscale_enabled) {
+      settings.tailscale_enabled = cj.tailscale_enabled;
+      changed = true;
+    }
+    if (cj.tailscale_hostname != null) {
+      const th = String(cj.tailscale_hostname || '').trim();
+      if (String(settings.tailscale_hostname || '') !== th) {
+        settings.tailscale_hostname = th;
+        changed = true;
+      }
+    }
+    if (cj.tailscale_port != null) {
+      const tp = Number(cj.tailscale_port) || 3001;
+      if (Number(settings.tailscale_port || 3001) !== tp) {
+        settings.tailscale_port = tp;
+        changed = true;
+      }
+    }
     if (cj.projects_dir && String(cj.projects_dir).trim()) {
       const pd = String(cj.projects_dir).trim();
       if (PROJECTS_ROOT !== pd) PROJECTS_ROOT = pd;
@@ -3190,6 +3329,7 @@ async function applyAnimusClientConfigFromJson(cj, opts = {}) {
 async function refreshAllSettingsUiFromState() {
   try {
     ensureChatBackend();
+    renderTailscaleSettings();
     renderNotificationSettings();
     renderWakeLockSettings();
     await renderTtsSettings();
@@ -3279,6 +3419,11 @@ if (!settings.notify_mode) settings.notify_mode = 'screen-off';
 if (settings.notif_sidebar_badges === undefined) settings.notif_sidebar_badges = true;
 if (settings.chat_model === undefined) settings.chat_model = '';
 if (settings.wake_lock_enabled === undefined) settings.wake_lock_enabled = true;
+if (settings.tailscale_enabled === undefined) settings.tailscale_enabled = false;
+if (settings.tailscale_hostname === undefined) settings.tailscale_hostname = '';
+if (settings.tailscale_port === undefined) settings.tailscale_port = 3001;
+if (settings.cron_show_test_jobs === undefined) settings.cron_show_test_jobs = false;
+if (!Array.isArray(settings.disabled_tools)) settings.disabled_tools = [];
 if (!settings.sidebar_rail_toggle || (settings.sidebar_rail_toggle !== 'shrink' && settings.sidebar_rail_toggle !== 'close')) {
   settings.sidebar_rail_toggle = 'close';
 }
@@ -3712,6 +3857,43 @@ const INFERENCE_MATRIX_ORDER = [
   ['cursor-agent', 'Cursor CLI'],
 ];
 
+function normalizeInferenceProviderForUsage(raw) {
+  const p = String(raw || '').trim().toLowerCase();
+  if (!p) return '';
+  if (p === 'gemini') return 'google';
+  if (p === 'togetherai') return 'together';
+  return p;
+}
+
+async function providerUsageTotalsMap() {
+  const out = new Map();
+  try {
+    const local = collectTokenUsageEntriesAll();
+    const merged = await mergeServerTokenEntriesFull(local.entries || []);
+    const entries = Array.isArray(merged.entries) ? merged.entries : [];
+    for (const e of entries) {
+      const pid = normalizeInferenceProviderForUsage(e && e.provider);
+      if (!pid) continue;
+      const t = Number((e && e.total) || 0) || 0;
+      out.set(pid, (out.get(pid) || 0) + t);
+    }
+  } catch (_) {}
+  return out;
+}
+
+async function orderedInferenceMatrixRows() {
+  const base = INFERENCE_MATRIX_ORDER.map((row, idx) => ({ row, idx }));
+  const totals = await providerUsageTotalsMap();
+  return base
+    .sort((a, b) => {
+      const ta = Number(totals.get(a.row[0]) || 0);
+      const tb = Number(totals.get(b.row[0]) || 0);
+      if (tb !== ta) return tb - ta;
+      return a.idx - b.idx;
+    })
+    .map((x) => x.row);
+}
+
 function _inferenceStatusLabel(st) {
   if (st === 'ready') return '<span style="color:var(--success)">● Ready</span>';
   if (st === 'error') return '<span style="color:#eab308">○ Error</span>';
@@ -3766,7 +3948,8 @@ async function renderInferenceBackendMatrix() {
     return d ? escAttr(d.slice(0, 480)) : '';
   };
   const rowsHtml = [];
-  for (const [pid, plab] of INFERENCE_MATRIX_ORDER) {
+  const orderedRows = await orderedInferenceMatrixRows();
+  for (const [pid, plab] of orderedRows) {
     const meta = byId[pid] || { id: pid, status: 'no_key', kind: 'api_key' };
     const st = String(meta.status || 'no_key');
     const modelsFor = models
@@ -3919,7 +4102,7 @@ async function renderInferenceBackendMatrix() {
       }
       if (String(settings.chat_backend || '') !== pid) return;
       let fallback = '';
-      for (const [p2] of INFERENCE_MATRIX_ORDER) {
+      for (const [p2] of orderedRows) {
         if (p2 === pid) continue;
         const m2 = byId[p2] || {};
         if (String(m2.status || '') === 'ready') {
@@ -4250,6 +4433,21 @@ function renderNotificationSettings() {
 function renderWakeLockSettings() {
   const cb = $('wakeLockToggle');
   if (cb) cb.checked = settings.wake_lock_enabled !== false;
+}
+
+function renderTailscaleSettings() {
+  const en = $('tailscaleEnabledToggle');
+  const host = $('tailscaleHostInput');
+  const port = $('tailscalePortInput');
+  const prev = $('tailscaleUrlPreview');
+  if (en) en.checked = settings.tailscale_enabled === true;
+  if (host && document.activeElement !== host) host.value = String(settings.tailscale_hostname || '');
+  if (port && document.activeElement !== port) {
+    const p = Number(settings.tailscale_port || 3001);
+    port.value = String(Number.isFinite(p) && p > 0 ? p : 3001);
+  }
+  const h = String((host && host.value) || settings.tailscale_hostname || '').trim();
+  if (prev) prev.textContent = h ? `HTTPS URL preview: https://${h}` : 'HTTPS URL preview: —';
 }
 
 let _ttsHasPiper = false;
@@ -4837,7 +5035,7 @@ function wireSettingsCollapsesOnce() {
   };
   bind($('inferenceCollapseHead'), $('inferenceCollapsePanel'));
   bind($('messagingCollapseHead'), $('messagingCollapsePanel'));
-  bind($('notifSettingsCollapseHead'), $('notifSettingsCollapsePanel'));
+  bind($('tailscaleSettingsCollapseHead'), $('tailscaleSettingsCollapsePanel'));
   bind($('readAloudCollapseHead'), $('readAloudCollapsePanel'));
 }
 
@@ -5205,7 +5403,10 @@ document.querySelectorAll('.stab').forEach(btn => {
     _lastSidebarTabKey = nextTab;
     if (prevTab === 'tokens' && nextTab !== 'tokens') stopTokenUsageAutoRefresh();
     if (prevTab === 'help' && nextTab !== 'help') resetHelpGuideTabState();
-    if (btn.dataset.tab === 'skills') loadSkills();
+    if (btn.dataset.tab === 'skills') {
+      if (_skillsToolsActiveSubtab === 'tools') void loadTools();
+      else void loadSkills();
+    }
     if (btn.dataset.tab === 'cron') {
       void loadCron();
       startCronListPolling();
@@ -6718,6 +6919,7 @@ async function syncProjectsFromRoot(root = PROJECTS_ROOT) {
 async function saveProject(data) {
   if (modalEditProjId) {
     const p = getProj(modalEditProjId);
+    const prevWorkspaceRoot = p ? normalizeSyncPath(projectWorkspaceFilesPath(p) || p.path || '') : '';
     if (p) {
       Object.assign(p, data);
       if (data.workspace_files_path !== undefined) {
@@ -6725,6 +6927,20 @@ async function saveProject(data) {
         if (tw) p.workspace_files_path = tw;
         else delete p.workspace_files_path;
       }
+    }
+    const nextProject = getProj(modalEditProjId);
+    const nextWorkspaceRoot = nextProject ? normalizeSyncPath(projectWorkspaceFilesPath(nextProject) || nextProject.path || '') : '';
+    if (prevWorkspaceRoot && nextWorkspaceRoot && prevWorkspaceRoot !== nextWorkspaceRoot) {
+      // Hardening: if a project's effective workspace path changes, rotate
+      // Hermes sessions so next send rebuilds the session prompt snapshot
+      // against the new project root.
+      convs.forEach((c) => {
+        if (!projectIdsEqual(c.project_id, modalEditProjId)) return;
+        c.session_id = uid();
+        delete c.hermes_has_stored_system_prompt;
+        delete c.hermes_stored_prompt_confirmed_session_id;
+        delete c.hermes_project_session_primed;
+      });
     }
     const clearedForServer = [];
     if (data.path) {
@@ -6852,9 +7068,10 @@ function updateHeader() {
   $('headerTitle').textContent = conv?.title ?? 'ANIMUS';
   const bar = $('projCtxBar');
   if (project) {
+    const projectPath = projectWorkspaceFilesPath(project) || project.path;
     $('projCtxDot').style.background = project.color;
     $('projCtxName').textContent     = project.name;
-    $('projCtxPath').textContent     = projectWorkspaceFilesPath(project) || project.path;
+    $('projCtxChatId').textContent   = projectScopedChatId(projectPath, conv?.session_id || '');
     $('projCtxEdit').dataset.id      = project.id;
     bar.classList.add('visible');
   } else {
@@ -8049,13 +8266,21 @@ function renderSidebar() {
   const appendConvRow = (c, mount, opts) => {
     const isNotif = opts && opts.notif;
     const unreadNotif = isNotif && viewProjectId && getNotifConvUnreadCount(c) > 0;
+    const rowProject = convProj(c);
+    const rowProjectPath = rowProject ? (projectWorkspaceFilesPath(rowProject) || rowProject.path || '') : '';
+    const rowScopedChatId = rowProject ? projectScopedChatId(rowProjectPath, c.session_id || '') : '';
+    const rowScopedChatIdShort = rowProject ? projectScopedChatIdRowLabel(rowProjectPath, c.session_id || '') : '';
+    const rowTitle = rowScopedChatId
+      ? `${String(c.title || '').trim()}\n${rowScopedChatId}`
+      : String(c.title || '').trim();
     const el = document.createElement('div');
     el.className =
       'conv-item' +
       (isNotif ? ' notif-item' : '') +
       (unreadNotif ? ' notif-item-unread' : '') +
       (c.id === activeId ? ' active' : '');
-    el.innerHTML = `<span class="conv-name">${esc(c.title)}</span>`
+    if (rowTitle) el.title = rowTitle;
+    el.innerHTML = `<span class="conv-name">${esc(c.title)}${rowScopedChatIdShort ? ` · ${esc(rowScopedChatIdShort)}` : ''}</span>`
                  + `<button class="conv-del" data-id="${c.id}">×</button>`;
     el.addEventListener('click', e => {
       if (e.target.dataset.id) return;
@@ -9425,6 +9650,52 @@ function updateSaveBtn() {
 let skillDetailLast = null;
 let _skillsCaps = { enable_disable_supported: false };
 
+function skillIdentifier(s) {
+  return String((s && (s.name || s.id)) || '').trim();
+}
+
+function isBareMinimumCodingSkill(s) {
+  const cat = String((s && s.category) || '').trim().toLowerCase();
+  const name = String((s && s.name) || '').trim().toLowerCase();
+  const desc = String((s && s.description) || '').trim().toLowerCase();
+  const text = `${name} ${desc}`;
+
+  // Category-first pass from full live catalog review.
+  if ([
+    'software-development',
+    'software development',
+    'autonomous-ai-agents',
+    'github',
+    'mlops',
+    'mcp',
+    'devops',
+    'data-science',
+  ].includes(cat)) {
+    return true;
+  }
+
+  if ([
+    'creative',
+    'media',
+    'gaming',
+    'smart-home',
+    'social-media',
+    'email',
+    'note-taking',
+  ].includes(cat)) {
+    return false;
+  }
+
+  // Explicit coding-adjacent keep/drop overrides from uncategorized/productivity/research groups.
+  if (name === 'dogfood') return true; // exploratory QA for web apps
+  if (name === 'yuanbao') return false;
+
+  if (/(music|song|comic|infographic|pixel|art|spotify|youtube|minecraft|pokemon|openhue|xurl)\b/.test(text)) {
+    return false;
+  }
+  return /\b(code|coding|programming|software|debug|test|review|refactor|repo|github|git|pull request|ci|cd|deploy|mcp|agent|tooling|harness|python|node)\b/.test(text);
+}
+
 function animusMiniMd(src) {
   if (!src) return '';
   const raw = String(src);
@@ -9474,10 +9745,168 @@ async function loadSkills() {
   }
 }
 
-function renderSkills(skills) {
-  const query = $('skillsSearch').value.toLowerCase();
+function isBareMinimumCodingTool(toolName) {
+  const nm = String(toolName || '').trim().toLowerCase();
+  if (!nm) return false;
+
+  // Only direct non-coding creative generation tool in the current catalog.
+  if (nm === 'image_generate') return false;
+
+  // Browser toolset is needed for frontend AI-coding validation loops.
+  if (nm.startsWith('browser_')) return true;
+
+  if ([
+    'terminal',
+    'read_file',
+    'write_file',
+    'patch',
+    'search_files',
+    'process',
+    'execute_code',
+    'delegate_task',
+    'todo',
+    'skills_list',
+    'skill_view',
+    'skill_manage',
+    'session_search',
+    'memory',
+    'vision_analyze',
+    'cronjob',
+  ].includes(nm)) {
+    return true;
+  }
+
+  // Future-proof fallback for newly added tools.
+  return /\b(file|search|patch|terminal|code|debug|test|browser|vision|session|memory|skill|process|task|cron)\b/.test(nm);
+}
+
+function isDebugProfileSkill(s) {
+  const cat = String((s && s.category) || '').trim().toLowerCase();
+  const name = String((s && s.name) || '').trim().toLowerCase();
+  const desc = String((s && s.description) || '').trim().toLowerCase();
+  const text = `${name} ${desc}`;
+  if (cat === 'software-development' || cat === 'software development') return true;
+  if (cat === 'github') return true;
+  if (name === 'dogfood') return true;
+  if (/(debug|bug|fix|test|qa|review|inspect|trace|diagnos|regression|incident|triage)/.test(text)) return true;
+  return /(codebase-inspection|github-code-review|python-debugpy|node-inspect-debugger|systematic-debugging|test-driven-development|requesting-code-review)/.test(name);
+}
+
+function isAutomationProfileSkill(s) {
+  const cat = String((s && s.category) || '').trim().toLowerCase();
+  const name = String((s && s.name) || '').trim().toLowerCase();
+  const desc = String((s && s.description) || '').trim().toLowerCase();
+  const text = `${name} ${desc}`;
+  if (['autonomous-ai-agents', 'devops', 'mcp', 'mlops'].includes(cat)) return true;
+  if (/(autom|workflow|agent|cron|pipeline|deploy|ci|cd|orchestrat|subscription|mcp)/.test(text)) return true;
+  return /(webhook-subscriptions|subagent-driven-development|writing-plans|plan|spike|native-mcp|codex|claude-code|opencode|hermes-agent)/.test(name);
+}
+
+function isDebugProfileTool(toolName) {
+  const nm = String(toolName || '').trim().toLowerCase();
+  if (!nm) return false;
+  if (nm === 'image_generate') return false;
+  if (['read_file', 'search_files', 'patch', 'terminal', 'process', 'execute_code', 'todo', 'vision_analyze', 'session_search', 'delegate_task'].includes(nm)) return true;
+  return ['browser_console', 'browser_snapshot', 'browser_click', 'browser_type', 'browser_press', 'browser_scroll', 'browser_navigate', 'browser_back'].includes(nm);
+}
+
+function isAutomationProfileTool(toolName) {
+  const nm = String(toolName || '').trim().toLowerCase();
+  if (!nm) return false;
+  if (nm === 'image_generate') return false;
+  if (['terminal', 'process', 'execute_code', 'delegate_task', 'todo', 'cronjob', 'skills_list', 'skill_view', 'skill_manage', 'memory', 'read_file', 'write_file', 'patch', 'search_files'].includes(nm)) return true;
+  return nm.startsWith('browser_');
+}
+
+function setSkillsToolsSubtab(kind) {
+  const next = kind === 'tools' ? 'tools' : 'skills';
+  _skillsToolsActiveSubtab = next;
+  $('skillsSubtabSkillsBtn')?.classList.toggle('active', next === 'skills');
+  $('skillsSubtabToolsBtn')?.classList.toggle('active', next === 'tools');
+  $('skillsPanel')?.classList.toggle('active', next === 'skills');
+  $('toolsPanel')?.classList.toggle('active', next === 'tools');
+  if (next === 'tools') void loadTools();
+  else void loadSkills();
+}
+
+async function loadTools() {
+  $('toolsList').innerHTML = '<div class="cron-empty">Loading tools…</div>';
+  try {
+    const r = await fetch('/api/tools/list', { cache: 'no-store' });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    const tools = Array.isArray(data && data.tools) ? data.tools : [];
+    const disabled = Array.isArray(data && data.disabled_tools) ? data.disabled_tools : [];
+    settings.disabled_tools = disabled.slice();
+    allTools = tools;
+    renderTools(allTools);
+  } catch (e) {
+    $('toolsList').innerHTML = `<div class="cron-empty">Error: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderTools(tools) {
+  const query = String(($('toolsSearch') && $('toolsSearch').value) || '').toLowerCase().trim();
   const filtered = query
-    ? skills.filter(s => s.name.toLowerCase().includes(query) || (s.description||'').toLowerCase().includes(query))
+    ? tools.filter((t) => {
+      const nm = String((t && (t.name || t.id || t.title)) || '').toLowerCase();
+      const desc = String((t && (t.summary || t.description || t.help)) || '').toLowerCase();
+      return nm.includes(query) || desc.includes(query);
+    })
+    : tools;
+  const $list = $('toolsList');
+  $list.innerHTML = '';
+  if (!filtered.length) {
+    $list.innerHTML = '<div class="cron-empty">No tools found</div>';
+    return;
+  }
+  filtered.forEach(t => {
+    const nm = String((t && (t.name || t.id || t.title)) || '').trim() || 'Unnamed tool';
+    const desc = String((t && (t.summary || t.description || t.help)) || '').trim() || 'No description provided.';
+    const en = t.enabled !== false;
+    const wrap = document.createElement('div');
+    wrap.className = 'tool-item-wrap';
+    const row = document.createElement('div');
+    row.className = 'tool-item';
+    row.innerHTML =
+      '<div class="tool-item-info">' +
+      '<div class="tool-item-name">' + esc(nm) + '</div>' +
+      '<div class="tool-item-summary">' + esc(desc) + '</div>' +
+      '</div>';
+    const tg = document.createElement('label');
+    tg.className = 'ssh-toggle-row skill-toggle-row';
+    tg.title = en ? 'Disable tool' : 'Enable tool';
+    tg.innerHTML = `
+      <span class="ssh-toggle-label">${en ? 'On' : 'Off'}</span>
+      <span class="ssh-toggle-ui">
+        <input type="checkbox" ${en ? 'checked' : ''} />
+        <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+      </span>`;
+    const tgInput = tg.querySelector('input');
+    if (tgInput) {
+      tgInput.addEventListener('change', async () => {
+        const ok = await setToolEnabledByName(nm, !!tgInput.checked, { reload: false, silentError: true });
+        if (!ok) {
+          tgInput.checked = !tgInput.checked;
+          return;
+        }
+        t.enabled = !!tgInput.checked;
+      });
+    }
+    wrap.appendChild(row);
+    wrap.appendChild(tg);
+    $list.appendChild(wrap);
+  });
+}
+
+function renderSkills(skills) {
+  const query = String(($('skillsSearch') && $('skillsSearch').value) || '').toLowerCase().trim();
+  const filtered = query
+    ? skills.filter((s) => {
+      const nm = String((s && (s.name || s.id || s.title)) || '').toLowerCase();
+      const desc = String((s && (s.description || s.summary)) || '').toLowerCase();
+      return nm.includes(query) || desc.includes(query);
+    })
     : skills;
   const $list = $('skillsList');
   $list.innerHTML = '';
@@ -9488,18 +9917,39 @@ function renderSkills(skills) {
     const el = document.createElement('div');
     el.className = 'skill-item';
     const icon = s.category ? catIcon(s.category) : '🔧';
+    const skillName = String((s && (s.name || s.id || s.title)) || '').trim() || 'Unnamed skill';
+    const skillDesc = String((s && (s.description || s.summary)) || '').trim();
     const en = s.enabled !== false;
     el.innerHTML = `
       <span class="skill-icon">${icon}</span>
       <div class="skill-info">
-        <div class="skill-name">${esc(s.name)}</div>
-        ${s.description ? `<div class="skill-desc">${esc(s.description)}</div>` : ''}
+        <div class="skill-name">${esc(skillName)}</div>
+        ${skillDesc ? `<div class="skill-desc">${esc(skillDesc)}</div>` : '<div class="skill-desc">No description provided.</div>'}
         ${s.category ? `<div class="skill-cat">${esc(s.category)}</div>` : ''}
         <div class="skill-sub" style="font-size:11px;color:var(--muted);margin-top:2px">${en ? 'Enabled' : 'Disabled'}</div>
       </div>`;
     el.title = 'Open skill details';
     el.style.cursor = 'pointer';
     el.addEventListener('click', () => { void openSkillDetailModal(s); });
+    const sid = skillIdentifier(s);
+    const tg = document.createElement('label');
+    tg.className = 'ssh-toggle-row skill-toggle-row';
+    tg.title = en ? 'Disable skill' : 'Enable skill';
+    tg.innerHTML = `
+      <span class="ssh-toggle-label">${en ? 'On' : 'Off'}</span>
+      <span class="ssh-toggle-ui">
+        <input type="checkbox" ${en ? 'checked' : ''} />
+        <span class="ssh-toggle-track"><span class="ssh-toggle-knob"></span></span>
+      </span>`;
+    tg.addEventListener('click', e => e.stopPropagation());
+    const tgInput = tg.querySelector('input');
+    if (tgInput) {
+      tgInput.addEventListener('change', async (e) => {
+        e.stopPropagation();
+        const ok = await setSkillEnabledByName(sid, !!tgInput.checked);
+        if (!ok) tgInput.checked = !tgInput.checked;
+      });
+    }
     const ed = document.createElement('button');
     ed.type = 'button';
     ed.className = 'skill-edit-mini';
@@ -9507,6 +9957,7 @@ function renderSkills(skills) {
     ed.title = 'View / edit SKILL.md';
     ed.addEventListener('click', e => { e.stopPropagation(); openSkillEditor(s); });
     wrap.appendChild(el);
+    wrap.appendChild(tg);
     wrap.appendChild(ed);
     $list.appendChild(wrap);
   });
@@ -9514,6 +9965,11 @@ function renderSkills(skills) {
 
 async function openSkillDetailModal(s) {
   skillDetailLast = s;
+  const isEnabled = s && s.enabled !== false;
+  const enBtn = $('skillDetailEnableBtn');
+  const disBtn = $('skillDetailDisableBtn');
+  if (enBtn) enBtn.style.display = isEnabled ? 'none' : '';
+  if (disBtn) disBtn.style.display = isEnabled ? '' : 'none';
   const sid = encodeURIComponent(s.name || s.id || '');
   const ttl = $('skillDetailTitle');
   if (ttl) ttl.textContent = s.name || 'Skill';
@@ -9608,39 +10064,58 @@ function catIcon(cat) {
 
 $('skillsSearch').addEventListener('input', () => renderSkills(allSkills));
 
+function startActionButtonSpinner(btn) {
+  if (!btn) return null;
+  const prev = { html: btn.innerHTML, minWidth: btn.style.minWidth || '' };
+  const w = btn.offsetWidth;
+  if (w > 0) btn.style.minWidth = `${w}px`;
+  btn.classList.add('is-spinning');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-spin-icon" aria-hidden="true">↻</span>';
+  return prev;
+}
+
+function stopActionButtonSpinner(btn, prevHtml) {
+  if (!btn) return;
+  if (prevHtml && typeof prevHtml === 'object') {
+    btn.innerHTML = prevHtml.html != null ? prevHtml.html : btn.innerHTML;
+    btn.style.minWidth = prevHtml.minWidth != null ? prevHtml.minWidth : '';
+  } else if (prevHtml != null) {
+    btn.innerHTML = prevHtml;
+  }
+  btn.disabled = false;
+  btn.classList.remove('is-spinning');
+}
+
 $('skillsCheckUpdatesBtn')?.addEventListener('click', async () => {
   const btn = $('skillsCheckUpdatesBtn');
-  if (btn) btn.disabled = true;
+  const prevHtml = startActionButtonSpinner(btn);
   try {
     const r = await fetch('/api/skills/updates-available', { cache: 'no-store' });
     const j = await r.json().catch(() => ({}));
-    const u = Array.isArray(j.updates) ? j.updates : [];
-    const extra = String(j.raw || j.stderr || '').trim().slice(0, 1200);
-    alert(u.length ? `Updates check returned ${u.length} line(s). Raw output:\n\n${extra || '(see server logs)'}` : `No structured updates.${extra ? '\n\n' + extra : ''}`);
+    if (!r.ok) {
+      throw new Error(String(j.error || j.stderr || r.statusText || 'Check failed'));
+    }
     await loadSkills();
   } catch (e) {
-    alert(e && e.message ? e.message : 'Check failed');
+    console.warn(e && e.message ? e.message : 'Check failed');
   } finally {
-    if (btn) btn.disabled = false;
+    stopActionButtonSpinner(btn, prevHtml);
   }
 });
 
 $('skillsUpdateAllBtn')?.addEventListener('click', async () => {
-  if (!confirm('Update all installed skills? This can take several minutes.')) return;
   const btn = $('skillsUpdateAllBtn');
-  if (btn) btn.disabled = true;
+  const prevHtml = startActionButtonSpinner(btn);
   try {
     const r = await fetch('/api/skills/update-all', { method: 'POST' });
-    const t = await r.text();
-    if (!r.ok) {
-      alert(t || 'Update all failed');
-      return;
-    }
+    const t = await r.text().catch(() => '');
+    if (!r.ok) throw new Error(t || 'Update all failed');
     await loadSkills();
   } catch (e) {
-    alert(e && e.message ? e.message : 'Update all failed');
+    console.warn(e && e.message ? e.message : 'Update all failed');
   } finally {
-    if (btn) btn.disabled = false;
+    stopActionButtonSpinner(btn, prevHtml);
   }
 });
 
@@ -9814,8 +10289,211 @@ async function _postSkillToggle(pathSeg) {
   await loadSkills();
 }
 
+async function setSkillEnabledByName(skillName, enabled, opts) {
+  const options = opts || {};
+  const nm = String(skillName || '').trim();
+  if (!nm) return false;
+  const id = encodeURIComponent(nm);
+  const endpoint = enabled ? 'enable' : 'disable';
+  const r = await fetch('/api/skills/' + endpoint + '/' + id, { method: 'POST' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) {
+    if (!options.silentError) alert((j && j.error) ? j.error : 'Toggle failed');
+    return false;
+  }
+  recordTokenUsageManualIfPresent(j.usage, { source: 'skill', source_id: nm });
+  if (options.reload !== false) await loadSkills();
+  return true;
+}
+
+async function applyBulkSkillToggle(targets, activeBtn) {
+  const allBtns = ['skillsDisableAllBtn', 'skillsEnableAllBtn', 'skillsBareMinimumBtn', 'skillsDebugProfileBtn', 'skillsAutomationProfileBtn']
+    .map(id => $(id))
+    .filter(Boolean);
+  const prevHtml = startActionButtonSpinner(activeBtn);
+  allBtns.forEach(btn => { if (btn !== activeBtn) btn.disabled = true; });
+  let changed = 0;
+  const failures = [];
+  try {
+    for (const target of targets) {
+      const ok = await setSkillEnabledByName(target.name, target.enabled, { reload: false, silentError: true });
+      if (ok) changed += 1;
+      else failures.push(target.name);
+    }
+  } finally {
+    await loadSkills();
+    allBtns.forEach(btn => { if (btn !== activeBtn) btn.disabled = false; });
+    stopActionButtonSpinner(activeBtn, prevHtml);
+  }
+  if (failures.length) console.warn('Skill bulk toggle failures:', failures[0], 'count=', failures.length, 'updated=', changed);
+}
+
+async function setToolEnabledByName(toolName, enabled, opts) {
+  const options = opts || {};
+  const nm = String(toolName || '').trim();
+  if (!nm) return false;
+  const id = encodeURIComponent(nm);
+  const endpoint = enabled ? 'enable' : 'disable';
+  const r = await fetch('/api/tools/' + endpoint + '/' + id, { method: 'POST' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) {
+    if (!options.silentError) alert((j && j.error) ? j.error : 'Tool toggle failed');
+    return false;
+  }
+  const cur = new Set(Array.isArray(settings.disabled_tools) ? settings.disabled_tools : []);
+  if (enabled) cur.delete(nm);
+  else cur.add(nm);
+  settings.disabled_tools = Array.from(cur).sort();
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  schedulePersistUiSettingsToServer();
+  if (options.reload !== false) await loadTools();
+  return true;
+}
+
+async function applyBulkToolToggle(targets, activeBtn) {
+  const allBtns = ['toolsDisableAllBtn', 'toolsEnableAllBtn', 'toolsBareMinimumBtn', 'toolsDebugProfileBtn', 'toolsAutomationProfileBtn']
+    .map(id => $(id))
+    .filter(Boolean);
+  const prevHtml = startActionButtonSpinner(activeBtn);
+  allBtns.forEach(btn => { if (btn !== activeBtn) btn.disabled = true; });
+  let changed = 0;
+  const failures = [];
+  try {
+    for (const target of targets) {
+      const ok = await setToolEnabledByName(target.name, target.enabled, { reload: false, silentError: true });
+      if (ok) changed += 1;
+      else failures.push(target.name);
+    }
+  } finally {
+    await loadTools();
+    allBtns.forEach(btn => { if (btn !== activeBtn) btn.disabled = false; });
+    stopActionButtonSpinner(activeBtn, prevHtml);
+  }
+  if (failures.length) console.warn('Tool bulk toggle failures:', failures[0], 'count=', failures.length, 'updated=', changed);
+}
+
 $('skillDetailEnableBtn')?.addEventListener('click', () => { void _postSkillToggle('enable'); });
 $('skillDetailDisableBtn')?.addEventListener('click', () => { void _postSkillToggle('disable'); });
+
+$('skillsDisableAllBtn')?.addEventListener('click', async () => {
+  if (_skillsCaps.enable_disable_supported === false) return;
+  const targets = (allSkills || [])
+    .filter(s => s && s.enabled !== false)
+    .map(s => ({ name: skillIdentifier(s), enabled: false }))
+    .filter(s => s.name);
+  await applyBulkSkillToggle(targets, $('skillsDisableAllBtn'));
+});
+
+$('skillsEnableAllBtn')?.addEventListener('click', async () => {
+  if (_skillsCaps.enable_disable_supported === false) return;
+  const targets = (allSkills || [])
+    .filter(s => s && s.enabled === false)
+    .map(s => ({ name: skillIdentifier(s), enabled: true }))
+    .filter(s => s.name);
+  await applyBulkSkillToggle(targets, $('skillsEnableAllBtn'));
+});
+
+$('skillsBareMinimumBtn')?.addEventListener('click', async () => {
+  if (_skillsCaps.enable_disable_supported === false) return;
+  const targets = (allSkills || [])
+    .map(s => {
+      const name = skillIdentifier(s);
+      const shouldEnable = isBareMinimumCodingSkill(s);
+      const isEnabled = s && s.enabled !== false;
+      if (!name || shouldEnable === isEnabled) return null;
+      return { name, enabled: shouldEnable };
+    })
+    .filter(Boolean);
+  await applyBulkSkillToggle(targets, $('skillsBareMinimumBtn'));
+});
+
+$('skillsDebugProfileBtn')?.addEventListener('click', async () => {
+  if (_skillsCaps.enable_disable_supported === false) return;
+  const targets = (allSkills || [])
+    .map((s) => {
+      const name = skillIdentifier(s);
+      const shouldEnable = isDebugProfileSkill(s);
+      const isEnabled = s && s.enabled !== false;
+      if (!name || shouldEnable === isEnabled) return null;
+      return { name, enabled: shouldEnable };
+    })
+    .filter(Boolean);
+  await applyBulkSkillToggle(targets, $('skillsDebugProfileBtn'));
+});
+
+$('skillsAutomationProfileBtn')?.addEventListener('click', async () => {
+  if (_skillsCaps.enable_disable_supported === false) return;
+  const targets = (allSkills || [])
+    .map((s) => {
+      const name = skillIdentifier(s);
+      const shouldEnable = isAutomationProfileSkill(s);
+      const isEnabled = s && s.enabled !== false;
+      if (!name || shouldEnable === isEnabled) return null;
+      return { name, enabled: shouldEnable };
+    })
+    .filter(Boolean);
+  await applyBulkSkillToggle(targets, $('skillsAutomationProfileBtn'));
+});
+
+$('skillsSubtabSkillsBtn')?.addEventListener('click', () => setSkillsToolsSubtab('skills'));
+$('skillsSubtabToolsBtn')?.addEventListener('click', () => setSkillsToolsSubtab('tools'));
+$('toolsSearch')?.addEventListener('input', () => renderTools(allTools));
+
+$('toolsDisableAllBtn')?.addEventListener('click', async () => {
+  const targets = (allTools || [])
+    .filter(t => t && t.enabled !== false)
+    .map(t => ({ name: String(t.name || '').trim(), enabled: false }))
+    .filter(t => t.name);
+  await applyBulkToolToggle(targets, $('toolsDisableAllBtn'));
+});
+
+$('toolsEnableAllBtn')?.addEventListener('click', async () => {
+  const targets = (allTools || [])
+    .filter(t => t && t.enabled === false)
+    .map(t => ({ name: String(t.name || '').trim(), enabled: true }))
+    .filter(t => t.name);
+  await applyBulkToolToggle(targets, $('toolsEnableAllBtn'));
+});
+
+$('toolsBareMinimumBtn')?.addEventListener('click', async () => {
+  const targets = (allTools || [])
+    .map(t => {
+      const name = String((t && t.name) || '').trim();
+      const shouldEnable = isBareMinimumCodingTool(name);
+      const isEnabled = t && t.enabled !== false;
+      if (!name || shouldEnable === isEnabled) return null;
+      return { name, enabled: shouldEnable };
+    })
+    .filter(Boolean);
+  await applyBulkToolToggle(targets, $('toolsBareMinimumBtn'));
+});
+
+$('toolsDebugProfileBtn')?.addEventListener('click', async () => {
+  const targets = (allTools || [])
+    .map((t) => {
+      const name = String((t && t.name) || '').trim();
+      const shouldEnable = isDebugProfileTool(name);
+      const isEnabled = t && t.enabled !== false;
+      if (!name || shouldEnable === isEnabled) return null;
+      return { name, enabled: shouldEnable };
+    })
+    .filter(Boolean);
+  await applyBulkToolToggle(targets, $('toolsDebugProfileBtn'));
+});
+
+$('toolsAutomationProfileBtn')?.addEventListener('click', async () => {
+  const targets = (allTools || [])
+    .map((t) => {
+      const name = String((t && t.name) || '').trim();
+      const shouldEnable = isAutomationProfileTool(name);
+      const isEnabled = t && t.enabled !== false;
+      if (!name || shouldEnable === isEnabled) return null;
+      return { name, enabled: shouldEnable };
+    })
+    .filter(Boolean);
+  await applyBulkToolToggle(targets, $('toolsAutomationProfileBtn'));
+});
+
 
 const _chatModelPicker = $('chatModelPicker');
 if (_chatModelPicker) {
@@ -9948,6 +10626,88 @@ $('attachChips')?.addEventListener('click', (e) => {
   renderAttachChips();
 });
 $('skillPickSearch').addEventListener('input', () => { renderSkillPickList(); });
+
+async function persistTailscaleSettingsToServer() {
+  const payload = {
+    tailscale_enabled: settings.tailscale_enabled === true,
+    tailscale_hostname: String(settings.tailscale_hostname || '').trim(),
+    tailscale_port: Number(settings.tailscale_port || 3001) || 3001,
+  };
+  try {
+    await fetch('/api/setup/save-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (_) {}
+  try {
+    await fetch('/api/animus/client-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (_) {}
+}
+
+const tailscaleEnabledToggle = $('tailscaleEnabledToggle');
+if (tailscaleEnabledToggle) {
+  tailscaleEnabledToggle.addEventListener('change', async (e) => {
+    settings.tailscale_enabled = !!e.target.checked;
+    save();
+    renderTailscaleSettings();
+    await persistTailscaleSettingsToServer();
+  });
+}
+const tailscaleHostInput = $('tailscaleHostInput');
+if (tailscaleHostInput) {
+  tailscaleHostInput.addEventListener('input', () => {
+    settings.tailscale_hostname = String(tailscaleHostInput.value || '').trim();
+    save();
+    renderTailscaleSettings();
+  });
+  tailscaleHostInput.addEventListener('change', async () => {
+    settings.tailscale_hostname = String(tailscaleHostInput.value || '').trim();
+    save();
+    await persistTailscaleSettingsToServer();
+  });
+}
+const tailscalePortInput = $('tailscalePortInput');
+if (tailscalePortInput) {
+  tailscalePortInput.addEventListener('input', () => {
+    const p = Number(tailscalePortInput.value || 3001) || 3001;
+    settings.tailscale_port = p;
+    save();
+    renderTailscaleSettings();
+  });
+  tailscalePortInput.addEventListener('change', async () => {
+    const p = Number(tailscalePortInput.value || 3001) || 3001;
+    settings.tailscale_port = p;
+    save();
+    await persistTailscaleSettingsToServer();
+  });
+}
+$('tailscaleVerifyBtn')?.addEventListener('click', async () => {
+  const slot = $('tailscaleVerifyStatus');
+  const host = String(($('tailscaleHostInput') && $('tailscaleHostInput').value) || '').trim();
+  if (!host) {
+    if (slot) slot.textContent = 'Enter a hostname first.';
+    return;
+  }
+  if (slot) slot.textContent = 'Checking…';
+  try {
+    const r = await fetch('/api/setup/tailscale-check?' + new URLSearchParams({ hostname: host }), {
+      cache: 'no-store',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (slot) {
+      slot.innerHTML = j.ok
+        ? '<span style="color:var(--success)">✓ ' + esc(String(j.url || 'ok')) + '</span>'
+        : '<span style="color:var(--danger)">✗ ' + esc(String(j.error || 'failed')) + '</span>';
+    }
+  } catch (e) {
+    if (slot) slot.textContent = e && e.message ? e.message : 'Failed';
+  }
+});
 
 // ─── Notification settings ─────────────────────────────────────────────────────
 $('notifyModeSelect').addEventListener('change', e => {
@@ -11280,6 +12040,17 @@ async function fetchCronJobs() {
   }
 }
 
+function cronJobLooksLikeTest(job) {
+  if (!job || typeof job !== 'object') return false;
+  if (job.is_test === true || job.test === true) return true;
+  const name = String(job.name || '').trim().toLowerCase();
+  const prompt = String(job.prompt || '').trim().toLowerCase();
+  const tags = String(job.tags || '').trim().toLowerCase();
+  const blob = `${name} ${prompt} ${tags}`;
+  if (/\b(smoke|sandbox|fixture|dummy|sample)\b/.test(blob)) return true;
+  return /\btest(ing)?\b/.test(blob);
+}
+
 async function openCronLogsModal(jobId) {
   const backdrop = $('cronLogsBackdrop');
   const pre = $('cronLogsBody');
@@ -11339,11 +12110,27 @@ function cronJobActionIconSvgs() {
 function renderCron() {
   const $list = $('cronList'); $list.innerHTML = '';
   const ico = cronJobActionIconSvgs();
-  if (!cronJobs.length) {
+  const showTestJobs = settings.cron_show_test_jobs === true;
+  const visibleJobs = showTestJobs ? [...cronJobs] : cronJobs.filter((j) => !cronJobLooksLikeTest(j));
+  const hiddenTestCount = cronJobs.length - visibleJobs.length;
+  if (!visibleJobs.length) {
+    if (cronJobs.length && hiddenTestCount > 0) {
+      $list.innerHTML =
+        '<div class="cron-empty">Only test/system jobs found. Enable <b>Show test/system jobs</b> above to display them.</div>';
+      return;
+    }
     $list.innerHTML = '<div class="cron-empty">No cron jobs yet.<br>Use the <b>+</b> above to add a job.<br><span style="font-size:12px;opacity:.88;margin-top:8px;display:inline-block">One-time (&ldquo;once&rdquo;) schedules are removed from this list after they have run once (they stay in <code>~/.hermes/cron/output/</code> on the server until rotated).</span></div>';
     return;
   }
-  cronJobs.forEach(job => {
+  if (hiddenTestCount > 0) {
+    const tip = document.createElement('div');
+    tip.className = 'cron-empty';
+    tip.style.padding = '8px 14px';
+    tip.style.textAlign = 'left';
+    tip.innerHTML = `${hiddenTestCount} test/system job${hiddenTestCount === 1 ? '' : 's'} hidden.`;
+    $list.appendChild(tip);
+  }
+  visibleJobs.forEach(job => {
     const paused = job.state === 'paused' || job.enabled === false
       || job.paused || job.disabled || job.status === 'paused';
     const delSummary = esc(summarizeDeliverField(job.deliver));
@@ -11444,6 +12231,15 @@ function renderCron() {
 }
 
 $('addCronBtn').addEventListener('click', () => { void openCronModalForCreate(); });
+const cronShowTestJobsToggle = $('cronShowTestJobsToggle');
+if (cronShowTestJobsToggle) {
+  cronShowTestJobsToggle.checked = settings.cron_show_test_jobs === true;
+  cronShowTestJobsToggle.addEventListener('change', (e) => {
+    settings.cron_show_test_jobs = !!e.target.checked;
+    save();
+    renderCron();
+  });
+}
 
 $('cronDeliverMethod').addEventListener('change', onCronDeliverMethodChange);
 $('cronSchPattern').addEventListener('change', onCronSchPatternChange);
@@ -12016,7 +12812,7 @@ if (_checkAnimusUpdatesBtn) {
 
 const ANIMUS_TAB_TOOLTIPS = {
   chats: 'Your main conversation workspace. Start chatting with your AI.',
-  skills: 'Install and manage AI skills that extend ANIMUS capabilities.',
+  skills: 'Manage skills and tools, including on/off prompt controls.',
   cron: 'Schedule automated AI tasks to run on a timer.',
   plan: 'Break down complex work into stages with AI assistance.',
   tokens: 'Provider token usage by day, model, and source.',
@@ -12098,6 +12894,7 @@ async function runWizardIfNeeded() {
     keyTestOk: {},
     codexAuthenticated: false,
     cursorAuthenticated: false,
+    claudeAuthenticated: false,
     projectsDir: '',
     tsEnabled: false,
     tsHost: '',
@@ -12119,6 +12916,7 @@ async function runWizardIfNeeded() {
     { id: 'deepseek', label: 'DeepSeek', kind: 'api', hint: 'API key required' },
     { id: 'openai-codex', label: 'OpenAI Codex', kind: 'codex', hint: 'OAuth sign-in, no API key' },
     { id: 'cursor-agent', label: 'Cursor CLI', kind: 'cursor', hint: 'cursor login, no API key' },
+    { id: 'claude-code', label: 'Claude Code', kind: 'claude', hint: 'Browser sign-in on server, no API key' },
   ];
 
   await new Promise((resolve) => {
@@ -12331,8 +13129,20 @@ async function runWizardIfNeeded() {
             st.cursorAuthenticated = false;
           }
         };
+        const refreshClaude = async () => {
+          try {
+            const r = await fetch('/api/setup/provider-status', { cache: 'no-store' });
+            const j = await r.json().catch(() => ({}));
+            const rows = Array.isArray(j.providers) ? j.providers : [];
+            const row = rows.find((x) => x && String(x.id || '').toLowerCase() === 'claude-code');
+            st.claudeAuthenticated = row ? String(row.status || '').toLowerCase() === 'ready' : false;
+          } catch (_) {
+            st.claudeAuthenticated = false;
+          }
+        };
         await refreshCodex();
         await refreshCursor();
+        await refreshClaude();
         if (!st.selectedProviders.length) {
           try {
             await fetch('/api/setup/save-config', {
@@ -12377,6 +13187,20 @@ async function runWizardIfNeeded() {
                 '<button type="button" class="btn btn-ghost wiz-codex-go">Sign in with Codex</button> ' +
                 '<span id="wizCodexRes" style="font-size:13px">' +
                 (st.codexAuthenticated ? '<span style="color:var(--success)">✓ Signed in</span>' : '') +
+                '</span></div>'
+              );
+            }
+            if (d.kind === 'claude') {
+              return (
+                '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">' +
+                '<div style="font-weight:600;margin-bottom:8px">' +
+                esc(d.label) +
+                '</div>' +
+                '<p style="font-size:13px;color:var(--muted);margin:0 0 8px">Run Claude Code sign-in on the server host (browser/TTY flow).</p>' +
+                '<button type="button" class="btn btn-ghost wiz-claude-go">Sign in (server)</button> ' +
+                '<button type="button" class="btn btn-ghost wiz-claude-recheck" style="margin-left:6px">Re-check</button> ' +
+                '<span id="wizClaudeRes" style="font-size:13px">' +
+                (st.claudeAuthenticated ? '<span style="color:var(--success)">✓ Signed in</span>' : '') +
                 '</span></div>'
               );
             }
@@ -12441,6 +13265,35 @@ async function runWizardIfNeeded() {
             cgo.disabled = false;
           });
         }
+        const clgo = content.querySelector('.wiz-claude-go');
+        if (clgo) {
+          clgo.addEventListener('click', async () => {
+            const out = $('wizClaudeRes');
+            try {
+              const r = await fetch('/api/setup/claude-code-login-start', { method: 'POST', cache: 'no-store' });
+              const j = await r.json().catch(() => ({}));
+              if (!r.ok || j.ok === false) {
+                if (out) out.innerHTML = '<span style="color:var(--danger)">✗ ' + esc(String(j.error || r.status)) + '</span>';
+                return;
+              }
+              if (out) out.innerHTML = '<span style="color:var(--muted)">Started on server. Complete login then Re-check.</span>';
+            } catch (e) {
+              if (out) out.innerHTML = '<span style="color:var(--danger)">✗ ' + esc(String(e && e.message ? e.message : e)) + '</span>';
+            }
+          });
+        }
+        const clrc = content.querySelector('.wiz-claude-recheck');
+        if (clrc) {
+          clrc.addEventListener('click', async () => {
+            await refreshClaude();
+            const out = $('wizClaudeRes');
+            if (out) {
+              out.innerHTML = st.claudeAuthenticated
+                ? '<span style="color:var(--success)">✓ Signed in</span>'
+                : '<span style="color:var(--muted)">Not signed in yet.</span>';
+            }
+          });
+        }
         const curBody = $('wizCursorBody');
         const paintCur = async () => {
           await refreshCursor();
@@ -12488,6 +13341,7 @@ async function runWizardIfNeeded() {
             if (d.kind === 'api' && st.keyTestOk[pid]) ready.push(pid);
             if (d.kind === 'codex' && st.codexAuthenticated) ready.push(pid);
             if (d.kind === 'cursor' && st.cursorAuthenticated) ready.push(pid);
+            if (d.kind === 'claude' && st.claudeAuthenticated) ready.push(pid);
           });
           try {
             await fetch('/api/setup/save-config', {

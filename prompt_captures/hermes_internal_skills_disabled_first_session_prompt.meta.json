@@ -1,0 +1,8 @@
+{
+  "captured_at_utc": "2026-05-03T20:06:12Z",
+  "capture_scope": "hermes_internal_compiled_request",
+  "scenario": "skills_disabled_first_session_prompt",
+  "gateway_status_code": 200,
+  "gateway_response_preview": "HTTP 200",
+  "source_dump_file": "/home/sketch/animus/.hermes/sessions/request_dump_api-e6884a8cd46d5aa5_20260503_160612_809037.json"
+}

@@ -1,423 +1,206 @@
----
-description: Mandatory operating rules for AI coding agents in the animus repository.
-alwaysApply: true
----
+# AGENTS.md
 
-## Purpose
+Canonical project contract for all AI coding agents.
 
-This file defines the mandatory operating rules for all AI coding agents working in the **animus** repository.
+## Source of Truth
 
-Agents must preserve project continuity by reading the local project goal, project status, project history, project knowledge, and repo map before starting work, then updating those records after work is complete.
+Roles are **split** (see **Priority Order** below). Root-level project docs plus `project_memory/index.json` remain the default **governance and continuity** surface.
 
-| File | Role |
-|------|------|
-| `project_goal.md` | Project north star |
-| `project_status.md` | Current operational snapshot |
-| `project_history.md` | Chronological work log |
-| `project_knowledge.md` | Durable lessons for future agents |
-| `repo_map.md` | Living map of the codebase |
+- **`.project_intel/`** — machine or tool **state** (caches, runs, derived artifacts). Use when the workflow writes there; do **not** treat it as replacing `AGENTS.md` or `.cursor/rules` for policy.
 
----
+## Priority Order (conflict resolution)
 
-# Mandatory Session Start
+When sources disagree, **higher** wins:
 
-Before touching any code, the agent must read these local repo files:
+1. **`.cursor/rules/*.mdc`** — Cursor hard enforcement.
+2. **`AGENTS.md`** — this governance contract.
+3. **`CLAUDE.md`** — Claude adapter defaults.
+4. **`project_index.md`** if the repo adds it; **else** **`project_memory/index.json`** — compact navigation.
+5. **`project_status.md`**, **`project_knowledge.md`**, **`project_history.md`** — continuity (bounded reads by default).
+6. **`.project_intel/`** — state only; does **not** override 1–3.
 
-```text
-project_goal.md
-project_status.md
-project_history.md
-project_knowledge.md
-repo_map.md
-```
+Canonical Cursor-side spelling of this stack: `.cursor/rules/00-project-contract.mdc`.
 
-Hard rule:
+## Dual chronology (anti-drift)
 
-```text
-Do not edit, create, delete, refactor, or run destructive commands until project_goal.md, project_status.md, project_history.md, project_knowledge.md, and repo_map.md have been read.
-```
+- **`project_history.md`** — human / **audit** history (decisions, policy changes, impact). Small policy edits still belong here; they change agent behavior.
+- **`.project_intel/`** — **machine state ledger** (tool output, structured runs, derived indices).
 
-If any required file is missing:
+**Correlation rule:** If both are updated for the **same** change, use the **same ISO date** (`YYYY-MM-DD`) and the **same one-line summary** (the correlation key) in each place, and cross-reference so audit lines and ledger entries can be paired. If only one side is updated, no pairing is required.
 
-1. Stop.
-2. Create the missing file using the required format.
-3. If `project_history.md` is missing, create it first.
-4. Record the creation of missing files in `project_history.md`.
-5. Continue only after all required files exist and have been reviewed.
+## Future governance checks (CI, not implemented)
 
----
+Planned automated checks (to be added later) should verify, among other things: classification block present in outputs; no core files modified during feature-scoped tasks; module layout conventions followed. **Rollout:** when CI lands, keep checks **warn-only** first, then enforce in stages (classification → core boundary → module structure) to limit false positives and disruption.
 
-# Efficiency, navigation, and token discipline
+Required project docs:
 
-Agents must:
+- `project_status.md`
+- `project_history.md`
+- `project_knowledge.md`
+- `repo_map.md`
+- `project_memory/index.json`
 
-- **Minimize tokens:** Use the least reading, search, tool output, and prose necessary to complete the task safely. Prefer narrow searches, partial file reads, and small diffs over whole-repo exploration or dumping large files when the task does not require it.
-- **Navigate with `repo_map.md`:** Read `repo_map.md` early and follow it to entrypoints and owning directories. Do not read the entire codebase or enumerate every file by default—open only paths the map (or a targeted search) justifies.
-- **Use compact memory index first:** Read `project_memory/index.json` before `repo_map.md` and code scans. Use it as the token-light machine index for entrypoints, areas, and high-value files; use `repo_map.md` as human-readable backup only.
-- **Enrich `project_knowledge.md` for the next agent:** When you learn shortcuts that save time or tokens (fast validation commands, safe edit paths, folders to skip, search patterns, navigation tips), add concise bullets there. That file is for durable, reusable efficiency lessons—not for duplicating `project_history.md`.
-- **`project_history.md` when logging:** To add a session entry, **append** a new block at the bottom. Do **not** read or reload the full `project_history.md` just to append. Full-file reads of history are only for tasks that truly require auditing the entire log.
-- **Keep compact memory current:** After meaningful structural changes, refresh `project_memory/index.json` (or run the workspace refresh path that regenerates it) so future agents can navigate without broad repo scans.
+## Missing Project Docs Rule
 
----
-
-# Local Project Files
-
-## `project_goal.md`
-
-This file is the project north star.
-
-It defines what the project is trying to become, who it serves, what success looks like, and what should be avoided.
-
-Every agent must read this file before making changes.
-
-Update `project_goal.md` when:
-
-- The project’s main purpose changes.
-- The target user changes.
-- The definition of success changes.
-- The project scope expands or narrows.
-- A new non-goal is discovered.
-- A requested task conflicts with the current north star.
-- The human explicitly says the direction has changed.
+If required project docs are missing, create them before continuing.
 
 Rules:
 
-- Keep it short.
-- Keep it strategic, not implementation-heavy.
-- Do not turn it into a backlog.
-- Do not bury temporary tasks in this file.
-- This file should guide decisions, not document every detail.
-- If the north star shifts, update this file before implementation work continues.
+- create only missing files
+- create `project_memory/` if missing
+- initialize empty files with the standard minimal template
+- do not overwrite existing docs unless explicitly told
+- append the doc-creation event to `project_history.md`
+- update `project_status.md`
 
----
+## Read Order
 
-## `project_status.md`
+In **Cursor**, applicable `.cursor/rules/*.mdc` load with the session; start from **Priority Order** in `.cursor/rules/00-project-contract.mdc`, then:
 
-This file is the current operational snapshot of the project.
+1. `AGENTS.md`
+2. `project_status.md`
+3. `project_memory/index.json`
+4. targeted `repo_map.md` section
+5. targeted `project_knowledge.md` section
+6. recent tail of `project_history.md`
 
-It should show:
+## Token Rules
 
-- Current state
-- Active goal
-- Current priorities
-- Recently completed work
-- In-progress work
-- Known issues
-- Blockers
-- Validation status
-- Last validation run
-- Next recommended actions
+Read the smallest useful slice.
 
-Every agent must read this file before making changes.
+Allowed full reads:
 
-Update `project_status.md` when:
+- `AGENTS.md`
+- `project_status.md`
+- `project_memory/index.json`
+- `project_goal.md` only if scope is unclear
 
-- Work meaningfully changes the project state.
-- A priority changes.
-- A task moves from in-progress to complete.
-- A blocker appears or is resolved.
-- A known issue is discovered or fixed.
-- Validation status changes.
-- A new next action becomes obvious.
+Do not full-read by default:
 
-Rules:
+- `project_history.md`
+- `repo_map.md`
+- `project_knowledge.md`
 
-- Keep it current.
-- Keep it practical.
-- Do not duplicate the full work history.
-- Do not turn it into a backlog dump.
-- It should help the next agent understand what state the project is in right now.
+Use bounded reads:
 
----
-
-## `project_history.md`
-
-This file is the chronological work log for the repository.
-
-Every completed work session must append a new entry using this exact format:
-
-```text
-HHMM DDMMYY - One line summary of what was done or changed.
-Files touched:
-- path/to/file1.ext
-- path/to/file2.ext
-- path/to/file3.ext
+```bash
+tail -n 80 project_history.md
+grep -n '^## ' repo_map.md
+grep -n '^## ' project_knowledge.md
+grep -n -i "keyword" repo_map.md
+grep -n -i "keyword" project_history.md
+sed -n 'START,ENDp' file.md
 ```
 
-Example:
+Full-read exception for large docs requires:
 
-```text
-1435 240426 - Added authentication middleware and updated route protection.
-Files touched:
-- src/middleware/auth.ts
-- src/routes/login.ts
-- tests/auth.middleware.test.ts
-```
+1. bounded lookup failed
+2. task cannot proceed without broader context
+3. agent states why
 
-Rules:
+## Work Rules
 
-- Use 24-hour time.
-- Use local machine time.
-- Keep the summary to one line.
-- List every file created, edited, deleted, moved, or renamed.
-- Do not omit documentation, config, test, script, generated source, moved, renamed, or deleted files.
-- Do not include secrets, tokens, passwords, API keys, or private credentials.
-- Newest entries should be appended at the bottom unless the repo already uses newest-first ordering.
-- Every completed work session must have an entry before the agent reports completion.
-- **Efficiency:** For routine session logging, append the new entry at the bottom **without** reading or reprinting the full file. For context at session start, read only **recent** entries (or the tail of the file), not the entire history, unless the task explicitly requires a full audit.
+- Make scoped changes only.
+- Prefer existing patterns.
+- Follow **Dependency Rule** before adding any new dependency.
+- Do not rename or move files without updating docs (see **Existing Repo Handling** when the repo already has structure).
+- Do not duplicate facts across docs.
+- If docs and code disagree, report the conflict.
+- If nothing materially changed, do not update docs.
 
----
+## Existing Repo Handling
 
-## `project_knowledge.md`
+If this repository already has an architecture, **do not** force renames or moves to match a greenfield layout. Map existing folders to the conceptual areas below and **document the mapping in `repo_map.md`** (append or extend the conventional layout section there).
 
-This file stores durable knowledge learned during agent sessions.
+Conceptual areas to map:
 
-It is not a work log, backlog, repo map, or status tracker.  
-It is for useful lessons that should make future agents smarter.
+- `core`
+- `modules` / `plugins`
+- `adapters`
+- `schemas`
+- `tests`
 
-Every agent must read this file before making changes.
+Update the mapping when layout or responsibilities change.
 
-Every agent must update this file after a completed session with useful durable knowledge learned, or explicitly note that no new durable knowledge was learned.
+## Dependency Rule
 
-Update `project_knowledge.md` when the agent learns:
+New dependencies require justification **before** they are added:
 
-- Important project conventions
-- Gotchas or failure patterns
-- Setup requirements
-- Validation commands that matter
-- Files that are easy to misunderstand
-- Architecture decisions
-- Dependency constraints
-- Environment assumptions
-- Known fragile areas
-- Human preferences specific to this project
-- Reusable debugging lessons
-- Anything a future agent should know before changing code
-- **Token and navigation tips:** e.g. smallest useful test/lint command, which subtrees matter for which features, paths safe to ignore for common tasks, effective `rg`/search scopes, and how to use `repo_map.md` to avoid broad codebase reads
+- **Why** it is needed (problem it solves).
+- **Where** it will be used (modules, entry points, build).
+- **Lighter alternatives** considered (stdlib, existing deps, small local code).
 
-Rules:
+No dependency may be added **only** for convenience.
 
-- Keep entries short and useful.
-- Do not duplicate `project_history.md`.
-- Do not use this as a backlog.
-- Do not store secrets, tokens, passwords, API keys, or private credentials.
-- Capture lessons that help the next agent avoid mistakes.
-- If no useful durable knowledge was learned, add a no-new-knowledge entry.
+## Testing Rule
 
----
+Every **module** (cohesive unit behind a clear boundary) must have tests covering:
 
-## `repo_map.md`
+- **Enabled path** — default or turned-on behavior works.
+- **Disabled path** — feature flag / optional integration off, or module inactive, behaves as specified.
+- **Failure isolation** — errors in dependencies or collaborators do not leak in undocumented ways; boundaries hold.
+- **Replacement compatibility** — when the module is swappable (adapter, backend, transport), tests cover the contract so replacements do not break silently.
 
-This file is the living map of the codebase.
+Skip items only when genuinely not applicable; say so in the PR or task notes.
 
-It should help any agent quickly understand:
+## Schema Rule
 
-- Where the main entry points are.
-- Where core logic lives.
-- Where UI components live.
-- Where APIs/routes live.
-- Where data/storage logic lives.
-- Where scripts/tooling live.
-- Where tests live.
-- Where config lives.
-- Which generated/runtime files matter.
-- Which files are deprecated or obsolete.
+Any **data shape** change (API payloads, config files, DB columns, persisted events, interchange formats) must include:
 
-Update `repo_map.md` when:
+- **Schema version** (bump or explicit version field as appropriate for the system).
+- **Migration notes** (how to move from old to new shape).
+- **Backward compatibility notes** (what old producers/consumers may still send; deprecation timeline if any).
 
-- A new code file is added.
-- A code file is changed in a way that affects behavior, structure, ownership, or purpose.
-- A file is moved or renamed.
-- A module, service, route, component, script, test, or config file changes role.
-- A public interface, API contract, schema, command, or entrypoint changes.
-- A generated/runtime file becomes important enough to track.
-- A file becomes deprecated or obsolete.
+## Documentation Rules
 
-Rules:
+After meaningful changes:
 
-- Keep descriptions short but useful.
-- Update only the sections affected by the work.
-- Do not turn this into full documentation.
-- If a file is obsolete, mark it deprecated or remove it if deleted.
-- The map must help the next agent know where to work.
-- **Use this file as the primary navigation aid** before opening large subtrees or guessing paths; prefer map-guided partial reads over scanning the whole repository.
+| Change | Required update |
+|---|---|
+| task completed | `project_status.md`, append `project_history.md` |
+| behavior changed | `project_status.md`, append `project_history.md` |
+| architecture changed | append `repo_map.md` delta, update `project_memory/index.json`, append `project_history.md` |
+| durable lesson found | append `project_knowledge.md`, update `project_memory/index.json` if navigation changed |
+| blocker found | `project_status.md`, append `project_history.md` |
+| docs created | `project_status.md`, `project_memory/index.json`, append `project_history.md` |
+| both `project_history.md` and `.project_intel/` touched for same change | same `YYYY-MM-DD` + same one-line summary in both (see **Dual chronology**); append audit to `project_history.md` |
 
----
+## Write Rules
 
-# Mandatory Workflow
+- Append new history entries only.
+- Append new knowledge notes only.
+- Append repo-map deltas unless full regeneration is explicitly requested.
+- Keep `project_status.md` short and current.
+- Keep `project_memory/index.json` compact and valid JSON.
+- Update `project_memory/index.json` after structural/doc navigation changes.
+- Never rewrite full `project_history.md` just to add an entry.
+- Never regenerate `repo_map.md` unless requested.
 
-Every agent session must follow this order:
+## Continuity Doc Format Invariants
 
-```text
-1. Read AGENTS.md.
-2. Read project_goal.md.
-3. Read project_status.md.
-4. Skim recent project_history.md (latest entries or tail; avoid reading the entire file unless a full audit is required).
-5. Read project_knowledge.md (focus sections relevant to the task if the file is long).
-6. Read repo_map.md; use it to plan which code paths to open.
-7. Confirm the task aligns with project_goal.md.
-8. Understand the current project state from project_status.md.
-9. Cross-check recent history insights against project_status.md (still avoid full history read unless needed).
-10. Understand the current task; apply relevant lessons from project_knowledge.md (step 5) without rereading the whole file unless necessary.
-11. Inspect only the files needed for the task (per repo_map.md and targeted search—never the whole codebase by default).
-12. Make the smallest safe change.
-13. Run relevant validation.
-14. Update project_goal.md if the north star shifted.
-15. Update project_status.md if project state changed.
-16. Update project_history.md by appending one new entry at the bottom (append-only; do not full-read the file for this step).
-17. Update project_knowledge.md with useful durable lessons from the session (include token/nav tips when applicable), or note that no new durable knowledge was learned.
-18. Update repo_map.md if code structure changed.
-19. Report what changed, what was tested, and any blockers.
-```
+- Keep one canonical top-level title per continuity doc (`# ...`); if a historical alias remains, label it `Legacy Header Alias (Preserved)`.
+- Keep a navigation section near the top of each continuity doc (`Quick Navigation`, `Navigation Index`, or `Directive Navigation Index`).
+- Preserve legacy content when restructuring; re-home it under explicit legacy labels instead of deleting it.
+- `project_history.md` and `project_knowledge.md` remain append-oriented; do not rewrite or remove prior entries.
+- Keep template/bootstrap scaffolding explicitly separated from live state sections.
+- If duplicate headings are retained for compatibility, label later copies `Legacy duplicate (preserved)` and treat the earliest canonical section as source-of-truth for updates.
+- When continuity doc navigation changes, update `project_memory/index.json` (`agent_navigation`) in the same task.
 
----
+## Final Response Must Include
 
-# Work Rules
+Completion-style report. Include each item; use “n/a” or one line when not applicable.
 
-Agents must:
+- **Files changed** — code and docs paths.
+- **Docs read** — which project docs or files were consulted (bounded reads count).
+- **Docs changed** — created, updated, or appended; say if none.
+- **Rules added or changed** — Cursor rules, `AGENTS.md` policy, hooks, etc.; say if none.
+- **Architecture mapping** — if layout or folder roles were discovered or changed, point to the `repo_map.md` section or delta; say if none.
+- **Unresolved risks** — known follow-ups or merge/deploy risks; say “none known.”
+- **Commands run** — with enough context to reproduce (cwd, tool).
+- **Command results** — pass/fail and short outcome; say if no commands were run.
+- **Blockers** — if any.
 
-- Prefer small, controlled changes.
-- Avoid broad refactors unless explicitly requested.
-- **Use minimal tokens:** default to the narrowest reads, searches, and edits that still satisfy the task and safety; avoid dumping or reading entire large files or trees without cause.
-- Read only the files needed for the task after the mandatory startup files; **use `repo_map.md` first** to choose those paths instead of exploratory full-repo passes.
-- Preserve existing behavior unless the task requires changing it.
-- Keep changes easy to review.
-- Update documentation when behavior, structure, commands, config, or usage changes.
-- Run the narrowest relevant validation possible.
-- Clearly report validation results.
-- Clearly report any blockers, risks, or assumptions.
-- Stop and report the conflict if a requested task conflicts with `project_goal.md`.
-- Update `project_goal.md` first if the human changes the project direction.
-- Update `project_status.md` when the current project state changes.
-- Update `project_history.md` for every completed work session.
-- Update `project_knowledge.md` after every completed session with useful durable lessons, or explicitly stating no durable knowledge was learned.
-- Update `repo_map.md` when code structure, behavior, ownership, purpose, entrypoints, APIs, schemas, config, scripts, or tests change.
-
----
-
-# Validation Rules
-
-Before reporting completion, the agent must verify:
-
-```text
-[ ] project_goal.md was reviewed
-[ ] project_status.md was reviewed
-[ ] project_history.md was reviewed
-[ ] project_knowledge.md was reviewed
-[ ] repo_map.md was reviewed
-[ ] project_goal.md updated if the north star shifted
-[ ] project_status.md updated if project state changed
-[ ] project_history.md updated
-[ ] project_knowledge.md updated with useful durable lessons, or marked as no new durable knowledge
-[ ] repo_map.md updated if code files were added, moved, renamed, or behaviorally changed
-[ ] Tests or validation were run, or reason for not running was documented
-[ ] All changed files are listed in the final report
-[ ] No unrelated files were modified
-```
-
-Validation may include, depending on the project (update `project_knowledge.md` when a canonical stack exists):
-
-```text
-npm test
-npm run lint
-npm run build
-pytest
-ruff check .
-mypy .
-go test ./...
-cargo test
-dotnet test
-powershell -ExecutionPolicy Bypass -File ./scripts/validate.ps1
-```
-
-Use project-specific commands when they exist.
-
----
-
-# Required Final Agent Report
-
-At the end of the session, report:
-
-```text
-Summary:
-- One-line summary of completed work.
-
-Files changed:
-- path/to/file1.ext
-- path/to/file2.ext
-
-Validation:
-- Command run:
-- Result:
-
-Docs updated:
-- project_goal.md:
-- project_status.md:
-- project_history.md:
-- project_knowledge.md:
-- repo_map.md:
-
-Blockers / risks:
-- None
-```
-
-If validation was not run, state why.
-
----
-
-# Hard Constraints
-
-Agents must not:
-
-- Skip reading `project_goal.md`.
-- Skip reading `project_status.md`.
-- Skip the required review of `project_history.md` (but **do not** interpret this as requiring a full-file read—recent entries or tail are enough unless a full audit is needed).
-- Skip reading `project_knowledge.md`.
-- Skip reading `repo_map.md`.
-- **Read or reload the entire `project_history.md` solely to append** a new session entry—append at the bottom without a full read.
-- **Default to whole-repository reads or broad directory listing** when `repo_map.md` and targeted search can narrow the scope.
-- Make code changes before reading required context.
-- Make changes that conflict with `project_goal.md` without reporting the conflict.
-- Allow the project north star to shift without updating `project_goal.md`.
-- Allow project state to change without updating `project_status.md`.
-- Finish a session without updating `project_history.md`.
-- Finish a session without updating `project_knowledge.md` or explicitly stating no durable knowledge was learned.
-- Store temporary task notes in `project_knowledge.md`.
-- Duplicate `project_history.md` entries inside `project_knowledge.md`.
-- Leave changed files undocumented.
-- Update code without updating `project_history.md`.
-- Add, move, rename, or behaviorally change code files without checking whether `repo_map.md` needs updates.
-- Store secrets, tokens, passwords, API keys, or private credentials in repo docs.
-- Commit local runtime state, generated caches, logs, databases, or machine-specific files unless explicitly required.
-- Perform broad refactors unless explicitly requested.
-- Delete or rename files without documenting the reason.
-- Run destructive commands without explicit approval.
-- Modify unrelated files while completing a task.
-
----
-
-# Operating Principle
-
-Prefer small, controlled, well-documented changes.
-
-The project goal is the north star.  
-The project status is the live snapshot.  
-The project history is the audit trail.  
-The project knowledge file is the durable lesson memory.  
-The repo map is the navigation layer.
-
-The next agent should be able to understand:
-
-```text
-What changed.
-Why it changed.
-Which files were touched.
-How to validate it.
-Where the related code lives.
-What state the project is currently in.
-What durable lessons are known.
-What still needs attention.
-```
+If the agent relied on a **large full-read** of a normally bounded doc, say which file and **why** the exception was needed.
 
 <!-- hermes-project-memory-v1 -->
 Compact project memory workflow:

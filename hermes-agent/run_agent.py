@@ -813,6 +813,7 @@ class AIAgent:
         tool_delay: float = 1.0,
         enabled_toolsets: List[str] = None,
         disabled_toolsets: List[str] = None,
+        disabled_tools: List[str] = None,
         save_trajectories: bool = False,
         verbose_logging: bool = False,
         quiet_mode: bool = False,
@@ -875,6 +876,7 @@ class AIAgent:
             tool_delay (float): Delay between tool calls in seconds (default: 1.0)
             enabled_toolsets (List[str]): Only enable tools from these toolsets (optional)
             disabled_toolsets (List[str]): Disable tools from these toolsets (optional)
+            disabled_tools (List[str]): Disable specific tools by function name (optional)
             save_trajectories (bool): Whether to save conversation trajectories to JSONL files (default: False)
             verbose_logging (bool): Enable verbose logging for debugging (default: False)
             quiet_mode (bool): Suppress progress output for clean CLI experience (default: False)
@@ -1094,6 +1096,7 @@ class AIAgent:
         # Store toolset filtering options
         self.enabled_toolsets = enabled_toolsets
         self.disabled_toolsets = disabled_toolsets
+        self.disabled_tools = [str(t).strip() for t in (disabled_tools or []) if str(t).strip()]
         
         # Model response configuration
         self.max_tokens = max_tokens  # None = use model default
@@ -1429,6 +1432,7 @@ class AIAgent:
         self.tools = get_tool_definitions(
             enabled_toolsets=enabled_toolsets,
             disabled_toolsets=disabled_toolsets,
+            disabled_tools=self.disabled_tools,
             quiet_mode=self.quiet_mode,
         )
         
@@ -1445,6 +1449,8 @@ class AIAgent:
                     print(f"   ✅ Enabled toolsets: {', '.join(enabled_toolsets)}")
                 if disabled_toolsets:
                     print(f"   ❌ Disabled toolsets: {', '.join(disabled_toolsets)}")
+                if self.disabled_tools:
+                    print(f"   ❌ Disabled tools: {', '.join(self.disabled_tools)}")
         elif not self.quiet_mode:
             print("🛠️  No tools loaded (all tools filtered out or unavailable)")
         

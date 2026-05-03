@@ -1,7 +1,120 @@
 # Project knowledge (animus)
 
-Durable lessons for future agents. Not a backlog or duplicate of `project_history.md`.
+## Legacy Header Alias (Preserved)
 
+Durable project lessons only.
+
+Do not full-read by default.
+
+## Navigation Index
+
+- Intake and operating template: `## New Notes Inbox`, `## Rules`
+- Active durable knowledge blocks: section headers dated `(...)`
+- Historical archive cluster: `## 290426 — Initial repo` onward
+- Repeated legacy sections intentionally preserved under `Legacy duplicate` labels
+- Fast lookup pattern: `rg "^## " project_knowledge.md` then bounded `ReadFile` slices
+
+
+## Related Docs
+
+Current state:
+
+- `project_status.md`
+
+History:
+
+- `project_history.md`
+
+Repo navigation:
+
+- `repo_map.md`
+- `project_memory/index.json`
+
+## Read Policy
+
+Use:
+
+```bash
+grep -n '^## ' project_knowledge.md
+grep -n -i "keyword" project_knowledge.md
+sed -n 'START,ENDp' project_knowledge.md
+```
+
+## Durable Rules
+
+- Add only rules that should survive future sessions.
+
+## Conventions
+
+- Add stable coding, naming, architecture, and workflow conventions.
+
+## Known Pitfalls
+
+Add recurring problems, causes, and fixes.
+
+Format:
+
+```md
+### YYYY-MM-DD HH:MM — short pitfall name
+
+Problem:
+- concise description
+
+Cause:
+- concise cause
+
+Fix:
+- concise fix
+```
+
+## Validation Notes
+
+- Add commands or checks that are repeatedly useful.
+
+## New Notes Inbox
+
+Append new durable facts here first.
+
+### 2026-05-03 — Governance CI rollout (planned)
+
+Fact:
+
+- Future lint/CI should verify: classification block exists in agent/tool outputs where required; core files are not modified during feature-scoped tasks; module layout conventions are followed.
+- When CI is introduced: **warn-only** first, then **enforce in stages** (classification → core boundary → module structure).
+
+Reason:
+
+- Avoids false positives and disruption while conventions and corpora stabilize.
+
+Format:
+
+```md
+### YYYY-MM-DD HH:MM — short title
+
+Fact:
+- concise durable fact
+
+Reason:
+- why this matters
+```
+
+## Rules
+
+Agents must:
+
+- append new knowledge only
+- keep entries concise
+- add only durable facts
+- update `project_memory/index.json` if navigation/indexing changes
+- avoid storing temporary task status here
+
+Do not:
+
+- duplicate history
+- duplicate status
+- duplicate `project_memory/index.json`
+- paste logs
+- add speculative notes
 ---
 
 ## mitmproxy + ANIMUS / Hermes gateway (010526)
@@ -59,6 +172,7 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 
 - **SQLite system prompt reload (gateway):** In **`hermes-agent/run_agent.py`** `run_conversation`, the path that sets **`_cached_system_prompt`** from **`SessionDB.get_session(...).system_prompt`** must **not** require **`conversation_history`** to be non-empty. The HTTP gateway constructs a **new** `AIAgent` per message; gating on history caused every turn to fall through to **`_build_system_prompt()`** again (~multi‑k token core rebuild + unstable prefix cache) even when **`sessions.system_prompt`** already held the merged snapshot — symptom: similar **input** token totals on every turn instead of growing mainly with thread length. **Validation:** `PYTEST_ADDOPTS='' pytest tests/run_agent/test_run_agent.py::TestSystemPromptStability`.
 - **Client:** **`ensureHermesSessionIds(convs)`** backfills **`session_id`** (UUID) for any conv missing it (legacy data, server import). Runs after localStorage load (persist + **`queueMicrotask(_scheduleServerSync)`** so sync helpers exist), after **`applyServerConversationsList`**, and before each **`send()`** via **`ensureHermesSessionIds([conv]); save()`**. Chat JSON includes **`conversation_id: conv.id`**. **`normalizeUsageTokens`** reads **`input_tokens` / `output_tokens`** when Codex-style.
+- **Project-scoped chat ID UI (030526):** Use existing Hermes conversation **`session_id`** as the chat identity source and render it as **`<project path> ID<session_id>`**. Header context bar shows the full value for the active project chat; sidebar rows show a compact form and tooltip with the full value. This can only appear for chats that already exist (new/uncreated chats have no session id yet).
 - **Gateway:** **`api_server._derive_chat_session_id`** now hashes **`conversation_id`** into the seed when **`X-Hermes-Session-Id`** is absent so two chats with the same first user line do not share **`api-{digest}`**. Bogus header values **`undefined` / `null` / `none` / `[object object]`** are cleared so the derive path can run.
 - **Prompt size:** **`buildMessages`** project system block is shorter (same facts, fewer tokens than the old multi-paragraph template). You cannot honestly shrink provider counts below real **tools + system + history**; new chats still pay tool/schema overhead.
 - **Project system once per Hermes session:** **`run_agent`** persists **core + ephemeral_system_prompt** into **`sessions.system_prompt`** when the session row has no stored prompt yet. **`buildMessages`** omits the ANIMUS project **system** block only when **`hermes_has_stored_system_prompt === true`**, **`hermes_stored_prompt_confirmed_session_id === session_id`**, and preflight/SSE agree with SQLite (see **`reconcileHermesStoredPromptFromServer`**). Non-stream responses include **`X-Hermes-Has-Stored-System-Prompt`**. New **`session_id`** clears **`hermes_has_stored_system_prompt`**, **`hermes_stored_prompt_confirmed_session_id`**, and **`hermes_project_session_primed`**.
@@ -116,12 +230,12 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 ## Default **General** project (300426)
 
 - **`server.ensure_animus_general_project()`** (in **`animus-chat/server.py`**): creates **`<projects_sync_root>/general`** and appends a **`projects.json`** row (stable id **`00000000-0000-4000-8000-000000000001`**, display name **General**) when no row already points at that resolved path. Runs at **lifespan startup**, on **`POST /api/animus/client-config`** when **`projects_dir`** is saved, and from the wizard after **`POST /api/setup/save-config`** / **`POST /api/setup/complete`** when **`projects_dir`** is non-empty (via **`importlib.import_module("server")`** in **`wizard_routes.py`**).
-## Skills availability across models (300426)
+## Legacy duplicate (preserved) — Skills availability across models (300426)
 
 - **API-server hardening:** `hermes-agent/gateway/platforms/api_server.py` now force-adds the `skills` toolset in `_create_agent`, so `skills_list` / `skill_view` / `skill_manage` stay available even if `platform_toolsets.api_server` was saved without `skills`.
 - **ANIMUS chat guidance flag:** `animus-chat/app/index.html` regular chat sends include `animus_skill_mode: true`; `animus-chat/server.py` consumes that flag and injects a concise system note reminding the model to reuse existing skills and create/update one with `skill_manage` when workflows repeat. Plan pipeline calls do not set the flag, so plan-stage “no tools” prompts are unaffected.
 
-## Project bootstrap mirrors (300426)
+## Legacy duplicate (preserved) — Project bootstrap mirrors (300426)
 
 - **New project governance sync:** `agent.project_workspace.ensure_workspace_files()` now ensures `AGENTS.md`, `CLAUDE.md`, and `.cursorrules` exist for each project root and keeps them mirrored from the project's existing policy source (priority: `AGENTS.md` → `CLAUDE.md` → `.cursorrules`).
 - **Workspace continuity files:** the same bootstrap now creates `project_status.md` and `project_knowledge.md` when missing, in addition to history/map/goal files, so newly added projects start with the full continuity set.
@@ -131,12 +245,12 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Workspace editor parity:** ANIMUS project workspace API/UI now treats `project_status` and `project_knowledge` as first-class editable files (not just auto-created files), so operators can maintain the continuity set directly from the sidebar without dropping to shell/file tools.
 - **Help source of truth update:** `docs/animus-user-guide.md` now explicitly documents continuity auto-bootstrap, refresh-time governance/continuity repair, and cron `workdir` continuity enforcement; this keeps Help answers aligned with the token-saving navigation strategy (goal/status/knowledge/map first, broad scans second).
 
-## Plan pipeline Stop (300426)
+## Legacy duplicate (preserved) — Plan pipeline Stop (300426)
 
 - **Clarification modal blocks the Plan toolbar:** **`#planClarifyModal`** full-screen overlay sits above **`#planStopBtn`**, so users could not cancel during question waits. **Fix:** footer button **`#planClarifyModalStop`** calls **`requestPlanPipelineStop()`** (sets **`planStopRequested`**, **`planAbortClarifyModalPromise()`**, **`planAbortController.abort()`**) — same path as toolbar Stop. Toolbar Stop unchanged for non-modal stages.
 - **No header “Clear” on Plan:** Removed **`#planClearBtn`**; clearing local idea/output/draft is via saved-draft **−** ( **`planDraftDeleteBtn`** → **`planClearDraft()`** ) and listing row deletes. While a run is in flight, use **Stop** (toolbar or clarification modal footer), not a separate clear control.
 
-## Project list order + merge (300426)
+## Legacy duplicate (preserved) — Project list order + merge (300426)
 
 - **Sidebar reorder:** Each **`.project-item`** is **`draggable`** (gear **`draggable=false`** + **`dragstart` `preventDefault`** so Edit still works). Drop on another row; **top / bottom half** = insert before / after. **⋮⋮** is visual only (`pointer-events:none`). Order: **`save()`** + **`flushProjectsToServer()`** → **`POST /api/projects`**.
 - **Server `server._merge_projects_onto_client`:** Incoming POST array order is canonical for shared keys; disk-only keys append in disk order — so reorder survives merge and multi-client.
@@ -148,7 +262,7 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Cron list actions:** **`renderCron()`** builds **`cron-btn cron-btn--icon`** buttons with inline SVGs; **`cronJobActionIconSvgs()`** returns shared strings. **Run now** = stick runner (head **`circle`** + torso + forward/back **arms** + bent front leg + rear leg). **Pause** when active / **Play** when paused (same **`pause`/`resume`** API as before). **Run now** uses **`innerHTML`** save/restore while loading (not **`textContent`**). **Add job:** **`#addCronBtn`** only — **`addCronBtnLabel`** removed; **`.cron-jobs-section-label .add-project-btn`** shares Projects **+** styling.
 - **PWA / desktop settings sync:** **`POST /api/animus/client-config`** accepts **`{ ui_settings }`** (full **`settings`** snapshot, JSON-safe, ~450KB cap) → **`config.json`** key **`animus_ui_settings`**; **`GET`** returns **`ui_settings`**. Client: **`applyAnimusClientConfigFromJson`** merges **`ui_settings`** then legacy top-level fields; **`save()`** debounces **`schedulePersistUiSettingsToServer`** (~900ms); **`pullClientConfigFromServer()`** on **`visibilitychange`** (with convs/projects). **`_applyingServerClientConfig`** skips pushing while applying server JSON. Legacy **`wake_lock`**, **`inference_models`**, cron/TTS POSTs still update **`animus_ui_settings`** subsets on the server.
 
-## Default **General** project (300426)
+## Legacy duplicate (preserved) — Default **General** project (300426)
 
 - **`server.ensure_animus_general_project()`** (in **`animus-chat/server.py`**): creates **`<projects_sync_root>/general`** and appends a **`projects.json`** row (stable id **`00000000-0000-4000-8000-000000000001`**, display name **General**) when no row already points at that resolved path. Runs at **lifespan startup**, on **`POST /api/animus/client-config`** when **`projects_dir`** is saved, and from the wizard after **`POST /api/setup/save-config`** / **`POST /api/setup/complete`** when **`projects_dir`** is non-empty (via **`importlib.import_module("server")`** in **`wizard_routes.py`**).
 - **Client:** **`findAnimusDefaultGeneralProject()`** matches **`PROJECTS_ROOT + '/general'`** (case-insensitive, slashes normalised). After **`syncProjectsFromRoot()`**, if found and **`sessionStorage`** lacks **`animus_general_workspace_session_v1`**, sets it and calls **`enterProjectView`** so each **browser session** starts in General once.
@@ -275,7 +389,7 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Gateway `_run_agent` usage dict:** Prefer **`run_conversation` result** `prompt_tokens` / `completion_tokens` / `total_tokens` for the SSE finish chunk (see `hermes-agent/gateway/platforms/api_server.py`) so streamed totals match the turn result object.
 - **Codex streaming usage (300426):** `responses.stream()` + `get_final_response()` often returns **`usage=None`** even when terminal events include counts. **`run_agent._run_codex_stream`** now copies **`usage`** from **`response.completed` / `response.incomplete` / `response.failed`** events onto the final response (`_codex_merge_stream_usage`) so `session_*` counters and ANIMUS **`token_usage.jsonl`** get non-zero values when the API reports them.
 
-## Conventions
+## Legacy duplicate (preserved) — Conventions
 
 - **Session start:** Read `AGENTS.md` then `project_goal.md`, `project_status.md`, `project_history.md`, this file, and `repo_map.md` before code edits.
 - **Session end:** Append `project_history.md`; update this file with new lessons or a no-new-knowledge note; refresh `project_status.md` / `repo_map.md` when state or layout changes.
@@ -298,6 +412,8 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Default port:** `CHAT_PORT` / `PORT` default **3001** in `server.py`; live Hermes on 3000 stays untouched.
 
 ---
+
+## Historical Notes Archive
 
 ## 290426 — Initial repo
 
@@ -448,6 +564,28 @@ Durable lessons for future agents. Not a backlog or duplicate of `project_histor
 - **Regression guard:** **`hermes-agent/tests/hermes_cli/test_provider_registry_external_shims.py`** — for every **`hermes_cli.auth.PROVIDER_REGISTRY`** entry with **`auth_type == "external_process"`**, assert **`HERMES_OVERLAYS`** contains the id and **`resolve_provider_full`** succeeds. Add a matching **`HERMES_OVERLAYS`** row whenever a new subprocess inference provider is added to **`PROVIDER_REGISTRY`**.
 - **After provider resolves:** Empty replies can still mean missing **`cursor-agent`** on **`PATH`**, **`CURSOR_API_KEY`**, or logged-in **`cursor`** CLI — see gateway logs and **`hermes doctor`**.
 - **Quick checks:** (1) **`python3 -c "import os; os.environ.setdefault('PYTHONPATH','hermes-agent'); from hermes_cli.providers import resolve_provider_full; print(resolve_provider_full('cursor-agent',{},None))"`** from repo root (with **`PYTHONPATH=hermes-agent`**) should return a **`ProviderDef`**, not **`None`**. (2) **`curl -sS http://127.0.0.1:3001/api/version | jq .gateway_openai_models_ok,.gateway_bearer_source`**. (3) Non-stream probe with the same JSON body the UI sends — surfaces auth / CLI errors once provider resolution works.
+
+## Skills/Tools prompt hard-blocking (030526)
+
+- **Root cause from captures:** Disabling skills in UI previously removed only a tiny guidance note; the full tools schema block was still sent to Hermes provider payloads, so token cost stayed high.
+- **Hard-block path now:** ANIMUS stores disabled tool names in `animus_ui_settings.disabled_tools`, injects `hermes_disabled_tools` on chat requests, gateway `api_server` forwards this into `AIAgent(disabled_tools=...)`, and `model_tools.get_tool_definitions()` removes those tools before schema assembly.
+- **Verification snapshots:** `prompt_captures/hermes_internal_*.json` now show expected schema counts by scenario: all tools off → 0 tools; some tools on (bare minimum preset) → only coding subset; all on → full set.
+- **Skills/Tools UI split:** `animus-chat/app/index.html` now has Skills/Tools sub-tabs; Tools includes per-tool toggles and bulk actions (disable all / enable all / bare minimum coding tools).
+
+## Project binding semantics (030526)
+
+- **Session identity:** Hermes chat continuity is keyed by `X-Hermes-Session-Id` (ANIMUS `conv.session_id`), not by project UUID.
+- **Project context binding:** ANIMUS also sends `hermes_project_path`; first turn persists project context into session `system_prompt` snapshot, and gateway appends tool history into that project workspace path.
+- **Hardening added:** When a project's effective workspace root changes (workspace files path or fallback project path), ANIMUS now rotates `session_id` for chats in that project and clears `hermes_has_stored_system_prompt` + related flags so Hermes rebuilds prompt context against the new root.
+
+## Service watchdog timer (030526)
+
+- Added user systemd watchdog units to ensure ANIMUS + Hermes gateway are up and HTTP-healthy:
+  - `systemd/animus-hermes-healthcheck.service`
+  - `systemd/animus-hermes-healthcheck.timer`
+  - `scripts/check-animus-hermes.sh`
+- Timer scheduling is strict top-of-hour (`OnCalendar=hourly`) with jitter (`RandomizedDelaySec=2min`) and persistence.
+- `scripts/sync-dev-systemd.sh` now installs/enables this timer automatically.
 
 ## No-new-knowledge template
 

@@ -818,6 +818,7 @@ class APIServerAdapter(BasePlatformAdapter):
         model_override: Optional[str] = None,
         provider_override: Optional[str] = None,
         base_url_override: Optional[str] = None,
+        disabled_tools: Optional[List[str]] = None,
     ) -> Any:
         """
         Create an AIAgent instance using the gateway's runtime config.
@@ -893,6 +894,7 @@ class APIServerAdapter(BasePlatformAdapter):
             verbose_logging=False,
             ephemeral_system_prompt=ephemeral_system_prompt or None,
             enabled_toolsets=enabled_toolsets,
+            disabled_tools=[str(t).strip() for t in (disabled_tools or []) if str(t).strip()],
             session_id=session_id,
             platform="api_server",
             stream_delta_callback=stream_delta_callback,
@@ -965,6 +967,38 @@ class APIServerAdapter(BasePlatformAdapter):
                 }
             ],
         })
+
+    async def _handle_tools_list(self, request: "web.Request") -> "web.Response":
+        """GET /api/tools/list — runtime-resolved tools for API server platform."""
+        auth_err = self._check_auth(request)
+        if auth_err:
+            return auth_err
+        try:
+            agent = self._create_agent()
+            rows: List[Dict[str, Any]] = []
+            for td in list(getattr(agent, "tools", []) or []):
+                if not isinstance(td, dict):
+                    continue
+                fn = td.get("function")
+                if not isinstance(fn, dict):
+                    continue
+                nm = str(fn.get("name") or "").strip()
+                if not nm:
+                    continue
+                rows.append(
+                    {
+                        "name": nm,
+                        "description": str(fn.get("description") or ""),
+                    }
+                )
+            rows.sort(key=lambda r: r["name"])
+            return web.json_response({"tools": rows})
+        except Exception as exc:
+            logger.exception("api tools list failed")
+            return web.json_response(
+                _openai_error(f"Internal server error: {exc}", err_type="server_error"),
+                status=500,
+            )
 
     async def _handle_chat_session_prompt_status(self, request: "web.Request") -> "web.Response":
         """GET /v1/chat/session-prompt-status — SQLite truth for ANIMUS preflight before omitting project system.
@@ -1146,6 +1180,15 @@ class APIServerAdapter(BasePlatformAdapter):
         hb = body.get("hermes_base_url")
         provider_ov = hp.strip() if isinstance(hp, str) and hp.strip() else None
         base_ov = hb.strip() if isinstance(hb, str) and hb.strip() else None
+        disabled_tools: List[str] = []
+        raw_disabled_tools = body.get("hermes_disabled_tools")
+        if isinstance(raw_disabled_tools, list):
+            for item in raw_disabled_tools:
+                nm = str(item or "").strip()
+                if nm:
+                    disabled_tools.append(nm)
+        if disabled_tools:
+            disabled_tools = sorted(set(disabled_tools))
 
         project_hist_root = _resolve_hermes_project_path_for_history(body)
         _ensure_hermes_project_workspace(project_hist_root)
@@ -1212,6 +1255,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 model_override=agent_model_override,
                 provider_override=provider_ov,
                 base_url_override=base_ov,
+                disabled_tools=disabled_tools,
             ))
 
             return await self._write_sse_chat_completion(
@@ -1230,6 +1274,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 model_override=agent_model_override,
                 provider_override=provider_ov,
                 base_url_override=base_ov,
+                disabled_tools=disabled_tools,
             )
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -2514,6 +2559,7 @@ class APIServerAdapter(BasePlatformAdapter):
         model_override: Optional[str] = None,
         provider_override: Optional[str] = None,
         base_url_override: Optional[str] = None,
+        disabled_tools: Optional[List[str]] = None,
     ) -> tuple:
         """
         Create an agent and run a conversation in a thread executor.
@@ -2539,6 +2585,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 model_override=model_override,
                 provider_override=provider_override,
                 base_url_override=base_url_override,
+                disabled_tools=disabled_tools,
             )
             if agent_ref is not None:
                 agent_ref[0] = agent
@@ -2850,6 +2897,7 @@ class APIServerAdapter(BasePlatformAdapter):
             self._app.router.add_get("/health/detailed", self._handle_health_detailed)
             self._app.router.add_get("/v1/health", self._handle_health)
             self._app.router.add_get("/v1/models", self._handle_models)
+            self._app.router.add_get("/api/tools/list", self._handle_tools_list)
             self._app.router.add_get("/v1/chat/session-prompt-status", self._handle_chat_session_prompt_status)
             self._app.router.add_post("/v1/chat/completions", self._handle_chat_completions)
             self._app.router.add_post("/v1/responses", self._handle_responses)

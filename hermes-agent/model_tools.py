@@ -202,6 +202,7 @@ _LEGACY_TOOLSET_MAP = {
 def get_tool_definitions(
     enabled_toolsets: List[str] = None,
     disabled_toolsets: List[str] = None,
+    disabled_tools: List[str] = None,
     quiet_mode: bool = False,
 ) -> List[Dict[str, Any]]:
     """
@@ -212,6 +213,7 @@ def get_tool_definitions(
     Args:
         enabled_toolsets: Only include tools from these toolsets.
         disabled_toolsets: Exclude tools from these toolsets (if enabled_toolsets is None).
+        disabled_tools: Exclude specific tool names regardless of toolset selection.
         quiet_mode: Suppress status prints.
 
     Returns:
@@ -265,6 +267,13 @@ def get_tool_definitions(
     # all check the tool registry for plugin-provided toolsets.  No bypass
     # needed; plugins respect enabled_toolsets / disabled_toolsets like any
     # other toolset.
+
+    if disabled_tools:
+        blocked = {str(t).strip() for t in disabled_tools if str(t).strip()}
+        if blocked:
+            tools_to_include.difference_update(blocked)
+            if not quiet_mode:
+                print(f"🚫 Disabled tools: {', '.join(sorted(blocked))}")
 
     # Ask the registry for schemas (only returns tools whose check_fn passes)
     filtered_tools = registry.get_definitions(tools_to_include, quiet=quiet_mode)

@@ -197,6 +197,8 @@ rm -f "${ZIP}"
 # - project_*.md, repo_map.md, AGENTS.md, CLAUDE.md, .cursorrules, .cursor/, setup_repo.md,
 #   animus-chat copies of repo_map / project_history / setup_repo; hermes-agent/AGENTS.md (upstream dev doc).
 zip -qr "${ZIP}" . \
+  -x".hermes/*" \
+  -x"./.hermes/*" \
   -x"*.git/*" \
   -x"*__pycache__/*" \
   -x"*.pyc" \
@@ -208,9 +210,13 @@ zip -qr "${ZIP}" . \
   -x"./hermes-agent/.envrc" \
   -x"./data/*" \
   -x"./animus-chat/data/*" \
+  -x"animus-chat/.venv/*" \
   -x"./animus-chat/.venv/*" \
   -x'./animus-chat/${HOME}/*' \
   -x"./animus-chat/whoami" \
+  -x"hermes-agent/venv/*" \
+  -x"hermes-agent/.venv/*" \
+  -x"hermes-agent/.e2e-venv/*" \
   -x"./hermes-agent/venv/*" \
   -x"./hermes-agent/.venv/*" \
   -x"./hermes-agent/.e2e-venv/*" \

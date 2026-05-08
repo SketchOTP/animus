@@ -247,6 +247,124 @@ class TestSSEAgentCancelOnDisconnect:
 
         asyncio.run(run())
 
+    def test_peer_transport_closing_cancels_before_queue_data(self):
+        """If ``request.transport.is_closing()`` is true during an idle wait
+        (no queue items yet), the writer must interrupt without relying on
+        ``response.write`` raising — parity with run-events SSE."""
+        adapter = _make_adapter()
+
+        stream_q = queue.Queue()
+
+        agent_done = asyncio.Event()
+
+        async def fake_agent():
+            await agent_done.wait()
+            return {"final_response": "done"}, {}
+
+        mock_agent = MagicMock()
+        mock_agent.interrupt = MagicMock()
+
+        async def run():
+            from aiohttp import web
+
+            agent_task = asyncio.ensure_future(fake_agent())
+            agent_ref = [mock_agent]
+
+            req = MagicMock()
+            req.headers = {}
+            trans = MagicMock()
+            trans.is_closing = MagicMock(return_value=True)
+            req.transport = trans
+
+            mock_response = AsyncMock(spec=web.StreamResponse)
+            mock_response.write = AsyncMock()
+            mock_response.prepare = AsyncMock()
+
+            with patch("gateway.platforms.api_server.web.StreamResponse",
+                       return_value=mock_response):
+                await adapter._write_sse_chat_completion(
+                    req, "cmpl-transport", "gpt-4", 1234567890,
+                    stream_q, agent_task, agent_ref,
+                )
+
+            mock_agent.interrupt.assert_called_once_with("SSE client disconnected")
+            assert agent_task.cancelled() or agent_task.done()
+            agent_done.set()
+
+        asyncio.run(run())
+
+    def test_peer_transport_closing_cancels_responses_before_queue_data(self):
+        """``/v1/responses`` SSE: if ``transport.is_closing()`` during idle wait,
+        interrupt the agent without relying on ``write`` raising — parity with
+        chat completions SSE."""
+        adapter = _make_adapter()
+
+        stream_q = queue.Queue()
+
+        agent_done = asyncio.Event()
+
+        async def fake_agent():
+            await agent_done.wait()
+            return {"final_response": "done"}, {}
+
+        mock_agent = MagicMock()
+        mock_agent.interrupt = MagicMock()
+
+        async def run():
+            from aiohttp import web
+
+            agent_task = asyncio.ensure_future(fake_agent())
+            agent_ref = [mock_agent]
+
+            req = MagicMock()
+            req.headers = {}
+            trans = MagicMock()
+            trans.is_closing = MagicMock(return_value=True)
+            req.transport = trans
+
+            mock_response = AsyncMock(spec=web.StreamResponse)
+            mock_response.write = AsyncMock()
+            mock_response.prepare = AsyncMock()
+
+            with patch("gateway.platforms.api_server.web.StreamResponse",
+                       return_value=mock_response):
+                await adapter._write_sse_responses(
+                    req,
+                    "resp-transport",
+                    "gpt-4",
+                    1234567890,
+                    stream_q,
+                    agent_task,
+                    agent_ref,
+                    [],
+                    "hello",
+                    None,
+                    None,
+                    False,
+                    "sess-rsp",
+                )
+
+            mock_agent.interrupt.assert_called_once_with("SSE client disconnected")
+            assert agent_task.cancelled() or agent_task.done()
+            agent_done.set()
+
+        asyncio.run(run())
+
+    def test_sse_peer_closing_static_helper(self):
+        from gateway.platforms.api_server import APIServerAdapter
+
+        req = MagicMock()
+        req.transport = None
+        assert APIServerAdapter._sse_peer_closing(req) is False
+
+        trans = MagicMock()
+        trans.is_closing = MagicMock(return_value=False)
+        req.transport = trans
+        assert APIServerAdapter._sse_peer_closing(req) is False
+
+        trans.is_closing = MagicMock(return_value=True)
+        assert APIServerAdapter._sse_peer_closing(req) is True
+
     def test_agent_ref_none_still_cancels_task(self):
         """When agent_ref is not provided (None), the task is still cancelled
         on disconnect — just without the interrupt() call."""

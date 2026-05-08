@@ -75,6 +75,24 @@ Fix:
 
 Append new durable facts here first.
 
+### 2026-05-07 — Project Brief / Command center (PWA) + summary refresh semantics
+
+Fact:
+
+- **Command center** (sidebar icon between Settings and Help) reopens the governance overlay from **Chats + all projects** context (`openCommandCenterFromRail` in `animus-chat/app/index.html`).
+- **Overlay title** in-app is **Project Brief**; **Settings** still label the feature **Command Brief** (enable toggle, recent window, auto-refresh). **Disable** is only in Settings, not the overlay toolbar. **Title row** includes a **Command center** icon on the right (`#commandBriefCloseBtn`) that **closes** the overlay (same as toggling Command center off).
+- **Sidebar scrim** `#overlay` (`z-index:40`) sat **above** the overlay inside `main` and made Command Brief look **washed out** until click; opening Project Brief now **hides** the scrim and restores it on dismiss when the drawer is still open on **mobile** width.
+- **Project list / cards / headers** share the same **rounded color bar** helpers: `projectListBarColor`, `projectListBarTextColor`, `applyProjectNameBarEl` (sidebar list, Command Brief card title, `#projCtxNameBar`, `#projModeNameBar`).
+- **Boot on narrow viewports:** With Command Brief enabled, **only desktop** (`isDesktopSidebarRail()`, `min-width: 641px`) auto-opens Project Brief on startup. **Phones / PWA** skip auto-open because `.command-brief-overlay` is `position:absolute; inset:0` on `.main`, which is full-width on mobile — otherwise the app appears to launch entirely inside Project Brief. Bootstrap (`loadCommandBriefBootstrap`) still runs; open from **Command center**.
+- **Projects list collapse (sidebar):** If `hermes_sidebar_projects_collapsed_v1` is **absent**, `getProjectsListCollapsed()` defaults to **expanded** (`false`). On **`!isDesktopSidebarRail()`** each app load, `setProjectsListCollapsed(false)` runs so the **Projects** block is open for choosing a project first (PWA-friendly); desktop keeps stored `'1'`/`'0'` unless the user is on a narrow window for that load.
+- **Project Brief prefs authority:** **`settings.commandBrief.enabled`** (`isCommandBriefFeatureWanted()`) hides the sidebar **Command center** control and forces Project Brief closed. **`autoRefreshRecent: false`** skips client `runCommandBriefSync('auto')` after bootstrap and server **`POST …/sync` `mode=auto`** short-circuits to read-only **`command_brief_state`** (no inference). **`recentWindowDays`** continues to drive server `should_regenerate_auto` / `classify_display_status` when auto is on. **`POST /api/animus/client-config`** **merges** into `animus_ui_settings` and **deep-merges `commandBrief`** so partial payloads do not wipe enable/auto/days (`server.py` `_merge_animus_ui_settings_into_cfg`). Settings **Enable** checkbox reflects **stored** `settings.commandBrief.enabled` (not plugin-masked). After boot `GET` client-config, **`renderCommandBriefSettings()`** + **`syncCommandBriefNavVisibility()`** run before Project Brief bootstrap. In-app label **Project Brief** (internal key remains `commandBrief`).
+- **Summary refresh (plain language):** opening the panel loads **saved** summaries first, then asks the server to **auto-refresh** only where allowed. **Auto** runs the AI only if auto-refresh is on, governance files were touched inside your **recent window (days)**, and those files changed **after** the last summary time. **Manual “refresh all” / per-card refresh** still **won’t call the AI** if the newest governance signal is **older than three days** (hard gate in code) — you get a “no recent work” style card instead of a fake fresh summary.
+- **Inference request** for sync always sends the **current chat model + provider** from the UI; server returns **400** if `model` / `hermes_provider` missing.
+
+Reason:
+
+- Future agents/operators need the **z-index / scrim** pitfall, **where to disable** the feature, and **why refresh sometimes does nothing** without reading the whole plugin.
+
 ### 2026-05-03 — Governance CI rollout (planned)
 
 Fact:
@@ -265,7 +283,7 @@ Do not:
 ## Legacy duplicate (preserved) — Default **General** project (300426)
 
 - **`server.ensure_animus_general_project()`** (in **`animus-chat/server.py`**): creates **`<projects_sync_root>/general`** and appends a **`projects.json`** row (stable id **`00000000-0000-4000-8000-000000000001`**, display name **General**) when no row already points at that resolved path. Runs at **lifespan startup**, on **`POST /api/animus/client-config`** when **`projects_dir`** is saved, and from the wizard after **`POST /api/setup/save-config`** / **`POST /api/setup/complete`** when **`projects_dir`** is non-empty (via **`importlib.import_module("server")`** in **`wizard_routes.py`**).
-- **Client:** **`findAnimusDefaultGeneralProject()`** matches **`PROJECTS_ROOT + '/general'`** (case-insensitive, slashes normalised). After **`syncProjectsFromRoot()`**, if found and **`sessionStorage`** lacks **`animus_general_workspace_session_v1`**, sets it and calls **`enterProjectView`** so each **browser session** starts in General once.
+- **Client:** **`findAnimusDefaultGeneralProject()`** matches **`PROJECTS_ROOT + '/general'`** (case-insensitive, slashes normalised). When **Project Brief** is **enabled**, startup may open that flow instead of General. When **Project Brief is disabled**, the client **does not** auto-**`enterProjectView`** General on load — **`setProjectsListCollapsed(false)`** + **`openSidebar()`** on narrow viewports so the user picks a project from the sidebar list.
 
 ## ANIMUS chat ghost branding (300426)
 
@@ -587,6 +605,13 @@ Do not:
 - Timer scheduling is strict top-of-hour (`OnCalendar=hourly`) with jitter (`RandomizedDelaySec=2min`) and persistence.
 - `scripts/sync-dev-systemd.sh` now installs/enables this timer automatically.
 
+## Release packaging glob pitfall (030526)
+
+- **Symptom:** `./build-release.sh` can report a massive buyer zip (for example ~806MB) even when prior releases were small, while `du` shows unexpected local state under repo root (for example `./.hermes/`) or a local venv under `animus-chat/.venv`.
+- **Root cause:** zip exclude patterns that only use one path style may miss entries depending on how `zip` materializes archive paths (with/without `./` prefix).
+- **Durable fix:** keep both exclude styles for local-state directories in `build-release.sh` (for example both `animus-chat/.venv/*` and `./animus-chat/.venv/*`; likewise for `hermes-agent` venv paths), and explicitly exclude repo-local `.hermes/*`.
+- **Operator check order:** run `du -sh ./* ./.*/ | sort -hr | head` first when size spikes, then rebuild and confirm `Created ...zip (<55MB)` plus leak-check pass.
+
 ## No-new-knowledge template
 
 When a session adds nothing durable, append:
@@ -600,3 +625,23 @@ DDMMYY — No new durable knowledge (routine doc-only / trivial change).
 290426 — No new durable knowledge (animus-site Gumroad URL swap only).
 300426 — No new durable knowledge (VERSION 1.0.7 + `./build-release.sh` zip only).
 010526 — No new durable knowledge (release 1.1.3 build/deploy/publish runbook execution only).
+
+## 2026-05-04 — Hardened restart process for gateway + chat
+
+- **Single command for both services:** use `./scripts/restart-animus-hermes.sh` from repo root (or `animus restart-all` via `scripts/animus`).
+- **Restart order is fixed:** gateway first (`hermes-gateway.service`), then chat (`animus.service`) so ANIMUS reconnects cleanly to a fresh backend.
+- **Success requires both unit + HTTP health:** script waits for `systemctl --user is-active` and then verifies:
+  - `http://127.0.0.1:8642/health`
+  - `http://127.0.0.1:3001/api/version`
+- **Failure mode is explicit:** if a unit fails to come up, script prints `systemctl --user status <unit> --no-pager -n 40` and exits non-zero; if health checks never recover, exits non-zero with failing URL.
+- **Operator rule for 502 incidents:** treat PWA `502` as potentially chat-only outage even when gateway is up; run the hardened dual restart command instead of restarting a single unit first.
+
+## 2026-05-07 — Buyer zip: exclude `backup/`
+
+Local **`backup/*.tar.gz`** (or other snapshots under **`backup/`**) can exceed **1GB**. If **`build-release.sh`** does not **`zip -x ./backup/*`**, the buyer archive can jump past the **55MB** gate in one file. Treat **`backup/`** like **`version archive/`**: never ship in **`animus-v*.zip`**, and fail the post-zip leak check if **`backup/`** appears inside the listing (same pattern as **`version archive/`**).
+
+## 2026-05-08 — animus-site Vercel: `releases/` total size vs Lambda bundle cap
+
+**`vercel.json`** maps **`releases/**`** to **`@vercel/static`**, so **every** zip under **`animus-site/releases/`** is counted toward the **serverless bundle** size (**~245 MB** hard limit). Accumulating many historical **`animus-v*.zip`** files (**~28 MB** each in older builds) can push the project past the cap (**deploy_failed: Total bundle size … exceeds Lambda limit**) even though each individual zip is small.
+
+**Operator mitigation:** before **`./scripts/release-and-publish.sh`**, prune **`releases/`** to a small tail (e.g. last few semver minors the team still wants to serve as static downloads) or move archival zips to external storage / seller Blob flow only. After deploy, run **`npx vercel alias set <production-deployment-url> animusai.vercel.app`** if the project alias is not auto-updated. **`./scripts/publish-animus-manifest.sh`** still points **`download_url`** at **`https://animusai.vercel.app/releases/animus-v${VERSION}.zip`**.

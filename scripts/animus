@@ -13,11 +13,13 @@ animus — control the ANIMUS chat user service (port 3001 by default)
   animus start      systemctl --user start animus.service
   animus stop       systemctl --user stop animus.service
   animus restart    systemctl --user restart animus.service
+  animus restart-all  restart hermes-gateway + animus, then verify health
   animus status     systemctl --user status animus.service --no-pager
 
 Override unit: ANIMUS_SYSTEMD_UNIT=my.service animus restart
 
 After code edits, use: animus restart
+After gateway/chat restarts, use: animus restart-all
 Then check: curl -fsS http://127.0.0.1:3001/api/version | jq .chat_server_rev
 EOF
 }
@@ -26,6 +28,10 @@ case "${cmd}" in
   start) systemctl --user start "${UNIT}" ;;
   stop) systemctl --user stop "${UNIT}" ;;
   restart) systemctl --user restart "${UNIT}" ;;
+  restart-all)
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    "${SCRIPT_DIR}/restart-animus-hermes.sh"
+    ;;
   status)
     shift
     systemctl --user status "${UNIT}" --no-pager "$@"

@@ -193,9 +193,14 @@ rm -f "${ZIP}"
 # - ./scripts/: repo-root dev/smoke checklists only (not hermes-agent/.../scripts/).
 # - seller-private/: seller-local tokens/notes; gitignored except README; never ship to buyers.
 # - artifacts/: internal verification / agent notes; not buyer runtime.
+# - backup/: local tarballs / snapshots; can exceed the zip cap if included.
 # Internal monorepo continuity (not for buyers — clone the repo to develop ANIMUS):
 # - project_*.md, repo_map.md, AGENTS.md, CLAUDE.md, .cursorrules, .cursor/, setup_repo.md,
 #   animus-chat copies of repo_map / project_history / setup_repo; hermes-agent/AGENTS.md (upstream dev doc).
+# Non-buyer-facing docs / scratch (buyer zip keeps user guide, INSTALL paths, patches, seller Gumroad note, etc.):
+# - docs/beta_skill_tool_context_protocol.md — internal beta architecture (not in-app Help).
+# - project_ideas/ — internal product notes.
+# - notes.md — repo operator scratch (not per-project workspace notes).
 zip -qr "${ZIP}" . \
   -x".hermes/*" \
   -x"./.hermes/*" \
@@ -247,10 +252,20 @@ zip -qr "${ZIP}" . \
   -x"./seller-private/*" \
   -x"./artifacts/*" \
   -x"./animus-v*.zip" \
-  -x"./version archive/*"
+  -x"./version archive/*" \
+  -x"./backup/*" \
+  -x"./docs/beta_skill_tool_context_protocol.md" \
+  -x"./project_ideas/*" \
+  -x"./notes.md"
 
 SZ="$(du -sm "${ZIP}" | awk '{print $1}')"
 echo "Created ${ZIP} (${SZ} MB)"
+
+echo "[check] Release zip includes animus/plugins/command_brief/ (Command Brief plugin)…"
+if ! unzip -l "${ZIP}" | grep -qF 'animus/plugins/command_brief/routes.py'; then
+  echo "FAIL: animus/plugins/command_brief/routes.py missing from ${ZIP} (buyer bundle must ship the plugin)" >&2
+  exit 1
+fi
 echo ""
 echo "Patch an older animus-chat/ tree from this zip (no placeholders — run from repo / unzip root):"
 echo "  chmod +x installer/sync-animus-chat-from-zip.sh && ./installer/sync-animus-chat-from-zip.sh \"${ZIP}\""
@@ -292,6 +307,10 @@ if unzip -l "${ZIP}" | grep -q 'seller-private/'; then
 fi
 if unzip -l "${ZIP}" | grep -qF 'version archive/'; then
   echo "FAIL: version archive/ present in zip (local zip history — exclude in build-release.sh)" >&2
+  exit 1
+fi
+if unzip -l "${ZIP}" | grep -qF 'backup/'; then
+  echo "FAIL: backup/ present in zip (local snapshots — exclude in build-release.sh)" >&2
   exit 1
 fi
 echo "  animus-update-server/ not in zip — OK"

@@ -40,3 +40,8 @@ artifacts/
 
 # Release artifact
 animus-v*.zip
+
+# Local snapshots / scratch (not source)
+backup/
+/blob.zip
+project_daily_summaries.md

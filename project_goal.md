@@ -2,6 +2,8 @@
 
 ## What we are building
 
+**In-product naming (2026-05-07):** the governance-summary overlay in **`animus-chat`** is titled **Project Brief** in the UI; **Settings** still group controls under **Command Brief** (same feature). **Command center** is the sidebar icon that reopens the overlay with the all-projects chats layout.
+
 ## Directive Navigation Index
 
 - Primary directive and constraints: `## ANIMUS — Distributable Product Build Directive`, `## ⚠️ CRITICAL — READ BEFORE TOUCHING ANYTHING`

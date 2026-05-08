@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 
 from tools.environments.base import BaseEnvironment, _pipe_stdin
+from tools.sane_path import SANE_PATH as _SANE_PATH
 
 _IS_WINDOWS = platform.system() == "Windows"
 
@@ -176,13 +177,6 @@ def _find_bash() -> str:
 _find_shell = _find_bash
 
 
-# Standard PATH entries for environments with minimal PATH.
-_SANE_PATH = (
-    "/opt/homebrew/bin:/opt/homebrew/sbin:"
-    "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-)
-
-
 def _make_run_env(env: dict) -> dict:
     """Build a run environment with a sane PATH and provider-var stripping."""
     try:
@@ -199,8 +193,11 @@ def _make_run_env(env: dict) -> dict:
         elif k not in _HERMES_PROVIDER_ENV_BLOCKLIST or _is_passthrough(k):
             run_env[k] = v
     existing_path = run_env.get("PATH", "")
-    if "/usr/bin" not in existing_path.split(":"):
-        run_env["PATH"] = f"{existing_path}:{_SANE_PATH}" if existing_path else _SANE_PATH
+    path_parts = existing_path.split(os.pathsep) if existing_path else []
+    if "/usr/bin" not in path_parts:
+        run_env["PATH"] = (
+            f"{existing_path}{os.pathsep}{_SANE_PATH}" if existing_path else _SANE_PATH
+        )
 
     # Per-profile HOME isolation: redirect system tool configs (git, ssh, gh,
     # npm …) into {HERMES_HOME}/home/ when that directory exists.  Only the

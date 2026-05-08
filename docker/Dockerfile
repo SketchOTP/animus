@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -e /opt/hermes-agent || true
 COPY animus-chat/requirements.txt /tmp/req.txt
 RUN pip install --no-cache-dir -r /tmp/req.txt
 
+COPY animus/ /app/animus/
 COPY animus-chat/ /app/animus-chat/
 COPY animus.env.example /app/animus.env.example
 RUN cp /app/animus.env.example /app/animus.env

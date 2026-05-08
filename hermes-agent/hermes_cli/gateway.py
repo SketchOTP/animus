@@ -36,6 +36,7 @@ from hermes_cli.setup import (
     prompt, prompt_choice, prompt_yes_no,
 )
 from hermes_cli.colors import Colors, color
+from tools.sane_path import extended_sane_path_dirs
 
 
 # =============================================================================
@@ -1522,7 +1523,7 @@ def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) 
         if resolved_node_dir not in path_entries:
             path_entries.append(resolved_node_dir)
 
-    common_bin_paths = ["/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"]
+    common_bin_paths = extended_sane_path_dirs()
     # systemd's TimeoutStopSec must exceed the gateway's drain_timeout so
     # there's budget left for post-interrupt cleanup (tool subprocess kill,
     # adapter disconnect, session DB close) before systemd escalates to
@@ -2034,6 +2035,7 @@ def generate_launchd_plist() -> str:
         resolved_node_dir = str(Path(resolved_node).resolve().parent)
         if resolved_node_dir not in priority_dirs:
             priority_dirs.append(resolved_node_dir)
+    priority_dirs.extend(extended_sane_path_dirs())
     sane_path = ":".join(
         dict.fromkeys(priority_dirs + [p for p in os.environ.get("PATH", "").split(":") if p])
     )

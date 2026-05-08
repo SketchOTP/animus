@@ -862,6 +862,7 @@ class AIAgent:
         checkpoint_max_snapshots: int = 50,
         pass_session_id: bool = False,
         persist_session: bool = True,
+        selected_skills: List[str] = None,
     ):
         """
         Initialize the AI Agent.
@@ -905,6 +906,7 @@ class AIAgent:
             skip_context_files (bool): If True, skip auto-injection of SOUL.md, AGENTS.md, and .cursorrules
                 into the system prompt. Use this for batch processing and data generation to avoid
                 polluting trajectories with user-specific persona or project instructions.
+            selected_skills (List[str]): Optional allowlist of skill names for this request only.
         """
         _install_safe_stdio()
 
@@ -1097,6 +1099,7 @@ class AIAgent:
         self.enabled_toolsets = enabled_toolsets
         self.disabled_toolsets = disabled_toolsets
         self.disabled_tools = [str(t).strip() for t in (disabled_tools or []) if str(t).strip()]
+        self.selected_skills = {str(s).strip() for s in (selected_skills or []) if str(s).strip()}
         
         # Model response configuration
         self.max_tokens = max_tokens  # None = use model default
@@ -4410,6 +4413,7 @@ class AIAgent:
             skills_prompt = build_skills_system_prompt(
                 available_tools=self.valid_tool_names,
                 available_toolsets=avail_toolsets,
+                allowed_skill_names=self.selected_skills or None,
             )
         else:
             skills_prompt = ""

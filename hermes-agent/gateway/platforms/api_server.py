@@ -36,6 +36,8 @@ import hmac
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 import socket as _socket
 import re
 import sqlite3
@@ -677,6 +679,10 @@ class APIServerAdapter(BasePlatformAdapter):
         # Creation timestamps for orphaned-run TTL sweep
         self._run_streams_created: Dict[str, float] = {}
         self._session_db: Optional[Any] = None  # Lazy-init SessionDB for session continuity
+        # Dedicated pool for blocking ``queue.Queue.get`` in SSE writers so
+        # polling does not compete with ``_run_agent`` (which uses the loop's
+        # default executor) for the same ThreadPoolExecutor workers.
+        self._sse_stream_queue_executor: Optional[ThreadPoolExecutor] = None
 
     @staticmethod
     def _parse_cors_origins(value: Any) -> tuple[str, ...]:
@@ -819,6 +825,8 @@ class APIServerAdapter(BasePlatformAdapter):
         provider_override: Optional[str] = None,
         base_url_override: Optional[str] = None,
         disabled_tools: Optional[List[str]] = None,
+        selected_tools: Optional[List[str]] = None,
+        selected_skills: Optional[List[str]] = None,
     ) -> Any:
         """
         Create an AIAgent instance using the gateway's runtime config.
@@ -886,6 +894,31 @@ class APIServerAdapter(BasePlatformAdapter):
         from gateway.run import GatewayRunner
         fallback_model = GatewayRunner._load_fallback_model()
 
+        effective_disabled_tools = [str(t).strip() for t in (disabled_tools or []) if str(t).strip()]
+        selected_tools_set = {str(t).strip() for t in (selected_tools or []) if str(t).strip()}
+        if selected_tools_set:
+            # Active mode: include only the selected subset among currently available tools.
+            try:
+                from model_tools import get_tool_definitions
+
+                currently_available = get_tool_definitions(
+                    enabled_toolsets=enabled_toolsets,
+                    disabled_toolsets=None,
+                    disabled_tools=effective_disabled_tools,
+                    quiet_mode=True,
+                )
+                current_names = {
+                    str(td.get("function", {}).get("name") or "").strip()
+                    for td in currently_available
+                    if str(td.get("function", {}).get("name") or "").strip()
+                }
+                to_disable = sorted(name for name in current_names if name not in selected_tools_set)
+                if to_disable:
+                    effective_disabled_tools = sorted(set(effective_disabled_tools) | set(to_disable))
+            except Exception:
+                # Fail closed: keep the original disabled_tools list.
+                pass
+
         agent = AIAgent(
             model=model,
             **runtime_kwargs,
@@ -894,7 +927,8 @@ class APIServerAdapter(BasePlatformAdapter):
             verbose_logging=False,
             ephemeral_system_prompt=ephemeral_system_prompt or None,
             enabled_toolsets=enabled_toolsets,
-            disabled_tools=[str(t).strip() for t in (disabled_tools or []) if str(t).strip()],
+            disabled_tools=effective_disabled_tools,
+            selected_skills=[str(s).strip() for s in (selected_skills or []) if str(s).strip()],
             session_id=session_id,
             platform="api_server",
             stream_delta_callback=stream_delta_callback,
@@ -905,6 +939,67 @@ class APIServerAdapter(BasePlatformAdapter):
             fallback_model=fallback_model,
         )
         return agent
+
+    def _build_beta_inference_hints(
+        self,
+        *,
+        model_override: Optional[str],
+        provider_override: Optional[str],
+        base_url_override: Optional[str],
+    ) -> Dict[str, Any]:
+        """Build current inference runtime hints for beta selector/router.
+
+        This mirrors normal request runtime resolution so beta mode uses the
+        exact same provider/auth/session path as standard inference.
+        """
+        from gateway.run import _resolve_runtime_agent_kwargs, _resolve_gateway_model
+
+        runtime_kwargs = _resolve_runtime_agent_kwargs()
+        model = _resolve_gateway_model()
+        mo = (model_override or "").strip() if model_override else ""
+        if mo:
+            model = mo
+        po = (provider_override or "").strip() if provider_override else ""
+        bou = (base_url_override or "").strip() if base_url_override else ""
+        if po or bou:
+            try:
+                from hermes_cli.runtime_provider import resolve_runtime_provider
+
+                resolved = resolve_runtime_provider(
+                    requested=po or str(runtime_kwargs.get("provider") or ""),
+                    explicit_base_url=(bou or None),
+                    target_model=(mo or model or None),
+                )
+                runtime_kwargs["api_key"] = resolved.get("api_key")
+                runtime_kwargs["base_url"] = resolved.get("base_url")
+                runtime_kwargs["provider"] = resolved.get("provider")
+                runtime_kwargs["api_mode"] = resolved.get("api_mode")
+                runtime_kwargs["command"] = resolved.get("command")
+                runtime_kwargs["args"] = list(resolved.get("args") or [])
+                runtime_kwargs["credential_pool"] = resolved.get("credential_pool")
+            except Exception:
+                if po:
+                    runtime_kwargs["provider"] = po
+                if bou:
+                    runtime_kwargs["base_url"] = bou
+        main_runtime = {
+            "provider": runtime_kwargs.get("provider"),
+            "model": model,
+            "base_url": runtime_kwargs.get("base_url"),
+            "api_key": runtime_kwargs.get("api_key"),
+            "api_mode": runtime_kwargs.get("api_mode"),
+            "command": runtime_kwargs.get("command"),
+            "args": list(runtime_kwargs.get("args") or []),
+            "credential_pool": runtime_kwargs.get("credential_pool"),
+        }
+        return {
+            "_inference_provider": runtime_kwargs.get("provider"),
+            "_inference_model": model,
+            "_inference_base_url": runtime_kwargs.get("base_url"),
+            "_inference_api_key": runtime_kwargs.get("api_key"),
+            "_inference_api_mode": runtime_kwargs.get("api_mode"),
+            "_inference_main_runtime": main_runtime,
+        }
 
     # ------------------------------------------------------------------
     # HTTP Handlers
@@ -1181,6 +1276,8 @@ class APIServerAdapter(BasePlatformAdapter):
         provider_ov = hp.strip() if isinstance(hp, str) and hp.strip() else None
         base_ov = hb.strip() if isinstance(hb, str) and hb.strip() else None
         disabled_tools: List[str] = []
+        selected_tools: List[str] = []
+        selected_skills: List[str] = []
         raw_disabled_tools = body.get("hermes_disabled_tools")
         if isinstance(raw_disabled_tools, list):
             for item in raw_disabled_tools:
@@ -1189,6 +1286,45 @@ class APIServerAdapter(BasePlatformAdapter):
                     disabled_tools.append(nm)
         if disabled_tools:
             disabled_tools = sorted(set(disabled_tools))
+
+        # Optional Animus beta context protocol (off by default).
+        beta_cfg = body.get("hermes_beta")
+        beta_candidates = body.get("hermes_beta_candidates")
+        if isinstance(beta_cfg, dict):
+            try:
+                from animus.beta.context_protocol.request_adapter import (
+                    apply_beta_context_protocol,
+                )
+                from gateway.run import _load_gateway_config
+                from hermes_cli.tools_config import _get_platform_tools
+
+                beta_cfg_runtime = dict(beta_cfg)
+                beta_cfg_runtime.update(
+                    self._build_beta_inference_hints(
+                        model_override=agent_model_override,
+                        provider_override=provider_ov,
+                        base_url_override=base_ov,
+                    )
+                )
+                beta_result = apply_beta_context_protocol(
+                    prompt=str(user_message or ""),
+                    beta_cfg=beta_cfg_runtime,
+                    enabled_toolsets=sorted(_get_platform_tools(_load_gateway_config(), "api_server")),
+                    disabled_tools=disabled_tools,
+                    candidates=beta_candidates if isinstance(beta_candidates, list) else [],
+                )
+                if beta_result.selected_provider:
+                    provider_ov = beta_result.selected_provider
+                if beta_result.selected_model:
+                    agent_model_override = beta_result.selected_model
+                    model_name = beta_result.selected_model
+                if beta_result.selected_tools:
+                    selected_tools = list(beta_result.selected_tools)
+                if beta_result.selected_skills:
+                    selected_skills = list(beta_result.selected_skills)
+            except Exception:
+                # Fail closed: keep manual model + full context path.
+                pass
 
         project_hist_root = _resolve_hermes_project_path_for_history(body)
         _ensure_hermes_project_workspace(project_hist_root)
@@ -1256,6 +1392,8 @@ class APIServerAdapter(BasePlatformAdapter):
                 provider_override=provider_ov,
                 base_url_override=base_ov,
                 disabled_tools=disabled_tools,
+                selected_tools=selected_tools,
+                selected_skills=selected_skills,
             ))
 
             return await self._write_sse_chat_completion(
@@ -1275,6 +1413,8 @@ class APIServerAdapter(BasePlatformAdapter):
                 provider_override=provider_ov,
                 base_url_override=base_ov,
                 disabled_tools=disabled_tools,
+                selected_tools=selected_tools,
+                selected_skills=selected_skills,
             )
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -1290,6 +1430,8 @@ class APIServerAdapter(BasePlatformAdapter):
                     "hermes_provider",
                     "hermes_base_url",
                     "hermes_project_path",
+                    "hermes_beta",
+                    "hermes_beta_candidates",
                 ],
             )
             try:
@@ -1344,6 +1486,53 @@ class APIServerAdapter(BasePlatformAdapter):
         except Exception:
             pass
         return web.json_response(response_data, headers=hdrs)
+
+    @staticmethod
+    def _sse_peer_closing(request: "web.Request") -> bool:
+        """True when the HTTP peer is disconnecting (observable during idle queue waits)."""
+        trans = request.transport
+        return trans is not None and trans.is_closing()
+
+    async def _interrupt_agent_for_sse_disconnect(
+        self,
+        agent_ref: Optional[List[Any]],
+        agent_task: asyncio.Task,
+        log_id: str,
+    ) -> None:
+        """Cancel the agent wrapper task and interrupt the agent when the SSE client drops."""
+        agent = agent_ref[0] if agent_ref else None
+        if agent is not None:
+            try:
+                agent.interrupt("SSE client disconnected")
+            except Exception:
+                pass
+        if not agent_task.done():
+            agent_task.cancel()
+            try:
+                await agent_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        logger.info("SSE client disconnected; interrupted agent task %s", log_id)
+
+    async def _await_threadsafe_stream_queue_get(self, stream_q, timeout: float = 0.5):
+        """Await a blocking ``queue.Queue.get`` on a dedicated thread pool.
+
+        ``_run_agent`` already uses ``loop.run_in_executor(None, ...)`` for the
+        full ``run_conversation`` call.  Polling the stream queue on the same
+        default pool can exhaust workers under load (agent thread + many SSE
+        readers), stalling token delivery.  A small dedicated pool isolates
+        queue polling from agent execution.
+        """
+        loop = asyncio.get_running_loop()
+        if self._sse_stream_queue_executor is None:
+            self._sse_stream_queue_executor = ThreadPoolExecutor(
+                max_workers=8,
+                thread_name_prefix="hermes_api_sse_q",
+            )
+        return await loop.run_in_executor(
+            self._sse_stream_queue_executor,
+            partial(stream_q.get, block=True, timeout=timeout),
+        )
 
     async def _write_sse_chat_completion(
         self, request: "web.Request", completion_id: str, model: str,
@@ -1415,10 +1604,14 @@ class APIServerAdapter(BasePlatformAdapter):
                 return time.monotonic()
 
             # Stream content chunks as they arrive from the agent
-            loop = asyncio.get_running_loop()
             while True:
+                if self._sse_peer_closing(request):
+                    await self._interrupt_agent_for_sse_disconnect(
+                        agent_ref, agent_task, completion_id,
+                    )
+                    return response
                 try:
-                    delta = await loop.run_in_executor(None, lambda: stream_q.get(timeout=0.5))
+                    delta = await self._await_threadsafe_stream_queue_get(stream_q)
                 except _q.Empty:
                     if agent_task.done():
                         # Drain any remaining items
@@ -1506,22 +1699,9 @@ class APIServerAdapter(BasePlatformAdapter):
                 pass
             await response.write(b"data: [DONE]\n\n")
         except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
-            # Client disconnected mid-stream.  Interrupt the agent so it
-            # stops making LLM API calls at the next loop iteration, then
-            # cancel the asyncio task wrapper.
-            agent = agent_ref[0] if agent_ref else None
-            if agent is not None:
-                try:
-                    agent.interrupt("SSE client disconnected")
-                except Exception:
-                    pass
-            if not agent_task.done():
-                agent_task.cancel()
-                try:
-                    await agent_task
-                except (asyncio.CancelledError, Exception):
-                    pass
-            logger.info("SSE client disconnected; interrupted agent task %s", completion_id)
+            await self._interrupt_agent_for_sse_disconnect(
+                agent_ref, agent_task, completion_id,
+            )
 
         return response
 
@@ -1797,10 +1977,14 @@ class APIServerAdapter(BasePlatformAdapter):
                     await _emit_text_delta(it)
                 # Other types (non-string, non-tuple) are silently dropped.
 
-            loop = asyncio.get_running_loop()
             while True:
+                if self._sse_peer_closing(request):
+                    await self._interrupt_agent_for_sse_disconnect(
+                        agent_ref, agent_task, response_id,
+                    )
+                    return response
                 try:
-                    item = await loop.run_in_executor(None, lambda: stream_q.get(timeout=0.5))
+                    item = await self._await_threadsafe_stream_queue_get(stream_q)
                 except _q.Empty:
                     if agent_task.done():
                         # Drain remaining
@@ -1928,21 +2112,9 @@ class APIServerAdapter(BasePlatformAdapter):
                         self._response_store.set_conversation(conversation, response_id)
 
         except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, OSError):
-            # Client disconnected — interrupt the agent so it stops
-            # making upstream LLM calls, then cancel the task.
-            agent = agent_ref[0] if agent_ref else None
-            if agent is not None:
-                try:
-                    agent.interrupt("SSE client disconnected")
-                except Exception:
-                    pass
-            if not agent_task.done():
-                agent_task.cancel()
-                try:
-                    await agent_task
-                except (asyncio.CancelledError, Exception):
-                    pass
-            logger.info("SSE client disconnected; interrupted agent task %s", response_id)
+            await self._interrupt_agent_for_sse_disconnect(
+                agent_ref, agent_task, response_id,
+            )
 
         return response
 
@@ -2051,6 +2223,73 @@ class APIServerAdapter(BasePlatformAdapter):
         # groups the entire conversation under one session entry.
         session_id = stored_session_id or str(uuid.uuid4())
 
+        model_name = body.get("model", self._model_name)
+        if isinstance(model_name, str) and model_name.strip():
+            model_name = model_name.strip()
+        else:
+            model_name = self._model_name
+
+        raw_model = body.get("model")
+        agent_model_override: Optional[str] = None
+        if isinstance(raw_model, str) and raw_model.strip():
+            rm = raw_model.strip()
+            if rm != self._model_name:
+                agent_model_override = rm
+
+        hp = body.get("hermes_provider")
+        hb = body.get("hermes_base_url")
+        provider_ov = hp.strip() if isinstance(hp, str) and hp.strip() else None
+        base_ov = hb.strip() if isinstance(hb, str) and hb.strip() else None
+
+        disabled_tools: List[str] = []
+        selected_tools: List[str] = []
+        selected_skills: List[str] = []
+        raw_disabled_tools = body.get("hermes_disabled_tools")
+        if isinstance(raw_disabled_tools, list):
+            for item in raw_disabled_tools:
+                nm = str(item or "").strip()
+                if nm:
+                    disabled_tools.append(nm)
+        if disabled_tools:
+            disabled_tools = sorted(set(disabled_tools))
+
+        beta_cfg = body.get("hermes_beta")
+        beta_candidates = body.get("hermes_beta_candidates")
+        if isinstance(beta_cfg, dict):
+            try:
+                from animus.beta.context_protocol.request_adapter import (
+                    apply_beta_context_protocol,
+                )
+                from gateway.run import _load_gateway_config
+                from hermes_cli.tools_config import _get_platform_tools
+
+                beta_cfg_runtime = dict(beta_cfg)
+                beta_cfg_runtime.update(
+                    self._build_beta_inference_hints(
+                        model_override=agent_model_override,
+                        provider_override=provider_ov,
+                        base_url_override=base_ov,
+                    )
+                )
+                beta_result = apply_beta_context_protocol(
+                    prompt=str(user_message or ""),
+                    beta_cfg=beta_cfg_runtime,
+                    enabled_toolsets=sorted(_get_platform_tools(_load_gateway_config(), "api_server")),
+                    disabled_tools=disabled_tools,
+                    candidates=beta_candidates if isinstance(beta_candidates, list) else [],
+                )
+                if beta_result.selected_provider:
+                    provider_ov = beta_result.selected_provider
+                if beta_result.selected_model:
+                    agent_model_override = beta_result.selected_model
+                    model_name = beta_result.selected_model
+                if beta_result.selected_tools:
+                    selected_tools = list(beta_result.selected_tools)
+                if beta_result.selected_skills:
+                    selected_skills = list(beta_result.selected_skills)
+            except Exception:
+                pass
+
         project_hist_root = _resolve_hermes_project_path_for_history(body)
         _ensure_hermes_project_workspace(project_hist_root)
 
@@ -2111,10 +2350,15 @@ class APIServerAdapter(BasePlatformAdapter):
                 tool_start_callback=_on_tool_start,
                 tool_complete_callback=_responses_tool_complete,
                 agent_ref=agent_ref,
+                model_override=agent_model_override,
+                provider_override=provider_ov,
+                base_url_override=base_ov,
+                disabled_tools=disabled_tools,
+                selected_tools=selected_tools,
+                selected_skills=selected_skills,
             ))
 
             response_id = f"resp_{uuid.uuid4().hex[:28]}"
-            model_name = body.get("model", self._model_name)
             created_at = int(time.time())
 
             return await self._write_sse_responses(
@@ -2142,6 +2386,12 @@ class APIServerAdapter(BasePlatformAdapter):
                 ephemeral_system_prompt=instructions,
                 session_id=session_id,
                 tool_complete_callback=_responses_tool_hist_only,
+                model_override=agent_model_override,
+                provider_override=provider_ov,
+                base_url_override=base_ov,
+                disabled_tools=disabled_tools,
+                selected_tools=selected_tools,
+                selected_skills=selected_skills,
             )
 
         idempotency_key = request.headers.get("Idempotency-Key")
@@ -2156,6 +2406,11 @@ class APIServerAdapter(BasePlatformAdapter):
                     "model",
                     "tools",
                     "hermes_project_path",
+                    "hermes_provider",
+                    "hermes_base_url",
+                    "hermes_disabled_tools",
+                    "hermes_beta",
+                    "hermes_beta_candidates",
                 ],
             )
             try:
@@ -2202,7 +2457,7 @@ class APIServerAdapter(BasePlatformAdapter):
             "object": "response",
             "status": "completed",
             "created_at": created_at,
-            "model": body.get("model", self._model_name),
+            "model": model_name,
             "output": output_items,
             "usage": {
                 "input_tokens": usage.get("input_tokens", 0),
@@ -2560,6 +2815,8 @@ class APIServerAdapter(BasePlatformAdapter):
         provider_override: Optional[str] = None,
         base_url_override: Optional[str] = None,
         disabled_tools: Optional[List[str]] = None,
+        selected_tools: Optional[List[str]] = None,
+        selected_skills: Optional[List[str]] = None,
     ) -> tuple:
         """
         Create an agent and run a conversation in a thread executor.
@@ -2586,6 +2843,8 @@ class APIServerAdapter(BasePlatformAdapter):
                 provider_override=provider_override,
                 base_url_override=base_url_override,
                 disabled_tools=disabled_tools,
+                selected_tools=selected_tools,
+                selected_skills=selected_skills,
             )
             if agent_ref is not None:
                 agent_ref[0] = agent
@@ -2757,6 +3016,66 @@ class APIServerAdapter(BasePlatformAdapter):
         session_id = body.get("session_id") or stored_session_id or run_id
         ephemeral_system_prompt = instructions
 
+        raw_model = body.get("model")
+        agent_model_override: Optional[str] = None
+        if isinstance(raw_model, str) and raw_model.strip():
+            rm = raw_model.strip()
+            if rm != self._model_name:
+                agent_model_override = rm
+
+        hp = body.get("hermes_provider")
+        hb = body.get("hermes_base_url")
+        provider_ov = hp.strip() if isinstance(hp, str) and hp.strip() else None
+        base_ov = hb.strip() if isinstance(hb, str) and hb.strip() else None
+
+        disabled_tools: List[str] = []
+        selected_tools: List[str] = []
+        selected_skills: List[str] = []
+        raw_disabled_tools = body.get("hermes_disabled_tools")
+        if isinstance(raw_disabled_tools, list):
+            for item in raw_disabled_tools:
+                nm = str(item or "").strip()
+                if nm:
+                    disabled_tools.append(nm)
+        if disabled_tools:
+            disabled_tools = sorted(set(disabled_tools))
+
+        beta_cfg = body.get("hermes_beta")
+        beta_candidates = body.get("hermes_beta_candidates")
+        if isinstance(beta_cfg, dict):
+            try:
+                from animus.beta.context_protocol.request_adapter import (
+                    apply_beta_context_protocol,
+                )
+                from gateway.run import _load_gateway_config
+                from hermes_cli.tools_config import _get_platform_tools
+
+                beta_cfg_runtime = dict(beta_cfg)
+                beta_cfg_runtime.update(
+                    self._build_beta_inference_hints(
+                        model_override=agent_model_override,
+                        provider_override=provider_ov,
+                        base_url_override=base_ov,
+                    )
+                )
+                beta_result = apply_beta_context_protocol(
+                    prompt=str(user_message or ""),
+                    beta_cfg=beta_cfg_runtime,
+                    enabled_toolsets=sorted(_get_platform_tools(_load_gateway_config(), "api_server")),
+                    disabled_tools=disabled_tools,
+                    candidates=beta_candidates if isinstance(beta_candidates, list) else [],
+                )
+                if beta_result.selected_provider:
+                    provider_ov = beta_result.selected_provider
+                if beta_result.selected_model:
+                    agent_model_override = beta_result.selected_model
+                if beta_result.selected_tools:
+                    selected_tools = list(beta_result.selected_tools)
+                if beta_result.selected_skills:
+                    selected_skills = list(beta_result.selected_skills)
+            except Exception:
+                pass
+
         async def _run_and_close():
             try:
                 agent = self._create_agent(
@@ -2764,6 +3083,12 @@ class APIServerAdapter(BasePlatformAdapter):
                     session_id=session_id,
                     stream_delta_callback=_text_cb,
                     tool_progress_callback=event_cb,
+                    model_override=agent_model_override,
+                    provider_override=provider_ov,
+                    base_url_override=base_ov,
+                    disabled_tools=disabled_tools,
+                    selected_tools=selected_tools,
+                    selected_skills=selected_skills,
                 )
                 def _run_sync():
                     r = agent.run_conversation(
@@ -2843,13 +3168,39 @@ class APIServerAdapter(BasePlatformAdapter):
         )
         await response.prepare(request)
 
+        idle_since = time.monotonic()
         try:
             while True:
-                try:
-                    event = await asyncio.wait_for(q.get(), timeout=30.0)
-                except asyncio.TimeoutError:
+                # Avoid a single 30s ``wait_for`` on ``q.get()``: the client can
+                # disconnect while we are idle, and we would not observe
+                # ``transport.is_closing()`` until the long wait finishes.  Slice
+                # waits (<=1s) and track wall-clock idle for keepalives.
+                now = time.monotonic()
+                elapsed_idle = now - idle_since
+                if elapsed_idle >= CHAT_COMPLETIONS_SSE_KEEPALIVE_SECONDS:
                     await response.write(b": keepalive\n\n")
-                    continue
+                    idle_since = time.monotonic()
+                    elapsed_idle = 0.0
+
+                time_until_keepalive = CHAT_COMPLETIONS_SSE_KEEPALIVE_SECONDS - elapsed_idle
+                slice_timeout = min(1.0, max(0.05, time_until_keepalive))
+
+                if self._sse_peer_closing(request):
+                    break
+
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=slice_timeout)
+                except asyncio.TimeoutError:
+                    # ``wait_for`` cancels ``q.get()`` on expiry; if an item was
+                    # handed to the queue in the same window it may still be
+                    # waiting — drain synchronously before the next slice.
+                    try:
+                        event = q.get_nowait()
+                    except asyncio.QueueEmpty:
+                        continue
+
+                idle_since = time.monotonic()
+
                 if event is None:
                     # Run finished — send final SSE comment and close
                     await response.write(b": stream closed\n\n")
@@ -2994,6 +3345,9 @@ class APIServerAdapter(BasePlatformAdapter):
             await self._runner.cleanup()
             self._runner = None
         self._app = None
+        if self._sse_stream_queue_executor is not None:
+            self._sse_stream_queue_executor.shutdown(wait=True)
+            self._sse_stream_queue_executor = None
         logger.info("[%s] API server stopped", self.name)
 
     async def send(

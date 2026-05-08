@@ -22,6 +22,8 @@ ANIMUS chat server (Starlette)
 - /api/projects           → load / save projects (server-side persistence); startup + wizard + client-config ensure **`<projects_sync_root>/general`** + default **General** row
 - /api/project-sync-exclusions → GET/POST path exclusions (deleted workspace projects stay gone across restarts)
 - /api/project-workspace/* → ensure / read / write project workspace markdown (history, repo_map, notes, project_goal) on registered project paths
+- ``GET /api/command-brief/health`` → JSON availability probe (always registered; works when the plugin tree is missing)
+- /api/command-brief/* (optional) → ``animus/plugins/command_brief`` startup overview: cache, governance-only summarization, ``project_daily_summaries.md`` read path; disabled when Command Brief is off in client config
 - /api/project-ssh-test → POST JSON ``{user, host, port?, identity_file?}`` — non-interactive ``ssh`` probe from the chat host
 - ``/api/ssh/hosts`` + ``/api/ssh/test`` → global SSH hosts (``ssh_routes.py``); token usage JSONL uses JSON fields ``"source"`` / ``"source_id"`` (``token_usage.py``)
 - /api/stt/transcribe → POST multipart ``audio`` (or ``file``) — ``HERMES_CHAT_STT_LOCAL_URL`` HTTP,
@@ -203,7 +205,45 @@ from setup_wizard.wizard_routes import cfg_still_first_run  # noqa: E402
 
 DATA_DIR = chat_data_dir()
 
+_animus_monorepo_root_str = str(_ANIMUS_MONOREPO_ROOT)
+if _animus_monorepo_root_str not in sys.path:
+    sys.path.insert(0, _animus_monorepo_root_str)
+
 log = logging.getLogger("animus")
+
+_COMMAND_BRIEF_ROUTES: list = []
+# When routes load OK this is None; otherwise a short operator-facing reason (also exposed via /health + client-config).
+_COMMAND_BRIEF_IMPORT_ERROR: str | None = None
+
+try:
+    from animus.plugins.command_brief.routes import command_brief_route_table
+
+    _COMMAND_BRIEF_ROUTES = command_brief_route_table()
+    if not _COMMAND_BRIEF_ROUTES:
+        _COMMAND_BRIEF_IMPORT_ERROR = "command_brief_route_table() returned no routes"
+        _COMMAND_BRIEF_ROUTES = []
+except Exception as _cb_exc:
+    _COMMAND_BRIEF_ROUTES = []
+    _COMMAND_BRIEF_IMPORT_ERROR = str(_cb_exc) or type(_cb_exc).__name__
+
+
+def command_brief_plugin_available() -> tuple[bool, str | None]:
+    """True when Command Brief Starlette routes are registered (plugin import + route table OK)."""
+    if _COMMAND_BRIEF_ROUTES:
+        return True, None
+    return False, _COMMAND_BRIEF_IMPORT_ERROR or "plugin routes not registered"
+
+
+async def command_brief_health(_: Request) -> Response:
+    ok, reason = command_brief_plugin_available()
+    body: dict = {
+        "available": ok,
+        "plugin": "command_brief",
+        "routes_registered": ok,
+    }
+    if not ok:
+        body["reason"] = reason or "unknown"
+    return JSONResponse(body)
 
 
 def projects_sync_root() -> Path:
@@ -232,7 +272,7 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260501-tokens-chart-defaults-v62"
+CHAT_SERVER_REV = "20260507-project-brief-rerender-subcontrols-v79"
 ANIMUS_CONTEXT_SUMMARY_MODEL = (os.environ.get("ANIMUS_CONTEXT_SUMMARY_MODEL") or "gpt-4o-mini").strip()
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
@@ -441,6 +481,28 @@ def _sanitize_ui_settings_blob(raw: object) -> dict:
     return out if isinstance(out, dict) else {}
 
 
+def _merge_animus_ui_settings_into_cfg(cfg: dict, incoming_raw: object) -> None:
+    """Shallow-merge ``ui_settings`` POST into ``animus_ui_settings``; deep-merge ``commandBrief`` so partial payloads cannot wipe enable/auto/window."""
+    incoming = _sanitize_ui_settings_blob(incoming_raw)
+    if not incoming:
+        return
+    cur = cfg.get("animus_ui_settings")
+    if not isinstance(cur, dict):
+        cur = {}
+    inc_cb = incoming.get("commandBrief")
+    rest = {k: v for k, v in incoming.items() if k != "commandBrief"}
+    merged: dict = {**cur, **rest}
+    cur_cb = cur.get("commandBrief") if isinstance(cur.get("commandBrief"), dict) else {}
+    if isinstance(inc_cb, dict) and inc_cb:
+        if isinstance(cur_cb, dict) and cur_cb:
+            merged["commandBrief"] = {**cur_cb, **inc_cb}
+        else:
+            merged["commandBrief"] = dict(inc_cb)
+    elif isinstance(cur_cb, dict) and cur_cb:
+        merged["commandBrief"] = dict(cur_cb)
+    cfg["animus_ui_settings"] = merged
+
+
 def _sync_cfg_flat_from_animus_ui(cfg: dict) -> None:
     """Copy selected fields from ``animus_ui_settings`` into legacy config keys."""
     us = cfg.get("animus_ui_settings")
@@ -448,6 +510,8 @@ def _sync_cfg_flat_from_animus_ui(cfg: dict) -> None:
         return
     if "wake_lock_enabled" in us:
         cfg["wake_lock"] = bool(us.get("wake_lock_enabled"))
+    if "background_run_enabled" in us:
+        cfg["background_run"] = bool(us.get("background_run_enabled"))
     im = us.get("inference_models")
     if isinstance(im, dict):
         cur = cfg.get("inference_models")
@@ -463,7 +527,6 @@ def _sync_cfg_flat_from_animus_ui(cfg: dict) -> None:
     tb = str(us.get("tts_backend") or "").strip().lower()
     if tb in ("browser", "piper"):
         cfg["tts_backend"] = tb
-
 
 def _merge_animus_ui_inference_into_blob(cfg: dict) -> None:
     """After a flat ``inference_models`` update, keep ``animus_ui_settings`` aligned."""
@@ -570,6 +633,9 @@ async def animus_client_config_get(_: Request) -> Response:
     wl = cfg.get("wake_lock", True)
     if isinstance(wl, str):
         wl = wl.strip().lower() not in ("0", "false", "no", "off")
+    br = cfg.get("background_run", False)
+    if isinstance(br, str):
+        br = br.strip().lower() not in ("0", "false", "no", "off")
     im = cfg.get("inference_models")
     if not isinstance(im, dict):
         im = {}
@@ -584,6 +650,8 @@ async def animus_client_config_get(_: Request) -> Response:
         tb = "browser"
     ui_blob = cfg.get("animus_ui_settings")
     ui_out = ui_blob if isinstance(ui_blob, dict) else {}
+    if "beta" in ui_out:
+        ui_out = {k: v for k, v in ui_out.items() if k != "beta"}
     stt_src = _animus_chat_stt_source_from_cfg(cfg)
     stt_key = str(cfg.get("animus_chat_stt_openai_key") or "").strip()
     stt_key_set = bool(stt_key)
@@ -592,9 +660,21 @@ async def animus_client_config_get(_: Request) -> Response:
         stt_key_preview = f"…{stt_key[-4:]}" if len(stt_key) >= 4 else "••••"
     stt_base = str(cfg.get("animus_chat_stt_openai_base") or "").strip()
     stt_model = str(cfg.get("animus_chat_stt_openai_model") or "").strip()
+    try:
+        from animus.plugins.command_brief.prefs import command_brief_prefs_from_cfg as _cb_prefs
+
+        command_brief = _cb_prefs(cfg)
+    except Exception:
+        command_brief = {
+            "enabled": False,
+            "autoRefreshRecent": True,
+            "recentWindowDays": 3,
+        }
+    cb_ok, cb_reason = command_brief_plugin_available()
     return JSONResponse(
         {
             "wake_lock": bool(wl),
+            "background_run": bool(br),
             "first_run": cfg_still_first_run(cfg),
             "projects_dir": str(cfg.get("projects_dir") or "").strip(),
             "inference_models": im,
@@ -612,6 +692,11 @@ async def animus_client_config_get(_: Request) -> Response:
             "animus_chat_stt_openai_key_preview": stt_key_preview,
             "animus_chat_stt_openai_base": stt_base,
             "animus_chat_stt_openai_model": stt_model,
+            "command_brief": command_brief,
+            "command_brief_plugin": {
+                "available": cb_ok,
+                "reason": None if cb_ok else (cb_reason or "unknown"),
+            },
         },
     )
 
@@ -623,7 +708,9 @@ async def animus_client_config_post(req: Request) -> Response:
         body = {}
     cfg = _read_animus_client_config()
     if "ui_settings" in body and isinstance(body.get("ui_settings"), dict):
-        cfg["animus_ui_settings"] = _sanitize_ui_settings_blob(body.get("ui_settings"))
+        _merge_animus_ui_settings_into_cfg(cfg, body.get("ui_settings"))
+        if isinstance(cfg.get("animus_ui_settings"), dict):
+            cfg["animus_ui_settings"].pop("beta", None)
         _sync_cfg_flat_from_animus_ui(cfg)
     if "wake_lock" in body:
         cfg["wake_lock"] = bool(body.get("wake_lock"))
@@ -631,6 +718,13 @@ async def animus_client_config_post(req: Request) -> Response:
         if not isinstance(uis, dict):
             uis = {}
         uis = {**uis, "wake_lock_enabled": bool(cfg["wake_lock"])}
+        cfg["animus_ui_settings"] = uis
+    if "background_run" in body:
+        cfg["background_run"] = bool(body.get("background_run"))
+        uis = cfg.get("animus_ui_settings")
+        if not isinstance(uis, dict):
+            uis = {}
+        uis = {**uis, "background_run_enabled": bool(cfg["background_run"])}
         cfg["animus_ui_settings"] = uis
     if "projects_dir" in body:
         raw = str(body.get("projects_dir") or "").strip()
@@ -714,7 +808,13 @@ async def animus_client_config_post(req: Request) -> Response:
             ensure_animus_general_project()
         except Exception:
             log.warning("ensure_animus_general_project after client-config failed", exc_info=True)
-    return JSONResponse({"ok": True, "wake_lock": bool(cfg.get("wake_lock", True))})
+    return JSONResponse(
+        {
+            "ok": True,
+            "wake_lock": bool(cfg.get("wake_lock", True)),
+            "background_run": bool(cfg.get("background_run", False)),
+        }
+    )
 
 
 def _desktop_launcher_open_url(req: Request) -> str:
@@ -3359,6 +3459,11 @@ async def _lifespan(_app):
     except Exception as exc:
         log.warning("Hermes alignment: gateway probe failed during startup: %s", exc)
     await _probe_gateway_openai_models()
+    cb_ok, cb_reason = command_brief_plugin_available()
+    if cb_ok:
+        log.info("Command Brief plugin: registered")
+    else:
+        log.info("Command Brief plugin: unavailable — %s", cb_reason or "unknown")
     try:
         from tts_routes import schedule_default_piper_voices_if_needed
 
@@ -3376,6 +3481,8 @@ app = Starlette(
     lifespan=_lifespan,
     middleware=[Middleware(_ForwardedProtoHstsMiddleware)],
     routes=[
+        Route("/api/command-brief/health", command_brief_health, methods=["GET"]),
+        *_COMMAND_BRIEF_ROUTES,
         *wizard_route_table(),
         *cron_route_table(),
         *skills_route_table(),

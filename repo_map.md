@@ -100,6 +100,72 @@ Append structural changes here unless full regeneration is explicitly requested.
 
 Also update `project_memory/index.json` after structural changes.
 
+### 2026-05-07 — Animus Command Brief (optional animus-chat plugin)
+
+Added:
+
+- `animus/plugins/command_brief/` — removable Starlette routes (`/api/command-brief/state`, `/api/command-brief/sync`, `/api/command-brief/daily-log` — **daily-log GET** materializes missing `project_daily_summaries.md` with the template header only), governance-only readers, cache (`DATA_DIR/command_brief_cache.json`), summarizer (Hermes `/v1/chat/completions` non-stream; optional `response_format: json_object` with retry), append-only `project_daily_summaries.md` per project workspace.
+- `animus-chat/server.py` — monorepo root on `sys.path`, optional route table registration, `command_brief` object on `GET /api/animus/client-config`, `CHAT_SERVER_REV` bump.
+- `animus-chat/app/index.html` + `animus-chat/app/sw.js` — Command Brief overlay, Settings toggles, **Summaries** workspace button, header reopen control.
+- `animus-chat/tests/test_command_brief.py` — unit + UI string smoke checks.
+
+Conceptual mapping: **`animus/`** = optional ANIMUS plugins loaded by **animus-chat** (not Hermes Agent core).
+
+### 2026-05-07 — Command Brief packaging + health endpoint
+
+Changed:
+
+- `build-release.sh` — after creating `animus-v*.zip`, fails if `animus/plugins/command_brief/routes.py` is missing from the archive (buyer bundle must ship `animus/` + plugin tree, not `animus-chat/` alone).
+- `docker/Dockerfile` — copies `animus/` into `/app/animus/` next to `animus-chat/` so container runtime matches monorepo `sys.path` layout.
+- `animus-chat/server.py` — always registers `GET /api/command-brief/health` (JSON `available` / `routes_registered` / optional `reason`); startup logs exactly one of `Command Brief plugin: registered` / `Command Brief plugin: unavailable — …`; `GET /api/animus/client-config` adds `command_brief_plugin` for Settings UI.
+- `animus-chat/app/index.html` + `animus-chat/app/sw.js` — Settings shows plugin Available/Unavailable, disables controls + shows reason when unavailable; HTML comment documents the health URL for operators.
+
+### 2026-05-03 18:46 — active second safety gate + implementation/tasklist baseline mapping
+
+Changed:
+
+- `hermes-agent/animus/beta/context_protocol/request_adapter.py` — added active-mode safety gate enforcement (`shadow_benchmark_passed`, `fallback_to_manual`, `decision_diagnostics_enabled`, `active_local_dev_only` + local/dev environment check). If gate fails, requested `active` is forced to `shadow`.
+- `animus-chat/server.py` — beta config defaults/normalization now include active-gate controls (`shadow_benchmark_passed`, `decision_diagnostics_enabled`, `active_local_dev_only`) with safe defaults.
+- `hermes-agent/animus/beta/context_protocol/request_adapter.py` baseline rule map expanded for implementation/task-list prompts so baseline can require `patch` and `todo` when intent is present.
+
+Flow update:
+
+- `requested active -> evaluate safety gate -> (pass => active) | (fail => shadow)`.
+- Deterministic baseline still runs before LLM refinement; required baseline tools remain non-prunable.
+
+### 2026-05-03 18:40 — baseline-authoritative selector flow (deterministic first-pass + LLM refinement)
+
+Changed:
+
+- `hermes-agent/animus/beta/context_protocol/request_adapter.py` — selector flow now runs deterministic baseline required-tool rules **before** LLM selection, merges baseline + LLM outputs, and prunes only optional LLM extras. Required baseline tools are non-prunable unless unavailable.
+- `hermes-agent/animus/beta/context_protocol/schema.py` — beta decision log now carries selector calibration diagnostics (`baseline_required_tools`, `llm_selected_tools`, `llm_added_tools`, `pruned_optional_tools`) for benchmark attribution.
+- `hermes-agent/tests/animus/shadow_selector_harness.py` — benchmark now reports baseline hits, LLM-added tools, pruned optional tools, missed expected tools per prompt, plus `empty_selection_rate`.
+
+Flow update:
+
+- `User prompt -> deterministic baseline_rules(prompt) -> required_tools -> selector model output -> merge(required + llm) -> prune optional-only extras -> guard validation -> final active/shadow handling`.
+- `shadow` mode still logs decisions only (no request mutation).
+- Active mode remains operationally gated/disabled by rollout policy despite improved metrics.
+
+### 2026-05-03 18:29 — beta inference decision path mapping (skill/tool context protocol + auto-router)
+
+Added:
+
+- `hermes-agent/animus/beta/context_protocol/` — isolated beta module for selector/router decisioning (`schema`, `registry_snapshot`, `selector`, `router`, `guards`, `fallback`, `logging`, `request_adapter`, `beta_config` for shared defaults/normalization).
+- `docs/beta_skill_tool_context_protocol.md` — rollout, safety, and mode behavior reference for `off|shadow|active`.
+
+Changed:
+
+- `hermes-agent/gateway/platforms/api_server.py` — inference hook point: consumes `hermes_beta`/`hermes_beta_candidates`, runs beta adapter before agent creation, applies active-mode provider/model/tool/skill selection, and fails closed to manual/full-context path.
+- `animus-chat/server.py` — injects normalized beta config + enabled provider/model candidates into proxied `/api/chat` requests only when beta mode is enabled.
+- `animus-chat/app/index.html` — Inference + Skills/Tools settings now expose Beta controls (mode, confidence, max selected tools/skills, auto-router toggle/mode/provider/model, fallback-to-manual).
+
+Flow:
+
+- `User prompt -> beta selector/router decision model (cheap enabled candidate) -> guard validation -> active-mode request adaptation (provider/model + selected tools/skills) -> final inference`.
+- `shadow` mode runs decisioning + logs but keeps request unchanged.
+- Any invalid decision/model failure/low confidence falls back to heuristic, then to normal manual/full-context path when needed.
+
 ### 2026-05-03 16:55 — project documentation information architecture pass
 
 Changed:
@@ -242,7 +308,7 @@ Root: `/home/sketch/animus`
 - `animus.env.example` — stock template + commented **mitmproxy** vars (same as `animus-chat/animus.env.example` pointer).
 - `ANIMUSLOGO.png` — large file (664372 bytes)
 - `ANIMUSLOGOICON.png` — large file (478545 bytes)
-- `build-release.sh` — Buyer zip from `VERSION`; excludes dev trees (e.g. `hermes-agent/.venv`, `hermes-agent/.e2e-venv`, `version archive/`, `artifacts/`, internal `project_*.md`); fails if zip exceeds 55MB cap.
+- `build-release.sh` — Buyer zip from `VERSION`; excludes dev trees (e.g. `hermes-agent/.venv`, `hermes-agent/.e2e-venv`, `version archive/`, `backup/` local snapshots, `artifacts/`, internal `project_*.md`), non-buyer docs (`docs/beta_skill_tool_context_protocol.md`), `project_ideas/`, root `notes.md`; fails if zip exceeds 55MB cap.
 - `CLAUDE.md` — --- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true
 - `docker/.env.example` — # Docker-specific copy of animus env — paths differ inside the container. HERMES_API_URL=http://host.docker.internal:8642 HERMES_API_KEY=
 - `docker/docker-compose.yml` — services: animus: build:

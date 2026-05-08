@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-03T20:55:00Z",
+  "generated_at": "2026-05-08T02:06:14Z",
   "project_root": "/home/sketch/animus",
   "entrypoints": [
     {
       "path": "animus-chat/app/index.html",
-      "summary": "large file (640267 bytes)"
+      "summary": "large file (727894 bytes)"
     },
     {
       "path": "animus-chat/server.py",
-      "summary": "large file (140743 bytes)"
+      "summary": "large file (145403 bytes)"
     },
     {
       "path": "hermes-agent/acp_adapter/server.py",
@@ -35,19 +35,19 @@
   "areas": [
     {
       "name": "hermes-agent",
-      "file_count": 138
+      "file_count": 118
     },
     {
       "name": "animus-chat",
-      "file_count": 41
+      "file_count": 50
+    },
+    {
+      "name": "animus",
+      "file_count": 12
     },
     {
       "name": "docs",
-      "file_count": 8
-    },
-    {
-      "name": "artifacts",
-      "file_count": 3
+      "file_count": 9
     },
     {
       "name": "docker",
@@ -62,23 +62,15 @@
       "file_count": 1
     },
     {
-      "name": "animus-v1.0.9.zip",
+      "name": "animus-v1.1.4.zip",
       "file_count": 1
     },
     {
-      "name": "animus-v1.1.0.zip",
+      "name": "animus-v1.1.5.zip",
       "file_count": 1
     },
     {
-      "name": "animus-v1.1.1.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.1.2.zip",
-      "file_count": 1
-    },
-    {
-      "name": "animus-v1.1.3.zip",
+      "name": "animus-v1.1.6.zip",
       "file_count": 1
     },
     {
@@ -95,6 +87,18 @@
     },
     {
       "name": "ANIMUSLOGOICON.png",
+      "file_count": 1
+    },
+    {
+      "name": "artifacts",
+      "file_count": 1
+    },
+    {
+      "name": "backup",
+      "file_count": 1
+    },
+    {
+      "name": "blob.zip",
       "file_count": 1
     },
     {
@@ -122,11 +126,11 @@
       "file_count": 1
     },
     {
-      "name": "project_goal.md",
+      "name": "project_daily_summaries.md",
       "file_count": 1
     },
     {
-      "name": "project_history.md",
+      "name": "project_goal.md",
       "file_count": 1
     }
   ],
@@ -137,11 +141,7 @@
     },
     {
       "path": "AGENTS.md",
-      "summary": "--- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true"
-    },
-    {
-      "path": "animus-chat/animus.env",
-      "summary": "text file (1 bytes)"
+      "summary": "# AGENTS.md Canonical project contract for all AI coding agents."
     },
     {
       "path": "animus-chat/animus.env.example",
@@ -181,7 +181,7 @@
     },
     {
       "path": "animus-chat/app/index.html",
-      "summary": "large file (640267 bytes)"
+      "summary": "large file (727894 bytes)"
     },
     {
       "path": "animus-chat/app/manifest.json",
@@ -189,7 +189,7 @@
     },
     {
       "path": "animus-chat/app/sw.js",
-      "summary": "// Bump when shell HTML or critical assets change \u2014 activate() evicts older caches. const CACHE = 'animus-v60';"
+      "summary": "// Bump when shell HTML or critical assets change \u2014 activate() evicts older caches. const CACHE = 'animus-v71';"
     },
     {
       "path": "animus-chat/cron_routes.py",
@@ -228,10 +228,6 @@
       "summary": "# Project history (ANIMUS animus-chat) Chronological work log. Newest entries at the bottom."
     },
     {
-      "path": "animus-chat/project_history.md.flock",
-      "summary": "empty file"
-    },
-    {
       "path": "animus-chat/repo_map.md",
       "summary": "# Repo map \u2014 `animus-chat/` Python Starlette server (`server.py`) plus static PWA in `app/`."
     },
@@ -248,8 +244,44 @@
       "summary": "#!/usr/bin/env bash # Reload ANIMUS after editing server.py (user systemd unit animus.service). set -euo pipefail"
     },
     {
+      "path": "animus-chat/rules_templates/AGENTS.md",
+      "summary": "# AGENTS.md Canonical project contract for all AI coding agents."
+    },
+    {
+      "path": "animus-chat/rules_templates/CLAUDE.md",
+      "summary": "@AGENTS.md # Claude adapter"
+    },
+    {
+      "path": "animus-chat/rules_templates/notes.md",
+      "summary": "# Notes Scratch space for this repository. Not a substitute for `project_history.md` or `project_knowledge.md`."
+    },
+    {
+      "path": "animus-chat/rules_templates/project_goal.md",
+      "summary": "# Project goal ## What we are building"
+    },
+    {
+      "path": "animus-chat/rules_templates/project_history.md",
+      "summary": "# Project History Append-only project timeline."
+    },
+    {
+      "path": "animus-chat/rules_templates/project_knowledge.md",
+      "summary": "# Project Knowledge Durable project lessons only."
+    },
+    {
+      "path": "animus-chat/rules_templates/project_status.md",
+      "summary": "# Project Status Short current-state file. Full read allowed."
+    },
+    {
+      "path": "animus-chat/rules_templates/repo_map.md",
+      "summary": "# Repo Map Token-light human navigation map."
+    },
+    {
+      "path": "animus-chat/rules_templates/setup_repo.md",
+      "summary": "# Bootstrap guide: agent continuity layout for `[repo]` This document describes **exactly** how to create the same repository documentation and agent-rule layo\u2026"
+    },
+    {
       "path": "animus-chat/server.py",
-      "summary": "large file (140743 bytes)"
+      "summary": "large file (145403 bytes)"
     },
     {
       "path": "animus-chat/setup_repo.md",
@@ -292,6 +324,14 @@
       "summary": "# ANIMUS animus-chat test package (unittest discover from animus-chat/)."
     },
     {
+      "path": "animus-chat/tests/test_beta_context_protocol.py",
+      "summary": "from __future__ import annotations import tempfile"
+    },
+    {
+      "path": "animus-chat/tests/test_command_brief.py",
+      "summary": "from __future__ import annotations import asyncio"
+    },
+    {
       "path": "animus-chat/tests/test_token_usage_animus_client.py",
       "summary": "\"\"\"Regression tests for allowlisted ``animus_client`` slugs (token_usage.jsonl). Run from ``animus-chat/``::"
     },
@@ -304,32 +344,72 @@
       "summary": "\"\"\"TTS helpers \u2014 browser vs local Piper (optional binary).\"\"\" from __future__ import annotations"
     },
     {
-      "path": "animus-v1.0.9.zip",
-      "summary": "large file (28887236 bytes)"
+      "path": "animus-v1.1.4.zip",
+      "summary": "large file (1143511525 bytes)"
     },
     {
-      "path": "animus-v1.1.0.zip",
-      "summary": "large file (28915617 bytes)"
+      "path": "animus-v1.1.5.zip",
+      "summary": "large file (16090383 bytes)"
     },
     {
-      "path": "animus-v1.1.1.zip",
-      "summary": "large file (28921742 bytes)"
-    },
-    {
-      "path": "animus-v1.1.2.zip",
-      "summary": "large file (28924003 bytes)"
-    },
-    {
-      "path": "animus-v1.1.3.zip",
-      "summary": "large file (28925693 bytes)"
+      "path": "animus-v1.1.6.zip",
+      "summary": "large file (16094669 bytes)"
     },
     {
       "path": "animus.env",
-      "summary": "# === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not \u2026"
+      "summary": "ANIMUS_UPDATE_URL=https://animusai.vercel.app/api/latest.json ANTHROPIC_API_KEY= CHAT_HOST=::"
     },
     {
       "path": "animus.env.example",
       "summary": "# === ANIMUS Configuration === # Copy to animus.env (in repo root or next to animus-chat/server.py) and fill values. # Default dev port is 3001 so it does not \u2026"
+    },
+    {
+      "path": "animus/__init__.py",
+      "summary": "\"\"\"Animus monorepo Python packages (optional plugins for animus-chat).\"\"\""
+    },
+    {
+      "path": "animus/plugins/__init__.py",
+      "summary": "\"\"\"Animus plugins loaded by animus-chat (optional, feature-flagged).\"\"\""
+    },
+    {
+      "path": "animus/plugins/command_brief/__init__.py",
+      "summary": "\"\"\"Animus Command Brief \u2014 optional startup project overview (see project_ideas/command_brief.md).\"\"\" from animus.plugins.command_brief.routes import command_br\u2026"
+    },
+    {
+      "path": "animus/plugins/command_brief/cache_store.py",
+      "summary": "from __future__ import annotations import json"
+    },
+    {
+      "path": "animus/plugins/command_brief/constants.py",
+      "summary": "from __future__ import annotations # Governance-relative paths only (no repo walk). Paths use POSIX separators under workspace root."
+    },
+    {
+      "path": "animus/plugins/command_brief/daily_log.py",
+      "summary": "from __future__ import annotations from datetime import datetime, timezone"
+    },
+    {
+      "path": "animus/plugins/command_brief/governance.py",
+      "summary": "from __future__ import annotations from dataclasses import dataclass"
+    },
+    {
+      "path": "animus/plugins/command_brief/json_extract.py",
+      "summary": "from __future__ import annotations import json"
+    },
+    {
+      "path": "animus/plugins/command_brief/prefs.py",
+      "summary": "from __future__ import annotations from typing import Any"
+    },
+    {
+      "path": "animus/plugins/command_brief/regenerate.py",
+      "summary": "from __future__ import annotations from animus.plugins.command_brief.governance import docs_changed_since, modified_within_recent_window"
+    },
+    {
+      "path": "animus/plugins/command_brief/routes.py",
+      "summary": "from __future__ import annotations import logging"
+    },
+    {
+      "path": "animus/plugins/command_brief/summarize.py",
+      "summary": "from __future__ import annotations import json"
     },
     {
       "path": "ANIMUSLOGO.png",
@@ -344,12 +424,12 @@
       "summary": "# Proof: ANIMUS digest no longer duplicated in `sessions.system_prompt` (token inflation fix) This document records **live gateway** verification after deployi\u2026"
     },
     {
-      "path": "artifacts/hermes_project_session_priming_e2e.md",
-      "summary": "# Hermes project session priming \u2014 E2E verification artifact (updated) ## Status summary"
+      "path": "backup/animus-repo-backup-20260507-122047.tar.gz",
+      "summary": "large file (1131053961 bytes)"
     },
     {
-      "path": "artifacts/token_tracker_tab_explained.md",
-      "summary": "# ANIMUS Token Tracker Tab \u2014 Full Explanation This document traces **capture \u2192 `token_usage.jsonl` \u2192 read API \u2192 Tokens tab UI \u2192 CSV**, with explicit limits and\u2026"
+      "path": "blob.zip",
+      "summary": "large file (534099 bytes)"
     },
     {
       "path": "build-release.sh",
@@ -357,7 +437,7 @@
     },
     {
       "path": "CLAUDE.md",
-      "summary": "--- description: Mandatory operating rules for AI coding agents in the animus repository. alwaysApply: true"
+      "summary": "# AGENTS.md Canonical project contract for all AI coding agents."
     },
     {
       "path": "docker/.env.example",
@@ -374,6 +454,10 @@
     {
       "path": "docs/animus-user-guide.md",
       "summary": "# ANIMUS user guide This document is the **official in-app Help source**. The Help assistant only uses what is written here."
+    },
+    {
+      "path": "docs/beta_skill_tool_context_protocol.md",
+      "summary": "# Beta Skill/Tool Context Protocol ## Purpose"
     },
     {
       "path": "docs/BUYER_UPDATES.md",
@@ -657,7 +741,7 @@
     },
     {
       "path": "hermes-agent/agent/prompt_builder.py",
-      "summary": "large file (49054 bytes)"
+      "summary": "large file (49646 bytes)"
     },
     {
       "path": "hermes-agent/agent/prompt_caching.py",
@@ -692,60 +776,12 @@
       "summary": "\"\"\"Progressive subdirectory hint discovery. As the agent navigates into subdirectories via tool calls (read_file, terminal,"
     },
     {
-      "path": "hermes-agent/agent/task_complexity.py",
-      "summary": "\"\"\"Heuristic task complexity for routing (delegation ACP, per-turn model pick).\"\"\" from __future__ import annotations"
-    },
-    {
-      "path": "hermes-agent/agent/title_generator.py",
-      "summary": "\"\"\"Auto-generate short session titles from the first user/assistant exchange. Runs asynchronously after the first response is delivered so it never"
-    },
-    {
-      "path": "hermes-agent/agent/trajectory.py",
-      "summary": "\"\"\"Trajectory saving utilities and static helpers. _convert_to_trajectory_format stays as an AIAgent method (batch_runner.py"
-    },
-    {
-      "path": "hermes-agent/agent/transports/__init__.py",
-      "summary": "\"\"\"Transport layer types and registry for provider response normalization. Usage:"
-    },
-    {
-      "path": "hermes-agent/agent/transports/anthropic.py",
-      "summary": "\"\"\"Anthropic Messages API transport. Delegates to the existing adapter functions in agent/anthropic_adapter.py."
-    },
-    {
-      "path": "hermes-agent/agent/transports/base.py",
-      "summary": "\"\"\"Abstract base for provider transports. A transport owns the data path for one api_mode:"
-    },
-    {
-      "path": "hermes-agent/agent/transports/bedrock.py",
-      "summary": "\"\"\"AWS Bedrock Converse API transport. Delegates to the existing adapter functions in agent/bedrock_adapter.py."
-    },
-    {
-      "path": "hermes-agent/agent/transports/chat_completions.py",
-      "summary": "\"\"\"OpenAI Chat Completions transport. Handles the default api_mode ('chat_completions') used by ~16 OpenAI-compatible"
-    },
-    {
-      "path": "hermes-agent/agent/transports/codex.py",
-      "summary": "\"\"\"OpenAI Responses API (Codex) transport. Delegates to the existing adapter functions in agent/codex_responses_adapter.py."
-    },
-    {
-      "path": "hermes-agent/agent/transports/types.py",
-      "summary": "\"\"\"Shared types for normalized provider responses. These dataclasses define the canonical shape that all provider adapters"
-    },
-    {
-      "path": "hermes-agent/agent/usage_pricing.py",
-      "summary": "from __future__ import annotations from dataclasses import dataclass"
-    },
-    {
       "path": "hermes-agent/AGENTS.md",
       "summary": "# Hermes Agent - Development Guide Instructions for AI coding assistants and developers working on the hermes-agent codebase."
     },
     {
       "path": "hermes-agent/animus_chat_digest_persist.py",
       "summary": "\"\"\"Strip ANIMUS-only transient system text before persisting gateway chat ephemerals to SQLite.\"\"\" _ANIMUS_CHAT_DIGEST_MARKERS = ("
-    },
-    {
-      "path": "hermes-agent/assets/banner.png",
-      "summary": "binary (.png)"
     },
     {
       "path": "hermes-agent/batch_runner.py",
@@ -766,22 +802,6 @@
     {
       "path": "hermes-agent/CONTRIBUTING.md",
       "summary": "# Contributing to Hermes Agent Thank you for contributing to Hermes Agent! This guide covers everything you need: setting up your dev environment, understandin\u2026"
-    },
-    {
-      "path": "hermes-agent/cron/__init__.py",
-      "summary": "\"\"\" Cron job scheduling system for Hermes Agent."
-    },
-    {
-      "path": "hermes-agent/cron/hermes_chat_delivery.py",
-      "summary": "\"\"\" Append cron job output into Hermes Chat server-side transcripts."
-    },
-    {
-      "path": "hermes-agent/cron/jobs.py",
-      "summary": "\"\"\" Cron job storage and management."
-    },
-    {
-      "path": "hermes-agent/cron/scheduler.py",
-      "summary": "large file (59450 bytes)"
     },
     {
       "path": "hermes-agent/docker-compose.yml",
@@ -826,22 +846,6 @@
     {
       "path": "hermes-agent/LICENSE",
       "summary": "MIT License Copyright (c) 2025 Nous Research"
-    },
-    {
-      "path": "hermes-agent/localhost+4-key.pem",
-      "summary": "-----BEGIN PRIVATE KEY----- MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDwQPXikE+J3Te7 bguwMrxMh0DRPvgtYImpMo0PSo0zwYp2Oa2aHptkYov9ZNFBBWZEh18+ZtzVqovH"
-    },
-    {
-      "path": "hermes-agent/localhost+4.pem",
-      "summary": "-----BEGIN CERTIFICATE----- MIIEFjCCAn6gAwIBAgIQbwnMYPFEekdShkG0EYb1yTANBgkqhkiG9w0BAQsFADBV MR4wHAYDVQQKExVta2NlcnQgZGV2ZWxvcG1lbnQgQ0ExFTATBgNVBAsMDHNrZXRj"
-    },
-    {
-      "path": "hermes-agent/localhost+5-key.pem",
-      "summary": "-----BEGIN PRIVATE KEY----- MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDg62/0eigfUjfT kQTtuTNHg4LKcGFeN/aAKekpjLW3Qm6S357jesnfsqyOnA5UixVxS3BcnMyzxswp"
-    },
-    {
-      "path": "hermes-agent/localhost+5.pem",
-      "summary": "-----BEGIN CERTIFICATE----- MIIEHTCCAoWgAwIBAgIRAJcTSKVMYoe9YRpIKJl4+J8wDQYJKoZIhvcNAQELBQAw VTEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMRUwEwYDVQQLDAxza2V0"
     },
     {
       "path": "hermes-agent/MANIFEST.in",
@@ -921,7 +925,7 @@
     },
     {
       "path": "hermes-agent/run_agent.py",
-      "summary": "large file (659662 bytes)"
+      "summary": "large file (660372 bytes)"
     },
     {
       "path": "hermes-agent/SECURITY.md",
@@ -972,12 +976,16 @@
       "summary": "# Notes Operator notes for this project (Markdown). Edited in Hermes Chat under **Project workspace \u2192 Notes**."
     },
     {
+      "path": "project_daily_summaries.md",
+      "summary": "# Project Daily Summaries This file is automatically appended by Animus Command Brief."
+    },
+    {
       "path": "project_goal.md",
-      "summary": "large file (140753 bytes)"
+      "summary": "large file (141576 bytes)"
     },
     {
       "path": "project_history.md",
-      "summary": "large file (82934 bytes)"
+      "summary": "large file (150368 bytes)"
     },
     {
       "path": "project_history.md.flock",
@@ -985,11 +993,11 @@
     },
     {
       "path": "project_knowledge.md",
-      "summary": "large file (96687 bytes)"
+      "summary": "large file (107043 bytes)"
     },
     {
       "path": "project_status.md",
-      "summary": "# Project status (animus) ## Current state"
+      "summary": "large file (69837 bytes)"
     },
     {
       "path": "README.md",
@@ -997,7 +1005,7 @@
     },
     {
       "path": "repo_map.md",
-      "summary": "large file (97979 bytes)"
+      "summary": "large file (109321 bytes)"
     },
     {
       "path": "setup_repo.md",
@@ -1009,78 +1017,12 @@
     },
     {
       "path": "VERSION",
-      "summary": "1.1.3"
+      "summary": "1.1.6"
     }
   ],
   "commands": [
     "Read project_memory/index.json first",
     "Read repo_map.md only for human-oriented backup detail",
     "Read only recent project_history.md lines when needed"
-  ],
-  "agent_navigation": {
-    "purpose": "Compact machine-readable navigation for bounded-read agent workflows.",
-    "preferred_doc_read_order": [
-      "project_status.md",
-      "project_memory/index.json",
-      "repo_map.md (targeted sections)",
-      "project_knowledge.md (targeted sections)",
-      "project_history.md (recent tail/keyword hits)",
-      "project_goal.md (targeted directive sections)"
-    ],
-    "project_docs": [
-      {
-        "path": "project_status.md",
-        "purpose": "Current state, priorities, blockers, and latest validation outcomes.",
-        "quick_sections": [
-          "Quick Navigation",
-          "Current state",
-          "Current priorities",
-          "Validation status",
-          "Blockers"
-        ]
-      },
-      {
-        "path": "project_knowledge.md",
-        "purpose": "Durable lessons, operational gotchas, and repeatable conventions.",
-        "quick_sections": [
-          "Navigation Index",
-          "New Notes Inbox",
-          "Rules",
-          "Historical Notes Archive"
-        ]
-      },
-      {
-        "path": "project_history.md",
-        "purpose": "Append-only audit timeline with normalized timestamp headings.",
-        "quick_sections": [
-          "Navigation Index",
-          "Entries"
-        ]
-      },
-      {
-        "path": "repo_map.md",
-        "purpose": "Human-readable repository map and structure deltas.",
-        "quick_sections": [
-          "Quick Navigation",
-          "Conventional layout mapping",
-          "Repo Map Deltas",
-          "Files"
-        ]
-      },
-      {
-        "path": "project_goal.md",
-        "purpose": "Master product directive and phased implementation/go-live instructions.",
-        "quick_sections": [
-          "Directive Navigation Index",
-          "ANIMUS \u2014 Distributable Product Build Directive",
-          "ANIMUS \u2014 Phase 4: Go-Live Directive"
-        ]
-      }
-    ],
-    "bounded_read_patterns": [
-      "rg -n \"^## \" <doc>.md",
-      "rg -n -i \"keyword\" <doc>.md",
-      "ReadFile with offset/limit for target section only"
-    ]
-  }
+  ]
 }

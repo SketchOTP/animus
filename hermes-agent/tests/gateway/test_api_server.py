@@ -16,6 +16,7 @@ import asyncio
 import json
 import time
 import uuid
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -2372,3 +2373,99 @@ class TestSessionIdHeader:
             call_kwargs = mock_run.call_args.kwargs
             assert call_kwargs["conversation_history"] == []
             assert call_kwargs["session_id"] == "some-session"
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/runs — beta context wiring
+# ---------------------------------------------------------------------------
+
+
+class TestRunsEndpointBetaWiring:
+    @pytest.mark.asyncio
+    async def test_runs_passes_beta_selections_to_create_agent(self, adapter):
+        """POST /v1/runs should honor hermes_beta the same way as chat completions."""
+        app = _create_app(adapter)
+        app.router.add_post("/v1/runs", adapter._handle_runs)
+
+        create_calls = []
+
+        mock_agent = MagicMock()
+        mock_agent.run_conversation.return_value = {
+            "final_response": "done",
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "total_tokens": 2,
+        }
+
+        def _capture_create(**kwargs):
+            create_calls.append(kwargs)
+            return mock_agent
+
+        beta_ret = SimpleNamespace(
+            selected_provider="openrouter",
+            selected_model="test-mini",
+            selected_tools=["read_file", "patch"],
+            selected_skills=["writing-plans"],
+        )
+
+        with patch.object(adapter, "_create_agent", side_effect=_capture_create):
+            with patch(
+                "animus.beta.context_protocol.request_adapter.apply_beta_context_protocol",
+                return_value=beta_ret,
+            ):
+                async with TestClient(TestServer(app)) as cli:
+                    resp = await cli.post(
+                        "/v1/runs",
+                        json={
+                            "input": "hello",
+                            "hermes_beta": {"mode": "active"},
+                            "model": "other-model",
+                        },
+                    )
+                    assert resp.status == 202
+
+        for _ in range(50):
+            await asyncio.sleep(0.05)
+            if create_calls:
+                break
+
+        assert create_calls, "expected _create_agent from background run task"
+        kw = create_calls[0]
+        assert kw.get("selected_tools") == ["read_file", "patch"]
+        assert kw.get("selected_skills") == ["writing-plans"]
+        assert kw.get("model_override") == "test-mini"
+        assert kw.get("provider_override") == "openrouter"
+
+    @pytest.mark.asyncio
+    async def test_responses_non_stream_passes_beta_to_run_agent(self, adapter):
+        """POST /v1/responses (non-stream) should pass beta tool/skill/model wiring to _run_agent."""
+        app = _create_app(adapter)
+        mock_result = {"final_response": "OK", "messages": []}
+        beta_ret = SimpleNamespace(
+            selected_provider="openrouter",
+            selected_model="resp-mini",
+            selected_tools=["read_file"],
+            selected_skills=["plan"],
+        )
+        with patch.object(adapter, "_run_agent", new_callable=AsyncMock) as mock_run:
+            mock_run.return_value = (
+                mock_result,
+                {"input_tokens": 2, "output_tokens": 3, "total_tokens": 5},
+            )
+            with patch(
+                "animus.beta.context_protocol.request_adapter.apply_beta_context_protocol",
+                return_value=beta_ret,
+            ):
+                async with TestClient(TestServer(app)) as cli:
+                    resp = await cli.post(
+                        "/v1/responses",
+                        json={"input": "hi", "hermes_beta": {"mode": "active"}},
+                    )
+                    assert resp.status == 200
+                    data = await resp.json()
+        assert data.get("model") == "resp-mini"
+        kw = mock_run.call_args.kwargs
+        assert kw.get("selected_tools") == ["read_file"]
+        assert kw.get("selected_skills") == ["plan"]
+        assert kw.get("model_override") == "resp-mini"
+        assert kw.get("provider_override") == "openrouter"

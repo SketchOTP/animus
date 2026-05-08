@@ -50,7 +50,6 @@ Usage:
 """
 
 import atexit
-import functools
 import json
 import logging
 import os
@@ -82,6 +81,10 @@ from tools.browser_providers.browserbase import BrowserbaseProvider
 from tools.browser_providers.browser_use import BrowserUseProvider
 from tools.browser_providers.firecrawl import FirecrawlProvider
 from tools.tool_backend_helpers import normalize_browser_cloud_provider
+from tools import sane_path as _sane_path
+
+# Module-qualified sane_path reads so ``patch('tools.sane_path.discover_…')`` works.
+_SANE_PATH = _sane_path.SANE_PATH
 
 # Camofox local anti-detection browser backend (optional).
 # When CAMOFOX_URL is set, all browser operations route through the
@@ -93,52 +96,12 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# Standard PATH entries for environments with minimal PATH (e.g. systemd services).
-# Includes Android/Termux and macOS Homebrew locations needed for agent-browser,
-# npx, node, and Android's glibc runner (grun).
-_SANE_PATH_DIRS = (
-    "/data/data/com.termux/files/usr/bin",
-    "/data/data/com.termux/files/usr/sbin",
-    "/opt/homebrew/bin",
-    "/opt/homebrew/sbin",
-    "/usr/local/sbin",
-    "/usr/local/bin",
-    "/usr/sbin",
-    "/usr/bin",
-    "/sbin",
-    "/bin",
-)
-_SANE_PATH = os.pathsep.join(_SANE_PATH_DIRS)
-
-
-@functools.lru_cache(maxsize=1)
-def _discover_homebrew_node_dirs() -> tuple[str, ...]:
-    """Find Homebrew versioned Node.js bin directories (e.g. node@20, node@24).
-
-    When Node is installed via ``brew install node@24`` and NOT linked into
-    /opt/homebrew/bin, agent-browser isn't discoverable on the default PATH.
-    This function finds those directories so they can be prepended.
-    """
-    dirs: list[str] = []
-    homebrew_opt = "/opt/homebrew/opt"
-    if not os.path.isdir(homebrew_opt):
-        return tuple(dirs)
-    try:
-        for entry in os.listdir(homebrew_opt):
-            if entry.startswith("node") and entry != "node":
-                bin_dir = os.path.join(homebrew_opt, entry, "bin")
-                if os.path.isdir(bin_dir):
-                    dirs.append(bin_dir)
-    except OSError:
-        pass
-    return tuple(dirs)
-
 
 def _browser_candidate_path_dirs() -> list[str]:
     """Return ordered browser CLI PATH candidates shared by discovery and execution."""
     hermes_home = get_hermes_home()
     hermes_node_bin = str(hermes_home / "node" / "bin")
-    return [hermes_node_bin, *list(_discover_homebrew_node_dirs()), *_SANE_PATH_DIRS]
+    return _sane_path.extended_sane_path_dirs(hermes_node_bin)
 
 
 def _merge_browser_path(existing_path: str = "") -> str:
@@ -321,6 +284,44 @@ def _get_dialog_policy_config() -> Tuple[str, float]:
         return policy, timeout_s
     except Exception:
         return DEFAULT_DIALOG_POLICY, DEFAULT_DIALOG_TIMEOUT_S
+
+
+def _get_agent_browser_args_from_config() -> str:
+    """Return extra Chromium flags from ``browser.agent_browser_args`` (config.yaml).
+
+    Values follow agent-browser's ``AGENT_BROWSER_ARGS`` convention: a single
+    comma-separated string, or a YAML list of flag strings joined with commas.
+    """
+    try:
+        from hermes_cli.config import read_raw_config
+
+        cfg = read_raw_config()
+        browser_cfg = cfg.get("browser", {}) if isinstance(cfg, dict) else {}
+        if not isinstance(browser_cfg, dict):
+            return ""
+        raw = browser_cfg.get("agent_browser_args")
+        if raw is None:
+            return ""
+        if isinstance(raw, str):
+            return raw.strip()
+        if isinstance(raw, list):
+            parts = [str(x).strip() for x in raw if str(x).strip()]
+            return ",".join(parts)
+    except Exception as e:
+        logger.debug("Could not read browser.agent_browser_args: %s", e)
+    return ""
+
+
+def _merge_agent_browser_args_into_env(browser_env: dict) -> None:
+    """Merge config ``browser.agent_browser_args`` into ``AGENT_BROWSER_ARGS``."""
+    extra = _get_agent_browser_args_from_config()
+    if not extra:
+        return
+    existing = (browser_env.get("AGENT_BROWSER_ARGS") or "").strip()
+    if existing:
+        browser_env["AGENT_BROWSER_ARGS"] = f"{existing},{extra}"
+    else:
+        browser_env["AGENT_BROWSER_ARGS"] = extra
 
 
 def _ensure_cdp_supervisor(task_id: str) -> None:
@@ -1290,7 +1291,9 @@ def _run_browser_command(
         if "AGENT_BROWSER_IDLE_TIMEOUT_MS" not in browser_env:
             idle_ms = str(BROWSER_SESSION_INACTIVITY_TIMEOUT * 1000)
             browser_env["AGENT_BROWSER_IDLE_TIMEOUT_MS"] = idle_ms
-        
+
+        _merge_agent_browser_args_into_env(browser_env)
+
         # Use temp files for stdout/stderr instead of pipes.
         # agent-browser starts a background daemon that inherits file
         # descriptors.  With capture_output=True (pipes), the daemon keeps
@@ -2457,7 +2460,7 @@ def cleanup_all_browsers() -> None:
     global _cached_command_timeout, _command_timeout_resolved
     _cached_agent_browser = None
     _agent_browser_resolved = False
-    _discover_homebrew_node_dirs.cache_clear()
+    _sane_path.discover_homebrew_node_dirs.cache_clear()
     _cached_command_timeout = None
     _command_timeout_resolved = False
 

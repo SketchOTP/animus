@@ -2927,6 +2927,6 @@ Single place for the **2026-05-07** assistant chat thread (UI + behavior + ops);
 - **`VERSION`** **1.1.6**; **`./build-release.sh`** → **`animus-v1.1.6.zip`** (~16 MB).
 - **Vercel:** first **`./scripts/release-and-publish.sh`** failed — total bundle **~298 MB** &gt; **245 MB** Lambda cap because sibling **`animus-site/releases/`** held many historical buyer zips. **Pruned** local **`releases/`** to **`1.1.4`–`1.1.6`** + README; redeploy **OK**; **`npx vercel alias set … animusai.vercel.app`** → Production URL.
 - **Manifest:** **`./scripts/publish-animus-manifest.sh`** (Production **`ADMIN_TOKEN`** from **`animus-site/.env.production.local`**) → **`GET https://animusai.vercel.app/api/latest.json`** **1.1.6**; **`/releases/animus-v1.1.6.zip`** HTTP **200**.
-- **Repo:** **`.gitignore`** **`backup/`**, **`/blob.zip`**, **`project_daily_summaries.md`**; **git push `main`** **`0cd2620`** (accumulated product changes).
+- **Repo:** **`.gitignore`** **`backup/`**, **`/blob.zip`**, **`project_daily_summaries.md`**; **git push `main`** product commit **`0cd2620`**, doc follow-up **`6a4e1ca`**.
 
 

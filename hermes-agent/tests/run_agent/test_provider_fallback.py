@@ -7,11 +7,7 @@ advancement through multiple providers.
 
 from unittest.mock import MagicMock, patch
 
-from run_agent import (
-    AIAgent,
-    _augment_fallback_chain_with_claude_subscription,
-    _pool_may_recover_from_rate_limit,
-)
+from run_agent import AIAgent, _pool_may_recover_from_rate_limit
 
 
 def _make_agent(fallback_model=None):
@@ -84,76 +80,6 @@ class TestFallbackChainInit:
     def test_invalid_dict_no_provider(self):
         agent = _make_agent(fallback_model={"model": "gpt-4o"})
         assert agent._fallback_chain == []
-
-
-# ── Codex → Claude subscription implicit fallback ──────────────────────────
-
-
-class TestCodexImplicitClaudeSubscriptionFallback:
-    def test_appends_when_codex_primary_and_token_present(self):
-        chain = [{"provider": "openrouter", "model": "x/y"}]
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-x"):
-            out = _augment_fallback_chain_with_claude_subscription(
-                chain, provider="openai-codex",
-            )
-        assert out[:-1] == chain
-        assert out[-1] == {
-            "provider": "anthropic",
-            "model": "claude-sonnet-4-6",
-        }
-
-    def test_skips_when_no_anthropic_credentials(self):
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value=None):
-            out = _augment_fallback_chain_with_claude_subscription(
-                [], provider="openai-codex",
-            )
-        assert out == []
-
-    def test_skips_non_codex_primary(self):
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-x"):
-            out = _augment_fallback_chain_with_claude_subscription(
-                [], provider="openrouter",
-            )
-        assert out == []
-
-    def test_skips_when_chain_already_has_anthropic(self):
-        chain = [{"provider": "anthropic", "model": "claude-opus-4-6"}]
-        with patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-x"):
-            out = _augment_fallback_chain_with_claude_subscription(
-                chain, provider="openai-codex",
-            )
-        assert out == chain
-
-    def test_skips_on_opt_out_env(self):
-        with (
-            patch.dict("os.environ", {"HERMES_DISABLE_CODEX_CLAUDE_FALLBACK": "1"}),
-            patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-x"),
-        ):
-            out = _augment_fallback_chain_with_claude_subscription(
-                [], provider="openai-codex",
-            )
-        assert out == []
-
-    def test_codex_agent_init_appends_claude_when_credentials_exist(self):
-        with (
-            patch("run_agent.get_tool_definitions", return_value=[]),
-            patch("run_agent.check_toolset_requirements", return_value={}),
-            patch("run_agent.OpenAI"),
-            patch("agent.anthropic_adapter.resolve_anthropic_token", return_value="sk-ant-x"),
-        ):
-            agent = AIAgent(
-                model="gpt-5-codex",
-                base_url="https://chatgpt.com/backend-api/codex",
-                api_key="codex-token",
-                provider="openai-codex",
-                quiet_mode=True,
-                skip_context_files=True,
-                skip_memory=True,
-            )
-        assert agent._fallback_chain[-1] == {
-            "provider": "anthropic",
-            "model": "claude-sonnet-4-6",
-        }
 
 
 # ── Chain advancement ─────────────────────────────────────────────────────
@@ -294,3 +220,88 @@ class TestPoolRotationRoom:
 
     def test_many_credentials_available_returns_true(self):
         assert _pool_may_recover_from_rate_limit(_pool(10)) is True
+
+
+# ── Skip-self dedup (#22548) ───────────────────────────────────────────────
+
+
+class TestFallbackChainDedup:
+    """A fallback chain entry that resolves to the current provider/model
+    (or the same custom-provider base_url) must be skipped, not retried.
+    Otherwise a misconfigured chain or two custom_providers entries pointing
+    at the same shim loop the same failure. See issue #22548."""
+
+    def test_skips_entry_matching_current_provider_and_model(self):
+        """Chain has [same-as-current, real-fallback]; activate must skip
+        the first and use the second."""
+        fbs = [
+            # First entry == current state. Should be skipped.
+            {"provider": "openrouter", "model": "z-ai/glm-4.7"},
+            # Second entry: real fallback.
+            {"provider": "zai", "model": "glm-4.7"},
+        ]
+        agent = _make_agent(fallback_model=fbs)
+        agent.provider = "openrouter"
+        agent.model = "z-ai/glm-4.7"
+        agent.base_url = "https://openrouter.ai/api/v1"
+
+        # Stub out resolve_provider_client so we can assert which entry was
+        # actually used — return a MagicMock client tagged with the provider.
+        called = []
+        def _resolve(provider, model=None, raw_codex=False, **kwargs):
+            called.append((provider, model))
+            return _mock_client(), model
+        with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
+            with patch("hermes_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
+                ok = agent._try_activate_fallback()
+
+        assert ok is True
+        # The first entry was skipped — only the second reached resolve.
+        assert called == [("zai", "glm-4.7")], (
+            f"expected fallback to skip same-state entry, got call order: {called}"
+        )
+
+    def test_skips_entry_matching_current_base_url_and_model(self):
+        """Two custom_providers entries pointing at the same shim URL
+        with the same model should dedup even if their provider names differ."""
+        fbs = [
+            # Different provider name but same shim URL + model — same backend.
+            {"provider": "claude-cli-alt", "model": "claude-opus-4.7",
+             "base_url": "http://127.0.0.1:7891/v1"},
+            # Real different fallback.
+            {"provider": "openrouter", "model": "anthropic/claude-opus-4.7"},
+        ]
+        agent = _make_agent(fallback_model=fbs)
+        agent.provider = "claude-cli"
+        agent.model = "claude-opus-4.7"
+        agent.base_url = "http://127.0.0.1:7891/v1"
+
+        called = []
+        def _resolve(provider, model=None, raw_codex=False, **kwargs):
+            called.append((provider, model))
+            return _mock_client(), model
+        with patch("agent.auxiliary_client.resolve_provider_client", side_effect=_resolve):
+            with patch("hermes_cli.model_normalize.normalize_model_for_provider", side_effect=lambda m, p: m):
+                ok = agent._try_activate_fallback()
+
+        assert ok is True
+        # Same shim/base_url+model entry skipped, second one used.
+        assert called == [("openrouter", "anthropic/claude-opus-4.7")], (
+            f"expected base_url-aware dedup, got call order: {called}"
+        )
+
+    def test_returns_false_when_only_self_matching_entries(self):
+        """A chain with only self-matching entries exhausts to False."""
+        fbs = [
+            {"provider": "openrouter", "model": "z-ai/glm-4.7"},
+        ]
+        agent = _make_agent(fallback_model=fbs)
+        agent.provider = "openrouter"
+        agent.model = "z-ai/glm-4.7"
+        agent.base_url = "https://openrouter.ai/api/v1"
+
+        with patch("agent.auxiliary_client.resolve_provider_client") as mock_resolve:
+            ok = agent._try_activate_fallback()
+
+        assert ok is False
+        mock_resolve.assert_not_called()

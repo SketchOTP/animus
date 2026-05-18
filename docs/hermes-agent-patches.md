@@ -1,6 +1,8 @@
 # Hermes Agent — ANIMUS patch record
 
-**Bundled version:** v0.11.0 (2026.4.23). **Upstream drift:** as of this ANIMUS release, upstream `hermes-agent` was **778 commits ahead** of the bundled tree (measured on the release host). Customers receive this **patched, tested** snapshot — **do not** run `hermes update` (or similar in-place upstream sync) inside the ANIMUS install; it can **overwrite** the customisations recorded below and break gateway/chat alignment until re-patched.
+**Bundled version:** v0.14.0 (2026.5.16), ported on branch `hermes-0.14-port` (2026-05-18). **Prior bundle:** v0.11.0 (2026.4.23). Customers receive this **patched, tested** snapshot — **do not** run `hermes update` (or similar in-place upstream sync) inside the ANIMUS install; it can **overwrite** the customisations recorded below and break gateway/chat alignment until re-patched.
+
+**Port method:** replace `hermes-agent/` from tag `v2026.5.16`, then 3-way-merge ANIMUS surfaces from `main` (`api_server.py`, `providers.py`, `transcription_tools.py`, `web_server.py`, `main.py`) and restore `hermes-agent/animus/`, `tests/animus/`, `hermes_cli/codex_device_oauth.py`.
 
 **v1.1+ planning:** Rebasing ANIMUS’s patches onto a newer Hermes Agent is a real upgrade task with real merge risk. The sections in this document are the checklist that makes that manageable when you choose to do it.
 
@@ -117,6 +119,18 @@ git diff origin/main --stat
 **Why it exists:** Conversation mode and the chat mic must not silently use cloud Whisper when the product expects local STT.  
 **Risk if removed:** ANIMUS would need to duplicate faster-whisper wiring or call private `_transcribe_local`.  
 **Test to verify:** With embedded flag on, `curl` multipart to **`/api/stt/transcribe`** returns JSON **`text`** without **`OPENAI_API_KEY`**.
+
+## v0.14 engine features (no extra ANIMUS patch — upstream)
+
+After the v0.14 port, these ship with the bundled tree and gateway defaults (enable in `~/.hermes/config.yaml` as needed):
+
+- **Curator** — `hermes curator …`, background maintenance via gateway idle hook (`agent/curator.py`).
+- **Kanban** — `hermes kanban …`, gateway dispatcher/notifier, dashboard plugin `plugins/kanban/dashboard/` at `/api/plugins/kanban/`.
+- **Checkpoint v2** — `hermes_cli/checkpoints.py`.
+- **Gateway auto-resume** — interrupted sessions resume on gateway restart (`gateway/run.py`).
+- **Startup / install** — PyPI-first `pyproject.toml`, lazy deps, faster cold start (see upstream `RELEASE_v0.14.0.md`).
+
+**ANIMUS UI follow-up (not in engine port):** proxy/embed kanban dashboard, Settings curator panel, extend `runtime_routes.py` allowlist for `/kanban` and `/goal` slash helpers.
 
 ## Patch 11 — `cursor-agent` in `HERMES_OVERLAYS` (gateway provider resolution)
 

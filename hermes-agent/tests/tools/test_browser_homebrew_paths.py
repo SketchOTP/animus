@@ -9,24 +9,23 @@ from unittest.mock import patch, MagicMock, mock_open
 import pytest
 
 from tools.browser_tool import (
+    _discover_homebrew_node_dirs,
     _find_agent_browser,
     _run_browser_command,
+    _SANE_PATH,
     check_browser_requirements,
 )
-from tools.sane_path import SANE_PATH as _SANE_PATH
-from tools.sane_path import discover_homebrew_node_dirs
-from tools.sane_path import extended_sane_path_dirs
 import tools.browser_tool as _bt
 
 
 @pytest.fixture(autouse=True)
 def _clear_browser_caches():
     """Clear lru_cache and manual caches between tests."""
-    discover_homebrew_node_dirs.cache_clear()
+    _discover_homebrew_node_dirs.cache_clear()
     _bt._cached_agent_browser = None
     _bt._agent_browser_resolved = False
     yield
-    discover_homebrew_node_dirs.cache_clear()
+    _discover_homebrew_node_dirs.cache_clear()
     _bt._cached_agent_browser = None
     _bt._agent_browser_resolved = False
 
@@ -54,12 +53,12 @@ class TestSanePath:
 
 
 class TestDiscoverHomebrewNodeDirs:
-    """Tests for discover_homebrew_node_dirs()."""
+    """Tests for _discover_homebrew_node_dirs()."""
 
     def test_returns_empty_when_no_homebrew(self):
         """Non-macOS systems without /opt/homebrew/opt should return empty."""
         with patch("os.path.isdir", return_value=False):
-            assert discover_homebrew_node_dirs() == ()
+            assert _discover_homebrew_node_dirs() == ()
 
     def test_finds_versioned_node_dirs(self):
         """Should discover node@20/bin, node@24/bin etc."""
@@ -78,7 +77,7 @@ class TestDiscoverHomebrewNodeDirs:
 
         with patch("os.path.isdir", side_effect=mock_isdir), \
              patch("os.listdir", return_value=entries):
-            result = discover_homebrew_node_dirs()
+            result = _discover_homebrew_node_dirs()
 
         assert len(result) == 2
         assert "/opt/homebrew/opt/node@20/bin" in result
@@ -88,31 +87,14 @@ class TestDiscoverHomebrewNodeDirs:
         """'node' (unversioned) should be excluded — covered by /opt/homebrew/bin."""
         with patch("os.path.isdir", return_value=True), \
              patch("os.listdir", return_value=["node"]):
-            result = discover_homebrew_node_dirs()
+            result = _discover_homebrew_node_dirs()
         assert result == ()
 
     def test_handles_oserror_gracefully(self):
         """Should return empty list if listdir raises OSError."""
         with patch("os.path.isdir", return_value=True), \
              patch("os.listdir", side_effect=OSError("Permission denied")):
-            assert discover_homebrew_node_dirs() == ()
-
-
-class TestExtendedSanePathDirs:
-    """Contract tests for :func:`tools.sane_path.extended_sane_path_dirs`."""
-
-    def test_skips_empty_prefix(self):
-        with patch("os.path.isdir", return_value=False):
-            base = extended_sane_path_dirs("")
-            assert base == list(_SANE_PATH.split(os.pathsep))
-
-    def test_prefix_first_then_dedupes_against_sane(self):
-        dup = "/opt/homebrew/bin"
-        with patch("os.path.isdir", return_value=False):
-            got = extended_sane_path_dirs("/tmp/hermes-node/bin", dup)
-        assert got[0] == "/tmp/hermes-node/bin"
-        assert got.count(dup) == 1
-        assert got.index(dup) == 1
+            assert _discover_homebrew_node_dirs() == ()
 
 
 class TestFindAgentBrowser:
@@ -133,7 +115,7 @@ class TestFindAgentBrowser:
         with patch("shutil.which", side_effect=mock_which), \
              patch("os.path.isdir", return_value=True), \
              patch(
-                 "tools.sane_path.discover_homebrew_node_dirs",
+                 "tools.browser_tool._discover_homebrew_node_dirs",
                  return_value=[],
              ):
             result = _find_agent_browser()
@@ -162,7 +144,7 @@ class TestFindAgentBrowser:
              patch("os.path.isdir", return_value=True), \
              patch.object(Path, "exists", mock_path_exists), \
              patch(
-                 "tools.sane_path.discover_homebrew_node_dirs",
+                 "tools.browser_tool._discover_homebrew_node_dirs",
                  return_value=[],
              ):
             result = _find_agent_browser()
@@ -200,7 +182,7 @@ class TestFindAgentBrowser:
              patch("os.path.isdir", side_effect=selective_isdir), \
              patch.object(Path, "exists", mock_path_exists), \
              patch(
-                 "tools.sane_path.discover_homebrew_node_dirs",
+                 "tools.browser_tool._discover_homebrew_node_dirs",
                  return_value=[],
              ):
             result = _find_agent_browser()
@@ -219,7 +201,7 @@ class TestFindAgentBrowser:
              patch("os.path.isdir", return_value=False), \
              patch.object(Path, "exists", mock_path_exists), \
              patch(
-                 "tools.sane_path.discover_homebrew_node_dirs",
+                 "tools.browser_tool._discover_homebrew_node_dirs",
                  return_value=[],
              ):
             with pytest.raises(FileNotFoundError, match="agent-browser CLI not found"):
@@ -227,6 +209,13 @@ class TestFindAgentBrowser:
 
 
 class TestBrowserRequirements:
+    def test_cdp_override_does_not_require_agent_browser_cli(self, monkeypatch):
+        monkeypatch.setenv("BROWSER_CDP_URL", "ws://127.0.0.1:9222/devtools/browser/test")
+        monkeypatch.setattr("tools.browser_tool._is_camofox_mode", lambda: False)
+        monkeypatch.setattr("tools.browser_tool._find_agent_browser", lambda: (_ for _ in ()).throw(FileNotFoundError("not found")))
+
+        assert check_browser_requirements() is True
+
     def test_termux_requires_real_agent_browser_install_not_npx_fallback(self, monkeypatch):
         monkeypatch.setenv("TERMUX_VERSION", "0.118.3")
         monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
@@ -277,9 +266,10 @@ class TestRunBrowserCommandPathConstruction:
         hermes_home = str(tmp_path / "hermes-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value=browser_path), \
+ patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-             patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
+             patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=[]), \
              patch("hermes_constants.Path.home", return_value=tmp_path), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
@@ -328,9 +318,10 @@ class TestRunBrowserCommandPathConstruction:
         hermes_home = str(tmp_path / "hermes-home")
 
         with patch("tools.browser_tool._find_agent_browser", return_value="npx agent-browser"), \
+ patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-             patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
+             patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=[]), \
              patch("hermes_constants.Path.home", return_value=tmp_path), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
@@ -349,7 +340,15 @@ class TestRunBrowserCommandPathConstruction:
                 _run_browser_command("test-task", "navigate", ["https://example.com"])
 
         assert captured_cmd is not None
-        assert captured_cmd[:2] == ["npx", "agent-browser"]
+        # The prefix must split "npx agent-browser" into two argv items.
+        # On POSIX shutil.which("npx") returns the absolute path if npx is on
+        # PATH (which the test's patched PATH always contains when the system
+        # has it installed).  The important invariant is that the second
+        # argv item is the package name "agent-browser", not a merged
+        # "npx agent-browser" string — that's what Popen needs.
+        assert len(captured_cmd) >= 2
+        assert captured_cmd[0].endswith("npx") or captured_cmd[0] == "npx"
+        assert captured_cmd[1] == "agent-browser"
         assert captured_cmd[2:6] == [
             "--session",
             "test-session",
@@ -358,7 +357,7 @@ class TestRunBrowserCommandPathConstruction:
         ]
 
     def test_subprocess_path_includes_homebrew_node_dirs(self, tmp_path):
-        """When discover_homebrew_node_dirs returns dirs, they should appear
+        """When _discover_homebrew_node_dirs returns dirs, they should appear
         in the subprocess env PATH passed to Popen."""
         captured_env = {}
 
@@ -399,9 +398,10 @@ class TestRunBrowserCommandPathConstruction:
             return real_isdir(p)
 
         with patch("tools.browser_tool._find_agent_browser", return_value="/usr/local/bin/agent-browser"), \
+ patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-             patch("tools.sane_path.discover_homebrew_node_dirs", return_value=fake_homebrew_dirs), \
+             patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=fake_homebrew_dirs), \
              patch("os.path.isdir", side_effect=selective_isdir), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
@@ -447,9 +447,10 @@ class TestRunBrowserCommandPathConstruction:
             return real_isdir(p)
 
         with patch("tools.browser_tool._find_agent_browser", return_value="/usr/local/bin/agent-browser"), \
+ patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-             patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
+             patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=[]), \
              patch("os.path.isdir", side_effect=selective_isdir), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
@@ -495,9 +496,10 @@ class TestRunBrowserCommandPathConstruction:
             return real_isdir(path)
 
         with patch("tools.browser_tool._find_agent_browser", return_value="/usr/local/bin/agent-browser"), \
+ patch("tools.browser_tool._chromium_installed", return_value=True), \
              patch("tools.browser_tool._get_session_info", return_value=fake_session), \
              patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-             patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
+             patch("tools.browser_tool._discover_homebrew_node_dirs", return_value=[]), \
              patch("os.path.isdir", side_effect=selective_isdir), \
              patch("subprocess.Popen", side_effect=capture_popen), \
              patch("os.open", return_value=99), \
@@ -510,114 +512,3 @@ class TestRunBrowserCommandPathConstruction:
         result_path = captured_env.get("PATH", "")
         assert "/data/data/com.termux/files/usr/bin" in result_path
         assert "/data/data/com.termux/files/usr/sbin" in result_path
-
-
-def test_run_browser_command_sets_agent_browser_args_from_config_string(tmp_path):
-    """browser.agent_browser_args (string) is merged into subprocess AGENT_BROWSER_ARGS."""
-    captured_env = {}
-    mock_proc = MagicMock()
-    mock_proc.returncode = 0
-    mock_proc.wait.return_value = 0
-
-    def capture_popen(cmd, **kwargs):
-        captured_env.update(kwargs.get("env", {}))
-        return mock_proc
-
-    fake_session = {
-        "session_name": "test-session",
-        "session_id": "test-id",
-        "cdp_url": None,
-    }
-    fake_json = json.dumps({"success": True})
-    fake_cfg = {"browser": {"agent_browser_args": "--no-sandbox,--disable-dev-shm-usage"}}
-
-    with patch("tools.browser_tool._find_agent_browser", return_value="/usr/local/bin/agent-browser"), \
-         patch("tools.browser_tool._get_session_info", return_value=fake_session), \
-         patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-         patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
-         patch("subprocess.Popen", side_effect=capture_popen), \
-         patch("os.open", return_value=99), \
-         patch("os.close"), \
-         patch("tools.interrupt.is_interrupted", return_value=False), \
-         patch("hermes_cli.config.read_raw_config", return_value=fake_cfg), \
-         patch.dict(os.environ, {"PATH": "/usr/bin", "HOME": "/home/test"}, clear=True):
-        with patch("builtins.open", mock_open(read_data=fake_json)):
-            _run_browser_command("test-task", "open", ["https://example.com"])
-
-    assert captured_env.get("AGENT_BROWSER_ARGS") == "--no-sandbox,--disable-dev-shm-usage"
-
-
-def test_run_browser_command_appends_config_agent_browser_args_to_env(tmp_path):
-    """Existing AGENT_BROWSER_ARGS is preserved; config flags are appended."""
-    captured_env = {}
-    mock_proc = MagicMock()
-    mock_proc.returncode = 0
-    mock_proc.wait.return_value = 0
-
-    def capture_popen(cmd, **kwargs):
-        captured_env.update(kwargs.get("env", {}))
-        return mock_proc
-
-    fake_session = {
-        "session_name": "test-session",
-        "session_id": "test-id",
-        "cdp_url": None,
-    }
-    fake_json = json.dumps({"success": True})
-    fake_cfg = {"browser": {"agent_browser_args": "--disable-blink-features=AutomationControlled"}}
-
-    with patch("tools.browser_tool._find_agent_browser", return_value="/usr/local/bin/agent-browser"), \
-         patch("tools.browser_tool._get_session_info", return_value=fake_session), \
-         patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-         patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
-         patch("subprocess.Popen", side_effect=capture_popen), \
-         patch("os.open", return_value=99), \
-         patch("os.close"), \
-         patch("tools.interrupt.is_interrupted", return_value=False), \
-         patch("hermes_cli.config.read_raw_config", return_value=fake_cfg), \
-         patch.dict(
-             os.environ,
-             {"PATH": "/usr/bin", "HOME": "/home/test", "AGENT_BROWSER_ARGS": "--no-sandbox"},
-             clear=True,
-         ):
-        with patch("builtins.open", mock_open(read_data=fake_json)):
-            _run_browser_command("test-task", "open", ["https://example.com"])
-
-    assert captured_env.get("AGENT_BROWSER_ARGS") == (
-        "--no-sandbox,--disable-blink-features=AutomationControlled"
-    )
-
-
-def test_run_browser_command_agent_browser_args_list_yaml(tmp_path):
-    """browser.agent_browser_args as a YAML list joins with commas."""
-    captured_env = {}
-    mock_proc = MagicMock()
-    mock_proc.returncode = 0
-    mock_proc.wait.return_value = 0
-
-    def capture_popen(cmd, **kwargs):
-        captured_env.update(kwargs.get("env", {}))
-        return mock_proc
-
-    fake_session = {
-        "session_name": "test-session",
-        "session_id": "test-id",
-        "cdp_url": None,
-    }
-    fake_json = json.dumps({"success": True})
-    fake_cfg = {"browser": {"agent_browser_args": ["--no-sandbox", "--disable-dev-shm-usage"]}}
-
-    with patch("tools.browser_tool._find_agent_browser", return_value="/usr/local/bin/agent-browser"), \
-         patch("tools.browser_tool._get_session_info", return_value=fake_session), \
-         patch("tools.browser_tool._socket_safe_tmpdir", return_value=str(tmp_path)), \
-         patch("tools.sane_path.discover_homebrew_node_dirs", return_value=[]), \
-         patch("subprocess.Popen", side_effect=capture_popen), \
-         patch("os.open", return_value=99), \
-         patch("os.close"), \
-         patch("tools.interrupt.is_interrupted", return_value=False), \
-         patch("hermes_cli.config.read_raw_config", return_value=fake_cfg), \
-         patch.dict(os.environ, {"PATH": "/usr/bin", "HOME": "/home/test"}, clear=True):
-        with patch("builtins.open", mock_open(read_data=fake_json)):
-            _run_browser_command("test-task", "open", ["https://example.com"])
-
-    assert captured_env.get("AGENT_BROWSER_ARGS") == "--no-sandbox,--disable-dev-shm-usage"

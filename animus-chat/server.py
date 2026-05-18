@@ -24,6 +24,7 @@ ANIMUS chat server (Starlette)
 - /api/project-workspace/* → ensure / read / write project workspace markdown (history, repo_map, notes, project_goal) on registered project paths
 - ``GET /api/command-brief/health`` → JSON availability probe (always registered; works when the plugin tree is missing)
 - /api/command-brief/* (optional) → ``animus/plugins/command_brief`` startup overview: cache, governance-only summarization, ``project_daily_summaries.md`` read path; disabled when Command Brief is off in client config
+- ``runtime_routes.py`` — ``POST /api/hermes/runtime/tui-rpc`` (slash catalog); ``GET /api/hermes/curator/status``; ``POST /api/hermes/curator/{run,pause,resume}``; ``GET /api/hermes/kanban/{path}`` (dashboard kanban plugin proxy)
 - /api/project-ssh-test → POST JSON ``{user, host, port?, identity_file?}`` — non-interactive ``ssh`` probe from the chat host
 - ``/api/ssh/hosts`` + ``/api/ssh/test`` → global SSH hosts (``ssh_routes.py``); token usage JSONL uses JSON fields ``"source"`` / ``"source_id"`` (``token_usage.py``)
 - /api/stt/transcribe → POST multipart ``audio`` (or ``file``) — ``HERMES_CHAT_STT_LOCAL_URL`` HTTP,
@@ -272,7 +273,7 @@ def projects_sync_root() -> Path:
 
 # Bumped when cron/API surface changes — curl GET /api/hermes-chat-meta on the host to verify deploy.
 # After changing this file: restart the service (see ./restart-after-code-change.sh).
-CHAT_SERVER_REV = "20260507-project-brief-rerender-subcontrols-v79"
+CHAT_SERVER_REV = "20260518-hermes-v014-runtime-curator-kanban-v81"
 ANIMUS_CONTEXT_SUMMARY_MODEL = (os.environ.get("ANIMUS_CONTEXT_SUMMARY_MODEL") or "gpt-4o-mini").strip()
 CHAT_MODEL_CACHE_TTL = 5 * 60
 CHAT_MODEL_CACHE: dict[str, dict] = {}
@@ -671,6 +672,17 @@ async def animus_client_config_get(_: Request) -> Response:
             "recentWindowDays": 3,
         }
     cb_ok, cb_reason = command_brief_plugin_available()
+    dash_preview = ""
+    dash_set = False
+    try:
+        from hermes_service_client import hermes_dashboard_session_token as _dash_tok_resolved
+
+        _full = (_dash_tok_resolved() or "").strip()
+        dash_set = bool(_full)
+        if _full:
+            dash_preview = f"…{_full[-4:]}" if len(_full) >= 4 else "••••"
+    except Exception:
+        dash_set = False
     return JSONResponse(
         {
             "wake_lock": bool(wl),
@@ -692,6 +704,8 @@ async def animus_client_config_get(_: Request) -> Response:
             "animus_chat_stt_openai_key_preview": stt_key_preview,
             "animus_chat_stt_openai_base": stt_base,
             "animus_chat_stt_openai_model": stt_model,
+            "hermes_dashboard_session_token_set": dash_set,
+            "hermes_dashboard_session_token_preview": dash_preview,
             "command_brief": command_brief,
             "command_brief_plugin": {
                 "available": cb_ok,
@@ -802,7 +816,22 @@ async def animus_client_config_post(req: Request) -> Response:
                 cfg["animus_chat_stt_openai_model"] = mt
             else:
                 cfg.pop("animus_chat_stt_openai_model", None)
+    if "hermes_dashboard_session_token" in body:
+        raw_d = body.get("hermes_dashboard_session_token")
+        if isinstance(raw_d, str):
+            dt = raw_d.strip()
+            if dt:
+                cfg["hermes_dashboard_session_token"] = dt
+            else:
+                cfg.pop("hermes_dashboard_session_token", None)
     _write_animus_client_config(cfg)
+    if "hermes_dashboard_session_token" in body:
+        try:
+            from hermes_service_client import invalidate_dashboard_token_config_cache
+
+            invalidate_dashboard_token_config_cache()
+        except Exception:
+            pass
     if "projects_dir" in body and str(cfg.get("projects_dir") or "").strip():
         try:
             ensure_animus_general_project()
@@ -1029,6 +1058,12 @@ async def hermes_chat_meta(req: Request) -> Response:
     # meta_schema / browser_tls_hint: curl `jq .meta_schema` — if missing, traffic is not this server.py.
     payload["meta_schema"] = 2
     payload["browser_tls_hint"] = _meta_tls_browser_hint() or ""
+    try:
+        from hermes_service_client import hermes_dashboard_session_token as _dash_meta
+
+        payload["hermes_dashboard_token_configured"] = bool(_dash_meta())
+    except Exception:
+        payload["hermes_dashboard_token_configured"] = False
     return JSONResponse(payload)
 
 
@@ -3410,6 +3445,7 @@ from messaging_routes import messaging_route_table  # noqa: E402
 from integrations_slack import slack_route_table  # noqa: E402
 from setup_wizard.wizard_routes import wizard_route_table  # noqa: E402
 from skills_routes import skills_route_table  # noqa: E402
+from runtime_routes import runtime_route_table  # noqa: E402
 from ssh_routes import ssh_route_table  # noqa: E402
 from token_usage import token_usage_route_table  # noqa: E402
 from tts_routes import tts_route_table  # noqa: E402
@@ -3491,6 +3527,7 @@ app = Starlette(
         *slack_route_table(),
         *messaging_route_table(),
         *ssh_route_table(),
+        *runtime_route_table(),
         *help_route_table(),
         Route("/api/health",               health),
         Route("/api/hermes-chat-meta",     hermes_chat_meta, methods=["GET"]),

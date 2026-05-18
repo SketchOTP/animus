@@ -158,25 +158,3 @@ class TestOllamaUrlHostCheck:
         assert base_url_host_matches(
             "https://api.ollama.com/v1", "ollama.com"
         ) is True
-
-
-def test_url_host_preflight_repairs_stale_utils_module():
-    """Gateway/cron import-time patch must restore helpers on an in-memory utils."""
-    import utils as u
-
-    saved_m = getattr(u, "base_url_host_matches", None)
-    saved_h = getattr(u, "base_url_hostname", None)
-    try:
-        delattr(u, "base_url_host_matches")
-        delattr(u, "base_url_hostname")
-        import url_host_preflight as p
-
-        assert p.apply() is True
-        assert callable(u.base_url_host_matches)
-        assert callable(u.base_url_hostname)
-        assert u.base_url_host_matches("https://openrouter.ai/v1", "openrouter.ai") is True
-    finally:
-        if saved_m is not None:
-            u.base_url_host_matches = saved_m
-        if saved_h is not None:
-            u.base_url_hostname = saved_h

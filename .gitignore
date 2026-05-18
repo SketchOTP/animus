@@ -29,6 +29,10 @@ animus-chat/data/
 # Agent / editor lock files
 **/*.flock
 
+# Hermes port scratch (local only)
+hermes-agent.v011.bak/
+.hermes-port-backup/
+
 # Hermes Agent (large / machine-specific)
 hermes-agent/.venv/
 hermes-agent/venv/

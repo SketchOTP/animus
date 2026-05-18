@@ -18,9 +18,9 @@ def _reset_caches():
     bt._agent_browser_resolved = False
     bt._cached_command_timeout = None
     bt._command_timeout_resolved = False
-    from tools.sane_path import discover_homebrew_node_dirs as _hb_node_dirs
-    if hasattr(_hb_node_dirs, "cache_clear"):
-        _hb_node_dirs.cache_clear()
+    # lru_cache for _discover_homebrew_node_dirs
+    if hasattr(bt._discover_homebrew_node_dirs, "cache_clear"):
+        bt._discover_homebrew_node_dirs.cache_clear()
 
 
 @pytest.fixture(autouse=True)
@@ -117,15 +117,15 @@ class TestCommandTimeoutCache:
 
 
 # ---------------------------------------------------------------------------
-# Caching: discover_homebrew_node_dirs (sane_path)
+# Caching: _discover_homebrew_node_dirs
 # ---------------------------------------------------------------------------
 
 class TestHomebrewNodeDirsCache:
 
     def test_lru_cached(self):
-        from tools.sane_path import discover_homebrew_node_dirs
-        assert hasattr(discover_homebrew_node_dirs, "cache_info"), \
-            "discover_homebrew_node_dirs should be decorated with lru_cache"
+        from tools.browser_tool import _discover_homebrew_node_dirs
+        assert hasattr(_discover_homebrew_node_dirs, "cache_info"), \
+            "_discover_homebrew_node_dirs should be decorated with lru_cache"
 
 
 # ---------------------------------------------------------------------------

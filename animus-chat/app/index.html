@@ -574,6 +574,11 @@
     .command-brief-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
     .command-brief-list{margin:6px 0 0;padding-left:18px;color:var(--muted2);font-size:13px}
     .command-brief-err{color:#fecaca;font-size:13px;margin-top:8px}
+    .command-brief-main-scroll{flex:1;min-height:0;overflow-y:auto;padding:10px 14px 18px;display:flex;flex-direction:column;gap:12px}
+    .command-brief-main-scroll .command-brief-cards{flex:1;min-height:0}
+    .command-brief-json-pre{margin:10px 0 0;padding:12px;border-radius:10px;background:#0b1020;color:#e2e8f0;font-size:11px;line-height:1.45;overflow:auto;max-height:42vh;border:1px solid var(--border);white-space:pre-wrap}
+    .cap-block{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--surface)}
+    .cap-block h3{margin:0 0 8px;font-size:14px;font-weight:700;color:var(--text)}
 
     /* ── Header ── */
     .header{height:60px;display:flex;align-items:center;gap:10px;
@@ -667,6 +672,18 @@
     /* ── Input ── */
     .input-area{position:relative;padding:10px 12px;padding-bottom:max(12px,env(safe-area-inset-bottom));
       background:var(--bg);border-top:1px solid var(--border);flex-shrink:0}
+    .slash-palette{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:4px;max-height:min(42vh,340px);
+      display:none;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:14px;
+      box-shadow:0 12px 40px rgba(0,0,0,.38);z-index:60;overflow:hidden}
+    .slash-palette.is-open{display:flex}
+    @media(min-width:640px){.slash-palette{left:20%;right:20%}}
+    .slash-palette-hint{font-size:11px;color:var(--muted2);padding:6px 12px;border-bottom:1px solid var(--border);flex-shrink:0;line-height:1.35}
+    .slash-palette-list{list-style:none;margin:0;padding:6px;overflow-y:auto;flex:1;min-height:0}
+    .slash-palette-item{padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.35;cursor:default}
+    .slash-palette-item:hover,.slash-palette-item.is-active{background:var(--surface2)}
+    .slash-palette-cmd{font-weight:650;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+    .slash-palette-desc{font-size:12px;color:var(--muted);margin-top:2px}
+    .slash-palette-empty{padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.45}
     @media(min-width:640px){.input-area{padding-left:20%;padding-right:20%}}
     @media(max-width:640px){.input-area{padding:10px 10px;padding-bottom:max(14px,env(safe-area-inset-bottom))}}
     .attach-chips{display:none;flex-wrap:wrap;gap:6px;margin:0 2px 8px}
@@ -1936,6 +1953,38 @@
             <button type="button" class="btn btn-ghost" id="restartChatBtn">Restart chat</button>
           </div>
           <div id="restartStatus" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
+          <div class="field" style="margin-top:10px">
+            <label for="hermesDashboardTokenInput">Hermes dashboard session token</label>
+            <input
+              type="password"
+              id="hermesDashboardTokenInput"
+              autocomplete="off"
+              placeholder="Paste from hermes dashboard (window.__HERMES_SESSION_TOKEN__)"
+              style="width:100%;max-width:520px;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px"
+            />
+            <small style="display:block;margin-top:6px;color:var(--muted);line-height:1.45">
+              Used for chat <code>/</code> slash completion and Project Brief slash catalog. Stored in server <code>config.json</code> only (not browser <code>localStorage</code>). You can still set <code>HERMES_DASHBOARD_SESSION_TOKEN</code> in repo <code>animus.env</code> instead.
+            </small>
+            <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px">
+              <button type="button" class="btn btn-primary" id="hermesDashboardTokenSaveBtn">Save token</button>
+              <button type="button" class="btn btn-ghost" id="hermesDashboardTokenClearBtn">Clear</button>
+            </div>
+            <div id="hermesDashboardTokenStatus" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+          </div>
+          <div class="cap-block" id="settingsCuratorBlock" style="margin-top:14px">
+            <h3 style="margin:0 0 6px;font-size:14px">Skill curator (Hermes v0.14)</h3>
+            <p style="margin:0 0 8px;font-size:12px;color:var(--muted);line-height:1.45">
+              Background skill maintenance runs when the gateway is idle. Manual run uses the same path as <code>hermes curator run</code>.
+            </p>
+            <div id="settingsCuratorStatus" style="font-size:12px;color:var(--muted2);margin-bottom:8px">Loading…</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button type="button" class="btn btn-primary" id="settingsCuratorRunBtn">Run curator now</button>
+              <button type="button" class="btn btn-ghost" id="settingsCuratorPauseBtn">Pause</button>
+              <button type="button" class="btn btn-ghost" id="settingsCuratorResumeBtn">Resume</button>
+              <button type="button" class="btn btn-ghost" id="settingsCuratorRefreshBtn">Refresh status</button>
+            </div>
+            <div id="settingsCuratorActionStatus" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+          </div>
           <div class="settings-label-row">
             <span class="settings-inline-label" style="font-weight:600;color:var(--text)">Chat history</span>
           </div>
@@ -2067,8 +2116,26 @@
           </button>
         </div>
       </div>
-      <div id="commandBriefError" class="command-brief-err" style="display:none;padding:0 14px"></div>
-      <div class="command-brief-cards" id="commandBriefCards"></div>
+      <div class="command-brief-main-scroll" id="commandBriefMainScroll">
+        <div id="commandBriefError" class="command-brief-err" style="display:none;padding:0 14px"></div>
+        <div class="command-brief-cards" id="commandBriefCards"></div>
+        <div class="cap-block" id="commandBriefKanbanBlock">
+          <h3>Kanban board</h3>
+          <p class="command-brief-meta" style="margin:0 0 8px">
+            Read-only snapshot from Hermes dashboard (<code>/api/plugins/kanban/board</code>). Requires the dashboard session token in Settings → Server.
+          </p>
+          <button type="button" class="btn btn-ghost" id="commandBriefKanbanLoadBtn">Load board</button>
+          <pre class="command-brief-json-pre" id="commandBriefKanbanOut" style="display:none"></pre>
+        </div>
+        <div class="cap-block" id="commandBriefSlashBlock">
+          <h3>Hermes slash commands</h3>
+          <p class="command-brief-meta" style="margin:0 0 8px">
+            Same Hermes catalog as the chat composer when you type <code>/</code> (plus <code>complete.slash</code> there). Requires <code>HERMES_DASHBOARD_SESSION_TOKEN</code> on the ANIMUS server and loopback dashboard WebSocket.
+          </p>
+          <button type="button" class="btn btn-ghost" id="commandBriefSlashCatalogBtn">Load catalog</button>
+          <pre class="command-brief-json-pre" id="commandBriefSlashCatalogOut" style="display:none"></pre>
+        </div>
+      </div>
     </div>
 
     <div class="proj-ctx-bar" id="projCtxBar">
@@ -2100,6 +2167,10 @@
     </div>
 
     <div class="input-area">
+      <div class="slash-palette" id="slashPalette" hidden aria-label="Slash commands">
+        <div class="slash-palette-hint" id="slashPaletteHint"></div>
+        <ul class="slash-palette-list" id="slashPaletteList" role="listbox"></ul>
+      </div>
       <div class="attach-chips" id="attachChips"></div>
       <div class="input-row">
         <div class="input-plus-wrap">
@@ -3360,7 +3431,11 @@ async function persistUiSettingsToServerNow() {
   } catch (_) {}
   const cb0 = ui_settings.commandBrief;
   if (!cb0 || typeof cb0 !== 'object') {
-    ui_settings.commandBrief = { enabled: false, autoRefreshRecent: true, recentWindowDays: 3 };
+    ui_settings.commandBrief = {
+      enabled: false,
+      autoRefreshRecent: true,
+      recentWindowDays: 3,
+    };
   } else {
     let days = parseInt(String(cb0.recentWindowDays != null ? cb0.recentWindowDays : 3), 10);
     if (!Number.isFinite(days)) days = 3;
@@ -3515,6 +3590,19 @@ async function applyAnimusClientConfigFromJson(cj, opts = {}) {
         changed = true;
       }
     }
+    if (typeof cj.hermes_dashboard_session_token_set === 'boolean') {
+      if (settings.hermes_dashboard_session_token_set !== cj.hermes_dashboard_session_token_set) {
+        settings.hermes_dashboard_session_token_set = cj.hermes_dashboard_session_token_set;
+        changed = true;
+      }
+    }
+    if (cj.hermes_dashboard_session_token_preview != null) {
+      const dpv = String(cj.hermes_dashboard_session_token_preview || '');
+      if (String(settings.hermes_dashboard_session_token_preview || '') !== dpv) {
+        settings.hermes_dashboard_session_token_preview = dpv;
+        changed = true;
+      }
+    }
     if (cj.command_brief && typeof cj.command_brief === 'object') {
       const prev = settings.commandBrief && typeof settings.commandBrief === 'object' ? { ...settings.commandBrief } : {};
       const merged = { ...prev, ...cj.command_brief };
@@ -3551,6 +3639,9 @@ async function applyAnimusClientConfigFromJson(cj, opts = {}) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
   syncCommandBriefNavVisibility();
+  if (refreshUi) {
+    renderHermesDashboardTokenSettings();
+  }
   if (changed && refreshUi) {
     await refreshAllSettingsUiFromState();
   }
@@ -3613,6 +3704,19 @@ async function refreshAllSettingsUiFromState() {
     syncCronOverseerUiFromSettings();
     void fillCronTimezoneDatalist(false);
   } catch (_) {}
+}
+
+function renderHermesDashboardTokenSettings() {
+  const st = $('hermesDashboardTokenStatus');
+  const inp = $('hermesDashboardTokenInput');
+  if (!st) return;
+  if (settings.hermes_dashboard_session_token_set) {
+    const pv = String(settings.hermes_dashboard_session_token_preview || '').trim();
+    st.textContent = pv ? `Saved token active (${pv})` : 'Saved token active';
+  } else {
+    st.textContent = 'No token on server — slash completion needs one (save below or animus.env).';
+  }
+  if (inp && !inp.dataset.slashTokFocused) inp.value = '';
 }
 
 async function pullClientConfigFromServer() {
@@ -3686,7 +3790,11 @@ function projectWorkspaceFilesPath(p) {
 }
 
 function getCommandBriefPrefs() {
-  const d = { enabled: false, autoRefreshRecent: true, recentWindowDays: 3 };
+  const d = {
+    enabled: false,
+    autoRefreshRecent: true,
+    recentWindowDays: 3,
+  };
   const cb = settings.commandBrief;
   if (!cb || typeof cb !== 'object') return d;
   let days = parseInt(String(cb.recentWindowDays != null ? cb.recentWindowDays : 3), 10);
@@ -3734,6 +3842,89 @@ function syncCommandBriefNavVisibility() {
 
 let commandBriefOverlayOpen = false;
 let commandBriefSummariesCache = [];
+
+async function hermesTuiRpc(method, params, timeoutSec) {
+  const r = await fetch('/api/hermes/runtime/tui-rpc', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ method, params: params || {}, timeout: timeoutSec || 60 }),
+  });
+  const j = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, body: j };
+}
+
+
+async function loadCuratorSettingsPanel() {
+  const el = $('settingsCuratorStatus');
+  if (!el) return;
+  el.textContent = 'Loading…';
+  try {
+    const r = await fetch('/api/hermes/curator/status', { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) {
+      el.textContent = (j && j.error) ? String(j.error) : 'Status unavailable';
+      return;
+    }
+    const sum = j.last_run_summary ? String(j.last_run_summary).slice(0, 200) : '(none)';
+    el.textContent =
+      'Status: ' + (j.status || '?') +
+      ' · runs: ' + (j.run_count != null ? j.run_count : '?') +
+      ' · last: ' + (j.last_run_at || 'never') +
+      ' · ' + sum;
+  } catch (e) {
+    el.textContent = 'Failed: ' + (e && e.message ? e.message : e);
+  }
+}
+
+async function curatorSettingsAction(path, label) {
+  const st = $('settingsCuratorActionStatus');
+  if (st) st.textContent = label + '…';
+  try {
+    const r = await fetch('/api/hermes/curator/' + path, { method: 'POST' });
+    const j = await r.json().catch(() => ({}));
+    if (st) st.textContent = j.ok ? (label + ' done') : (label + ' failed: ' + (j.stderr || j.error || r.status));
+    await loadCuratorSettingsPanel();
+  } catch (e) {
+    if (st) st.textContent = label + ' failed: ' + (e && e.message ? e.message : e);
+  }
+}
+
+$('settingsCuratorRefreshBtn')?.addEventListener('click', () => void loadCuratorSettingsPanel());
+$('settingsCuratorRunBtn')?.addEventListener('click', () => void curatorSettingsAction('run', 'Run'));
+$('settingsCuratorPauseBtn')?.addEventListener('click', () => void curatorSettingsAction('pause', 'Pause'));
+$('settingsCuratorResumeBtn')?.addEventListener('click', () => void curatorSettingsAction('resume', 'Resume'));
+
+$('commandBriefKanbanLoadBtn')?.addEventListener('click', async () => {
+  const out = $('commandBriefKanbanOut');
+  if (!out) return;
+  out.style.display = 'block';
+  out.textContent = 'Loading…';
+  try {
+    const r = await fetch('/api/hermes/kanban/board', { cache: 'no-store' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      out.textContent = JSON.stringify(j, null, 2).slice(0, 12000);
+      return;
+    }
+    out.textContent = JSON.stringify(j, null, 2).slice(0, 12000);
+  } catch (e) {
+    out.textContent = String(e && e.message ? e.message : e);
+  }
+});
+
+$('commandBriefSlashCatalogBtn')?.addEventListener('click', async () => {
+  const out = $('commandBriefSlashCatalogOut');
+  if (!out) return;
+  out.style.display = 'block';
+  out.textContent = 'Loading…';
+  const { body } = await hermesTuiRpc('commands.catalog', {}, 45);
+  if (body && body.error) {
+    out.textContent = JSON.stringify(body.error, null, 2);
+    return;
+  }
+  const r = body && body.result;
+  out.textContent = JSON.stringify(r || body, null, 2).slice(0, 12000);
+});
 
 function setCommandBriefOverlayVisible(on, opts) {
   const el = $('commandBriefOverlay');
@@ -3813,6 +4004,241 @@ function escapeHtml(s) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ─── Chat composer: Hermes slash completion (`complete.slash` + catalog fallback) ──
+let _slashSeq = 0;
+let _slashTimer = null;
+let _slashCatalogPairs = null;
+let _slashItems = [];
+let _slashSel = 0;
+let _slashCtx = null;
+
+function getSlashContext(text, cursor) {
+  const before = text.slice(0, cursor);
+  const m = before.match(/(?:^|[\s\n])(\/[^\s\n]*)$/);
+  if (!m) return null;
+  const token = m[1];
+  const tokenStart = before.length - token.length;
+  return { token, tokenStart, before };
+}
+
+function hideSlashPalette() {
+  clearTimeout(_slashTimer);
+  _slashTimer = null;
+  _slashSeq++;
+  const p = $('slashPalette');
+  if (p) {
+    p.classList.remove('is-open');
+    p.hidden = true;
+  }
+  _slashItems = [];
+  _slashCtx = null;
+}
+
+function renderSlashPalette() {
+  const list = $('slashPaletteList');
+  const hint = $('slashPaletteHint');
+  const pal = $('slashPalette');
+  if (!list || !pal) return;
+  list.innerHTML = '';
+  if (hint) {
+    if (_slashItems.length) {
+      hint.textContent = `${_slashItems.length} matches · ↑↓ · Tab or Enter · Esc`;
+    } else if (_slashCtx) {
+      hint.textContent =
+        'No matches. Settings → Server → Hermes dashboard session token, or HERMES_DASHBOARD_SESSION_TOKEN in animus.env.';
+    } else {
+      hint.textContent = '';
+    }
+  }
+  if (!_slashItems.length && _slashCtx) {
+    const empty = document.createElement('li');
+    empty.className = 'slash-palette-empty';
+    empty.style.listStyle = 'none';
+    empty.textContent = 'Try another prefix, or confirm the Hermes dashboard token on the host running ANIMUS.';
+    list.appendChild(empty);
+  } else {
+    for (let idx = 0; idx < _slashItems.length; idx++) {
+      const pick = _slashItems[idx];
+      const row = document.createElement('li');
+      row.className = 'slash-palette-item' + (idx === _slashSel ? ' is-active' : '');
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', idx === _slashSel ? 'true' : 'false');
+      row.dataset.idx = String(idx);
+      const label = pick.display || pick.text || '';
+      const d = pick.desc || '';
+      row.innerHTML =
+        `<div class="slash-palette-cmd">${escapeHtml(label)}</div>` +
+        (d ? `<div class="slash-palette-desc">${escapeHtml(d)}</div>` : '');
+      list.appendChild(row);
+    }
+  }
+  if (_slashCtx) {
+    pal.classList.add('is-open');
+    pal.hidden = false;
+  }
+  try {
+    const active = list.querySelector('.slash-palette-item.is-active');
+    active && active.scrollIntoView({ block: 'nearest' });
+  } catch (_) {}
+}
+
+async function ensureSlashCatalogPairs() {
+  if (_slashCatalogPairs) return;
+  const { ok, body } = await hermesTuiRpc('commands.catalog', {}, 35);
+  if (!ok || (body && body.error) || !body || !body.result) return;
+  const raw = body.result.pairs;
+  const out = [];
+  if (Array.isArray(raw)) {
+    for (const row of raw) {
+      if (Array.isArray(row) && row[0]) out.push({ cmd: String(row[0]), desc: String(row[1] || '') });
+    }
+  }
+  if (out.length) _slashCatalogPairs = out;
+}
+
+function filterSlashCatalogLocal(tokenLc) {
+  if (!_slashCatalogPairs || !tokenLc) return [];
+  const out = [];
+  for (const r of _slashCatalogPairs) {
+    const c = r.cmd.toLowerCase();
+    if (c.startsWith(tokenLc) || tokenLc === '/') {
+      out.push({ text: r.cmd, desc: r.desc, display: r.cmd });
+    }
+    if (out.length >= 30) break;
+  }
+  return out;
+}
+
+async function fetchAndShowSlashCompletions() {
+  const inp = $('input');
+  if (!inp) return;
+  const ctx = getSlashContext(inp.value, inp.selectionStart);
+  if (!ctx) {
+    hideSlashPalette();
+    return;
+  }
+  _slashCtx = ctx;
+  const my = ++_slashSeq;
+  const before = ctx.before;
+  const tokenLc = (ctx.token || '/').toLowerCase();
+  const { ok, body } = await hermesTuiRpc('complete.slash', { text: before }, 28);
+  if (my !== _slashSeq) return;
+  const again = getSlashContext(inp.value, inp.selectionStart);
+  if (!again) {
+    hideSlashPalette();
+    return;
+  }
+  _slashCtx = again;
+  let items = [];
+  if (ok && body && !body.error && body.result && Array.isArray(body.result.items)) {
+    for (const x of body.result.items) {
+      items.push({
+        text: String(x.text || ''),
+        desc: String(x.meta || ''),
+        display: String(x.display || x.text || ''),
+      });
+    }
+  }
+  if (!items.length) {
+    await ensureSlashCatalogPairs();
+    if (my !== _slashSeq) return;
+    items = filterSlashCatalogLocal(tokenLc);
+  }
+  _slashItems = items;
+  _slashSel = 0;
+  renderSlashPalette();
+}
+
+function scheduleSlashComplete() {
+  clearTimeout(_slashTimer);
+  _slashTimer = setTimeout(() => void fetchAndShowSlashCompletions(), 95);
+}
+
+function onComposerSlashSync() {
+  const inp = $('input');
+  if (!inp) return;
+  const ctx = getSlashContext(inp.value, inp.selectionStart);
+  if (!ctx) {
+    hideSlashPalette();
+    return;
+  }
+  _slashCtx = ctx;
+  _slashSel = 0;
+  const pal = $('slashPalette');
+  const hint = $('slashPaletteHint');
+  const list = $('slashPaletteList');
+  if (pal && hint && list) {
+    pal.classList.add('is-open');
+    pal.hidden = false;
+    hint.textContent = 'Loading Hermes slash commands…';
+    list.innerHTML = '';
+  }
+  scheduleSlashComplete();
+}
+
+function applySlashPick(idx) {
+  const inp = $('input');
+  if (!inp || !_slashCtx || idx < 0 || idx >= _slashItems.length) return;
+  const pick = _slashItems[idx];
+  const ins = String(pick.text || '').trim();
+  if (!ins) return;
+  const v = inp.value;
+  const cur = inp.selectionStart;
+  const start = _slashCtx.tokenStart;
+  const newV = v.slice(0, start) + ins + v.slice(cur);
+  inp.value = newV;
+  const pos = start + ins.length;
+  inp.setSelectionRange(pos, pos);
+  hideSlashPalette();
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+  try {
+    inp.focus();
+  } catch (_) {}
+}
+
+function slashPaletteHandleKeydown(e) {
+  const pal = $('slashPalette');
+  if (!pal || !pal.classList.contains('is-open')) return false;
+  if (!_slashCtx) return false;
+  if (e.key === 'Escape') {
+    hideSlashPalette();
+    return true;
+  }
+  if (!_slashItems.length) return false;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _slashSel = Math.min(_slashItems.length - 1, _slashSel + 1);
+    renderSlashPalette();
+    return true;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _slashSel = Math.max(0, _slashSel - 1);
+    renderSlashPalette();
+    return true;
+  }
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault();
+    applySlashPick(_slashSel);
+    return true;
+  }
+  return false;
+}
+
+(function wireSlashPaletteListOnce() {
+  const list = $('slashPaletteList');
+  if (!list || list.dataset.wiredSlash) return;
+  list.dataset.wiredSlash = '1';
+  list.addEventListener('mousedown', (e) => {
+    const row = e.target.closest('.slash-palette-item');
+    if (!row) return;
+    e.preventDefault();
+    const idx = parseInt(row.dataset.idx, 10);
+    if (Number.isFinite(idx)) applySlashPick(idx);
+  });
+})();
 
 /** Newest workspace activity first (governance max mtime); then last successful generation. */
 function commandBriefActivityTs(s) {
@@ -6053,6 +6479,7 @@ document.querySelectorAll('.stab').forEach(btn => {
       wireSettingsCollapsesOnce();
       void renderMessagingSettingsPanel();
       void renderSshHostsPanel();
+      void loadCuratorSettingsPanel();
     }
     setTimeout(() => showAnimusTabTooltipIfNeeded(btn.dataset.tab), 120);
   });
@@ -12198,6 +12625,58 @@ $('purgeHistoryBtn').addEventListener('click', async () => {
   setTimeout(() => { $('purgeStatus').textContent = ''; }, 4000);
 });
 
+const _hermesDashTokInput = $('hermesDashboardTokenInput');
+if (_hermesDashTokInput && !_hermesDashTokInput.dataset.wiredDashTok) {
+  _hermesDashTokInput.dataset.wiredDashTok = '1';
+  _hermesDashTokInput.addEventListener('focus', () => {
+    _hermesDashTokInput.dataset.slashTokFocused = '1';
+  });
+  _hermesDashTokInput.addEventListener('blur', () => {
+    delete _hermesDashTokInput.dataset.slashTokFocused;
+  });
+}
+$('hermesDashboardTokenSaveBtn')?.addEventListener('click', async () => {
+  const raw = String(($('hermesDashboardTokenInput') && $('hermesDashboardTokenInput').value) || '').trim();
+  if (!raw) {
+    const st = $('hermesDashboardTokenStatus');
+    if (st) st.textContent = 'Paste a token first.';
+    return;
+  }
+  try {
+    const r = await fetch('/api/animus/client-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hermes_dashboard_session_token: raw }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json().catch(() => ({}));
+    if (!j.ok) throw new Error('Save failed');
+    await pullClientConfigFromServer();
+    const inp = $('hermesDashboardTokenInput');
+    if (inp) inp.value = '';
+    renderHermesDashboardTokenSettings();
+  } catch (e) {
+    const st = $('hermesDashboardTokenStatus');
+    if (st) st.textContent = (e && e.message) || String(e);
+  }
+});
+$('hermesDashboardTokenClearBtn')?.addEventListener('click', async () => {
+  if (!confirm('Remove saved Hermes dashboard token from the server?')) return;
+  try {
+    const r = await fetch('/api/animus/client-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hermes_dashboard_session_token: '' }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await pullClientConfigFromServer();
+    renderHermesDashboardTokenSettings();
+  } catch (e) {
+    const st = $('hermesDashboardTokenStatus');
+    if (st) st.textContent = (e && e.message) || String(e);
+  }
+});
+
 $('notifyTestBtn').addEventListener('click', async () => {
   const perm = await ensureNotificationPermission();
   if (perm !== 'granted') {
@@ -16471,8 +16950,24 @@ $('reconnectBtn').addEventListener('click', () => {
 });
 
 const inp = $('input');
-inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; });
-inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+inp.addEventListener('input', () => {
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+  onComposerSlashSync();
+});
+inp.addEventListener('keydown', (e) => {
+  if (slashPaletteHandleKeydown(e)) return;
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+inp.addEventListener('click', () => {
+  void onComposerSlashSync();
+});
+inp.addEventListener('keyup', () => {
+  void onComposerSlashSync();
+});
 
 // ─── Visibility / background reconnect ───────────────────────────────────────
 document.addEventListener('visibilitychange', () => {

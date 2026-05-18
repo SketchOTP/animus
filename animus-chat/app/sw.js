@@ -1,5 +1,5 @@
 // Bump when shell HTML or critical assets change — activate() evicts older caches.
-const CACHE = 'animus-v76';
+const CACHE = 'animus-v81';
 
 self.addEventListener('install', e => {
   self.skipWaiting();

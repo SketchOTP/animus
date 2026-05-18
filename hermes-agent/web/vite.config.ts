@@ -1,30 +1,9 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import fs from "fs";
 import path from "path";
 
 const BACKEND = process.env.HERMES_DASHBOARD_URL ?? "http://127.0.0.1:9119";
-
-/** Vite 5+ host check: allow Tailscale MagicDNS (`*.ts.net`) and optional extra hosts. */
-const viteAllowedHosts = [
-  ".ts.net",
-  ...(process.env.HERMES_VITE_ALLOWED_HOSTS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
-];
-
-/** Same PEM pair as ``hermes dashboard --ssl-certfile … --ssl-keyfile …`` for HTTPS dev (mic / STT). */
-const devSslCert = process.env.HERMES_WEB_DEV_SSL_CERT;
-const devSslKey = process.env.HERMES_WEB_DEV_SSL_KEY;
-const devHttps =
-  devSslCert && devSslKey
-    ? {
-        cert: fs.readFileSync(devSslCert),
-        key: fs.readFileSync(devSslKey),
-      }
-    : undefined;
 
 /**
  * In production the Python `hermes dashboard` server injects a one-shot
@@ -91,14 +70,30 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // When @nous-research/ui is symlinked via `file:../../design-language`,
+    // Node's module resolution would pick up shared deps from
+    // design-language/node_modules/*, giving us two copies + breaking
+    // hooks (useRef-of-null), webgl contexts, etc. Force everything that
+    // exists in BOTH places to use the dashboard's copy.
+    //
+    // Don't list packages here that only exist in the DS (nanostores,
+    // @nanostores/react) — Vite dedupe errors out when it can't find
+    // them at the project root.
+    dedupe: [
+      "react",
+      "react-dom",
+      "@react-three/fiber",
+      "@observablehq/plot",
+      "three",
+      "leva",
+      "gsap",
+    ],
   },
   build: {
     outDir: "../hermes_cli/web_dist",
     emptyOutDir: true,
   },
   server: {
-    https: devHttps,
-    allowedHosts: viteAllowedHosts,
     proxy: {
       "/api": {
         target: BACKEND,

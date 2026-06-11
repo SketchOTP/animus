@@ -1,4 +1,4 @@
-/** Governance hub — BFF-backed Registry / Runs / Goals views (Command Brief overlay tabs). */
+/** Governance hub — BFF-backed Registry / Runs / Goals / Driver views (Command Brief overlay tabs). */
 
 /** @typedef {{ goal_id: string, status?: string, statement?: string }} GoalRow */
 
@@ -8,6 +8,31 @@ const AnimusGovernanceHelpers = {
   },
   formatGoalStatus(goal) {
     return String((goal && goal.status) || 'unknown');
+  },
+  parseDriverStatus(data) {
+    if (!data || typeof data !== 'object') {
+      return { status: 'idle', active_goal_id: null, active_queue_entry_id: null, last_stop_reason: null };
+    }
+    return {
+      status: String(data.status || 'idle'),
+      active_goal_id: data.active_goal_id || null,
+      active_queue_entry_id: data.active_queue_entry_id || null,
+      last_stop_reason: data.last_stop_reason || null,
+      last_seq: data.last_seq != null ? data.last_seq : null,
+    };
+  },
+  formatDriverStatus(driver) {
+    return String((driver && driver.status) || 'idle');
+  },
+  formatBudgetHint(driver) {
+    const reason = driver && driver.last_stop_reason ? String(driver.last_stop_reason) : '';
+    if (reason.indexOf('budget') >= 0 || reason === 'budget_exceeded') {
+      return 'Budget cap reached (run count or wall-clock)';
+    }
+    return 'Budget: registry policy (run count + wall-clock)';
+  },
+  shouldShowSignOff(goalStatus) {
+    return String(goalStatus || '') === 'pending_completion';
   },
   buildHierarchySummary(milestonesPayload, queuePayload) {
     const milestones = Array.isArray(milestonesPayload && milestonesPayload.milestones)
@@ -24,21 +49,29 @@ const AnimusGovernanceHelpers = {
       phase_count: phases.length,
       queue_count: queue.length,
       ready_count: queue.filter((row) => row.materialization === 'ready').length,
+      dispatched_count: queue.filter((row) => row.materialization === 'dispatched').length,
+      completed_count: queue.filter((row) => row.materialization === 'completed').length,
     };
   },
 };
 
 (function () {
   const PLATFORM_PROJECT_ID = '260c61b1-f774-5493-8ff3-97e0d750f58c';
+  const WORKSPACE_ID = 'a6acfd2b-3195-5085-aae8-ccb93fc7a02b';
   const CANONICAL_RUN_ID = 'a1dfc5a6-a1b3-4bc8-86b9-a7910f0aaae1';
+  let _cachedRepoPath = null;
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  async function govFetch(path) {
+  async function govFetch(path, options) {
+    const opts = options || {};
+    const headers = Object.assign({ Accept: 'application/json' }, opts.headers || {});
     const resp = await fetch('/api/governance/' + path.replace(/^\//, ''), {
-      headers: { Accept: 'application/json' },
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body || undefined,
     });
     const body = await resp.json().catch(() => ({}));
     if (!resp.ok) {
@@ -48,8 +81,42 @@ const AnimusGovernanceHelpers = {
     return body;
   }
 
+  function newRunId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'run-' + Date.now();
+  }
+
+  async function resolveRepoPath() {
+    if (_cachedRepoPath) return _cachedRepoPath;
+    const data = await govFetch('registry/projects/' + encodeURIComponent(PLATFORM_PROJECT_ID));
+    const repos = Array.isArray(data.repos) ? data.repos : [];
+    _cachedRepoPath = repos.length && repos[0].repo_path ? String(repos[0].repo_path) : '';
+    return _cachedRepoPath;
+  }
+
+  async function driverControl(action, goalId) {
+    const repoPath = await resolveRepoPath();
+    const body = { repo_path: repoPath, run_id: newRunId(), goal_id: goalId || null };
+    return govFetch('driver/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function signOffGoal(goalId) {
+    const repoPath = await resolveRepoPath();
+    return govFetch('goals/' + encodeURIComponent(goalId) + '/sign-off', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_path: repoPath, request_id: 'ui-sign-off-' + Date.now() }),
+    });
+  }
+
   function setGovernanceTab(tab) {
-    const tabs = ['brief', 'projects', 'goals', 'runs'];
+    const tabs = ['brief', 'projects', 'goals', 'driver', 'runs'];
     for (const name of tabs) {
       const panel = $('governancePanel' + name.charAt(0).toUpperCase() + name.slice(1));
       const btn = $('governanceTab' + name.charAt(0).toUpperCase() + name.slice(1));
@@ -58,6 +125,7 @@ const AnimusGovernanceHelpers = {
     }
     if (tab === 'projects') void renderGovernanceProjects();
     if (tab === 'goals') void renderGovernanceGoals();
+    if (tab === 'driver') void renderGovernanceDriver();
     if (tab === 'runs') void renderGovernanceRuns();
   }
 
@@ -86,6 +154,128 @@ const AnimusGovernanceHelpers = {
       '<div class="command-brief-cards" id="governanceGoalsList"></div>' +
       '<div id="governanceGoalsDetail"></div>';
     scroll.appendChild(panel);
+  }
+
+  function ensureDriverPanel() {
+    const bar = $('governanceTabBar');
+    const scroll = $('commandBriefMainScroll');
+    if (!bar || !scroll || $('governanceTabDriver')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'governance-tab-btn';
+    btn.id = 'governanceTabDriver';
+    btn.setAttribute('data-governance-tab', 'driver');
+    btn.setAttribute('role', 'tab');
+    btn.textContent = 'Driver';
+    const runsBtn = $('governanceTabRuns');
+    if (runsBtn && runsBtn.parentNode) {
+      runsBtn.parentNode.insertBefore(btn, runsBtn);
+    } else {
+      bar.appendChild(btn);
+    }
+    const panel = document.createElement('div');
+    panel.id = 'governancePanelDriver';
+    panel.className = 'governance-panel';
+    panel.hidden = true;
+    panel.innerHTML = '<div id="governanceDriverDetail"></div>';
+    scroll.appendChild(panel);
+  }
+
+  async function renderGovernanceDriver() {
+    const host = $('governanceDriverDetail');
+    if (!host) return;
+    host.innerHTML = '<div class="command-brief-meta">Loading driver…</div>';
+    try {
+      const driverRaw = await govFetch(
+        'driver/status?workspace_id=' + encodeURIComponent(WORKSPACE_ID),
+      );
+      const driver = AnimusGovernanceHelpers.parseDriverStatus(driverRaw);
+      let goalBlock = '';
+      let signOffBtn = '';
+      if (driver.active_goal_id) {
+        const goal = await govFetch(
+          'goals/' +
+            encodeURIComponent(driver.active_goal_id) +
+            '?project_id=' +
+            encodeURIComponent(PLATFORM_PROJECT_ID),
+        );
+        goalBlock =
+          '<div class="command-brief-meta">Active goal: ' +
+          driver.active_goal_id +
+          ' · ' +
+          AnimusGovernanceHelpers.formatGoalStatus(goal) +
+          ' · tier ' +
+          (goal.tier || '—') +
+          '</div>';
+        if (AnimusGovernanceHelpers.shouldShowSignOff(goal.status)) {
+          signOffBtn =
+            '<button type="button" class="btn btn-primary" id="governanceDriverSignOff">Sign off goal completion</button>';
+        }
+      }
+      host.innerHTML =
+        '<div class="command-brief-card" id="governanceDriverPanel">' +
+        '<div class="command-brief-card-title"><strong>Driver</strong><span class="command-brief-status" id="governanceDriverStatus">' +
+        AnimusGovernanceHelpers.formatDriverStatus(driver) +
+        '</span></div>' +
+        '<div class="command-brief-meta" id="governanceDriverStopReason">Stop reason: ' +
+        (driver.last_stop_reason || '—') +
+        '</div>' +
+        '<div class="command-brief-meta" id="governanceDriverBudget">' +
+        AnimusGovernanceHelpers.formatBudgetHint(driver) +
+        '</div>' +
+        '<div class="command-brief-meta">Active entry: ' +
+        (driver.active_queue_entry_id || '—') +
+        '</div>' +
+        goalBlock +
+        '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
+        '<button type="button" class="btn btn-ghost" data-driver-action="start">Start</button>' +
+        '<button type="button" class="btn btn-ghost" data-driver-action="pause">Pause</button>' +
+        '<button type="button" class="btn btn-ghost" data-driver-action="resume">Resume</button>' +
+        '<button type="button" class="btn btn-ghost" data-driver-action="halt">Halt</button>' +
+        '<button type="button" class="btn btn-ghost" data-driver-action="stop">Stop</button>' +
+        signOffBtn +
+        '</div>' +
+        '<div class="command-brief-meta" id="governanceDriverActionResult" style="margin-top:8px"></div>' +
+        '</div>';
+      host.querySelectorAll('[data-driver-action]').forEach((btn) => {
+        btn.addEventListener('click', () =>
+          void (async () => {
+            const action = btn.getAttribute('data-driver-action') || '';
+            const resultHost = $('governanceDriverActionResult');
+            if (resultHost) resultHost.textContent = 'Sending ' + action + '…';
+            try {
+              const resp = await driverControl(action, driver.active_goal_id);
+              if (resultHost) {
+                resultHost.textContent = (resp.event || action) + ' ok';
+              }
+              await renderGovernanceDriver();
+            } catch (err) {
+              if (resultHost) resultHost.textContent = String(err.message || err);
+            }
+          })(),
+        );
+      });
+      const signOff = $('governanceDriverSignOff');
+      if (signOff && driver.active_goal_id) {
+        signOff.addEventListener('click', () =>
+          void (async () => {
+            const resultHost = $('governanceDriverActionResult');
+            if (resultHost) resultHost.textContent = 'Publishing sign-off…';
+            try {
+              const resp = await signOffGoal(driver.active_goal_id);
+              if (resultHost) {
+                resultHost.textContent = (resp.event || 'governance.goal.completed') + ' ok';
+              }
+              await renderGovernanceDriver();
+            } catch (err) {
+              if (resultHost) resultHost.textContent = String(err.message || err);
+            }
+          })(),
+        );
+      }
+    } catch (err) {
+      host.innerHTML = '<div class="command-brief-err">' + String(err.message || err) + '</div>';
+    }
   }
 
   async function renderGovernanceGoals() {
@@ -149,8 +339,12 @@ const AnimusGovernanceHelpers = {
         summary.queue_count +
         ' (ready: ' +
         summary.ready_count +
+        ', dispatched: ' +
+        summary.dispatched_count +
+        ', completed: ' +
+        summary.completed_count +
         ')</div>' +
-        '<table class="command-brief-table"><thead><tr><th>#</th><th>Objective</th><th>Status</th><th>Tier</th></tr></thead><tbody>' +
+        '<table class="command-brief-table"><thead><tr><th>#</th><th>Objective</th><th>Materialization</th><th>Tier</th></tr></thead><tbody>' +
         queueRows
           .map(
             (row) =>
@@ -285,6 +479,7 @@ const AnimusGovernanceHelpers = {
     const bar = $('governanceTabBar');
     if (!bar || bar.dataset.wired) return;
     ensureGoalsPanel();
+    ensureDriverPanel();
     bar.dataset.wired = '1';
     bar.querySelectorAll('[data-governance-tab]').forEach((btn) => {
       btn.addEventListener('click', () => setGovernanceTab(btn.getAttribute('data-governance-tab') || 'brief'));
@@ -295,9 +490,12 @@ const AnimusGovernanceHelpers = {
     activateTab: setGovernanceTab,
     refreshProjects: renderGovernanceProjects,
     refreshGoals: renderGovernanceGoals,
+    refreshDriver: renderGovernanceDriver,
     refreshRuns: renderGovernanceRuns,
     wire: wireGovernanceTabsOnce,
     helpers: AnimusGovernanceHelpers,
+    driverControl: driverControl,
+    signOffGoal: signOffGoal,
   };
 
   document.addEventListener('DOMContentLoaded', wireGovernanceTabsOnce);

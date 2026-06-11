@@ -1,0 +1,11 @@
+{
+  "check": "phase8_driver_panel_ui",
+  "pass": true,
+  "detail": "unittest contract + governance-hub.js Driver tab wired",
+  "dom_ids": [
+    "governanceDriverPanel",
+    "governanceDriverStatus",
+    "governanceDriverStopReason",
+    "governanceDriverBudget"
+  ]
+}

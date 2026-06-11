@@ -795,5 +795,20 @@ class CommandBriefImportIsolationTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + "\n" + proc.stderr)
 
 
+class GovernanceHubPluginTests(unittest.TestCase):
+    def test_route_table_registers_governance_paths(self) -> None:
+        from animus.plugins.governance_hub.routes import governance_hub_route_table
+
+        paths = [route.path for route in governance_hub_route_table()]
+        self.assertIn("/api/governance/health", paths)
+        self.assertTrue(any("/api/governance/" in path for path in paths))
+
+    def test_governance_api_base_default(self) -> None:
+        from animus.plugins.governance_hub.proxy import governance_api_base
+
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(governance_api_base(), "http://127.0.0.1:8120")
+
+
 if __name__ == "__main__":
     unittest.main()

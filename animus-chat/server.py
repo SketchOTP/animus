@@ -227,6 +227,20 @@ except Exception as _cb_exc:
     _COMMAND_BRIEF_ROUTES = []
     _COMMAND_BRIEF_IMPORT_ERROR = str(_cb_exc) or type(_cb_exc).__name__
 
+_GOVERNANCE_HUB_ROUTES: list = []
+_GOVERNANCE_HUB_IMPORT_ERROR: str | None = None
+
+try:
+    from animus.plugins.governance_hub.routes import governance_hub_route_table
+
+    _GOVERNANCE_HUB_ROUTES = governance_hub_route_table()
+    if not _GOVERNANCE_HUB_ROUTES:
+        _GOVERNANCE_HUB_IMPORT_ERROR = "governance_hub_route_table() returned no routes"
+        _GOVERNANCE_HUB_ROUTES = []
+except Exception as _gh_exc:
+    _GOVERNANCE_HUB_ROUTES = []
+    _GOVERNANCE_HUB_IMPORT_ERROR = str(_gh_exc) or type(_gh_exc).__name__
+
 
 def command_brief_plugin_available() -> tuple[bool, str | None]:
     """True when Command Brief Starlette routes are registered (plugin import + route table OK)."""
@@ -3519,6 +3533,7 @@ app = Starlette(
     routes=[
         Route("/api/command-brief/health", command_brief_health, methods=["GET"]),
         *_COMMAND_BRIEF_ROUTES,
+        *_GOVERNANCE_HUB_ROUTES,
         *wizard_route_table(),
         *cron_route_table(),
         *skills_route_table(),

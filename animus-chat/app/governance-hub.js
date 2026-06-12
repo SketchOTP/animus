@@ -7,7 +7,20 @@ const AnimusGovernanceHelpers = {
     return Array.isArray(data && data.goals) ? data.goals : [];
   },
   formatGoalStatus(goal) {
-    return String((goal && goal.status) || 'unknown');
+    return String((goal && (goal.display_status || goal.status)) || 'unknown');
+  },
+  shouldShowBreakdownApproval(goal) {
+    const status = String((goal && (goal.display_status || goal.status)) || '');
+    return status === 'pending_approval';
+  },
+  formatBudgetCaps(tierPolicy) {
+    const policy = tierPolicy && tierPolicy.registry_tier_policy ? tierPolicy.registry_tier_policy : {};
+    const budgets = policy.budget_defaults && typeof policy.budget_defaults === 'object'
+      ? policy.budget_defaults
+      : {};
+    const runs = budgets.max_run_count != null ? String(budgets.max_run_count) : '—';
+    const hours = budgets.max_wall_clock_hours != null ? String(budgets.max_wall_clock_hours) : '—';
+    return 'Budget caps: runs ' + runs + ' · wall-clock hours ' + hours;
   },
   parseDriverStatus(data) {
     if (!data || typeof data !== 'object') {
@@ -341,6 +354,7 @@ const AnimusGovernanceHelpers = {
     panel.className = 'governance-panel';
     panel.hidden = true;
     panel.innerHTML =
+      '<div id="governanceGoalsIntake"></div>' +
       '<div class="command-brief-cards" id="governanceGoalsList"></div>' +
       '<div id="governanceGoalsDetail"></div>';
     scroll.appendChild(panel);
@@ -468,10 +482,142 @@ const AnimusGovernanceHelpers = {
     }
   }
 
+  async function submitGoalIntake(formEl) {
+    const statement = (formEl.querySelector('[data-intake-field="statement"]') || {}).value || '';
+    const repoPath = (formEl.querySelector('[data-intake-field="repo_path"]') || {}).value || '';
+    const projectId =
+      (formEl.querySelector('[data-intake-field="project_id"]') || {}).value || PLATFORM_PROJECT_ID;
+    const includeMemory = !!(formEl.querySelector('[data-intake-field="include_memory"]') || {}).checked;
+    const includeResearch = !!(formEl.querySelector('[data-intake-field="include_research"]') || {}).checked;
+    const goalSizeHint = (formEl.querySelector('[data-intake-field="goal_size_hint"]') || {}).value || 'M';
+    const tierExpectation =
+      (formEl.querySelector('[data-intake-field="tier_expectation"]') || {}).value || 'release';
+    const maxRunCount = (formEl.querySelector('[data-intake-field="max_run_count"]') || {}).value;
+    const maxWallHours = (formEl.querySelector('[data-intake-field="max_wall_clock_hours"]') || {}).value;
+    const breakdownAck = !!(formEl.querySelector('[data-intake-field="chk_breakdown"]') || {}).checked;
+    const dispatchAck = !!(formEl.querySelector('[data-intake-field="chk_dispatch"]') || {}).checked;
+    const signOffAck = !!(formEl.querySelector('[data-intake-field="chk_signoff"]') || {}).checked;
+    const payload = {
+      statement: String(statement).trim(),
+      repo_path: String(repoPath).trim(),
+      project_id: String(projectId).trim(),
+      include_memory: includeMemory,
+      include_research: includeResearch,
+      goal_size_hint: goalSizeHint,
+      tier_expectation: tierExpectation,
+      source: 'human',
+      human_checkpoints: {
+        breakdown_approval_required: breakdownAck,
+        dispatch_opt_in_required: dispatchAck,
+        sign_off_required_at_completion: signOffAck,
+      },
+    };
+    const budgetOverride = {};
+    if (maxRunCount) budgetOverride.max_run_count = Number(maxRunCount);
+    if (maxWallHours) budgetOverride.max_wall_clock_hours = Number(maxWallHours);
+    if (Object.keys(budgetOverride).length) payload.budget_override = budgetOverride;
+    return govFetch('goals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async function approveGoalBreakdown(goalId, breakdownVersion, repoPath) {
+    return govFetch('goals/' + encodeURIComponent(goalId) + '/breakdown/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repo_path: repoPath,
+        breakdown_version: breakdownVersion,
+        request_id: 'ui-approve-' + Date.now(),
+      }),
+    });
+  }
+
+  async function rejectGoalBreakdown(goalId, breakdownVersion, repoPath, reason) {
+    return govFetch('goals/' + encodeURIComponent(goalId) + '/breakdown/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repo_path: repoPath,
+        breakdown_version: breakdownVersion,
+        reason: reason,
+      }),
+    });
+  }
+
+  async function renderGoalIntakeForm() {
+    const host = $('governanceGoalsIntake');
+    if (!host) return;
+    host.innerHTML = '<div class="command-brief-meta">Loading intake form…</div>';
+    try {
+      const project = await govFetch('registry/projects/' + encodeURIComponent(PLATFORM_PROJECT_ID));
+      const repos = Array.isArray(project.repos) ? project.repos : [];
+      const repoOptions = repos
+        .map(function (repo) {
+          const path = repo.repo_path || '';
+          return '<option value="' + path + '">' + (repo.repo_id || path) + '</option>';
+        })
+        .join('');
+      host.innerHTML =
+        '<div class="command-brief-card" id="governanceGoalIntakePanel">' +
+        '<div class="command-brief-card-title"><strong>New goal</strong></div>' +
+        '<label class="command-brief-meta">Goal statement<br>' +
+        '<textarea data-intake-field="statement" rows="3" style="width:100%"></textarea></label>' +
+        '<label class="command-brief-meta">Target repo<br>' +
+        '<select data-intake-field="repo_path">' +
+        repoOptions +
+        '</select></label>' +
+        '<input type="hidden" data-intake-field="project_id" value="' +
+        PLATFORM_PROJECT_ID +
+        '">' +
+        '<label class="command-brief-meta"><input type="checkbox" data-intake-field="include_memory"> Include memory</label>' +
+        '<label class="command-brief-meta"><input type="checkbox" data-intake-field="include_research"> Include research</label>' +
+        '<label class="command-brief-meta">Size hint ' +
+        '<select data-intake-field="goal_size_hint"><option value="S">S</option><option value="M" selected>M</option><option value="L">L</option></select></label>' +
+        '<label class="command-brief-meta">Budget max runs <input data-intake-field="max_run_count" type="number" min="1" placeholder="registry default"></label>' +
+        '<label class="command-brief-meta">Budget wall-clock hours <input data-intake-field="max_wall_clock_hours" type="number" min="1" step="0.1" placeholder="registry default"></label>' +
+        '<label class="command-brief-meta">Tier expectation ' +
+        '<select data-intake-field="tier_expectation"><option value="trivial">trivial</option><option value="standard">standard</option><option value="release" selected>release</option></select></label>' +
+        '<div class="command-brief-meta"><strong>Human checkpoints</strong></div>' +
+        '<label class="command-brief-meta"><input type="checkbox" data-intake-field="chk_breakdown" checked> Breakdown approval required</label>' +
+        '<label class="command-brief-meta"><input type="checkbox" data-intake-field="chk_dispatch" checked> Dispatch opt-in required</label>' +
+        '<label class="command-brief-meta"><input type="checkbox" data-intake-field="chk_signoff" checked> Sign-off required at completion</label>' +
+        '<button type="button" class="btn btn-primary" id="governanceGoalIntakeSubmit" data-intake-action="submit">Submit goal</button>' +
+        '<div class="command-brief-meta" id="governanceGoalIntakeResult" style="margin-top:8px"></div>' +
+        '</div>';
+      const submitBtn = $('governanceGoalIntakeSubmit');
+      const formEl = $('governanceGoalIntakePanel');
+      if (submitBtn && formEl) {
+        submitBtn.addEventListener('click', () =>
+          void (async () => {
+            const resultHost = $('governanceGoalIntakeResult');
+            if (resultHost) resultHost.textContent = 'Submitting goal…';
+            try {
+              const resp = await submitGoalIntake(formEl);
+              if (resultHost) {
+                resultHost.textContent =
+                  'Created ' + (resp.goal_id || '').slice(0, 8) + '… · ' + (resp.status || 'pending_approval');
+              }
+              await renderGovernanceGoals();
+              if (resp.goal_id) await showGoalDetail(resp.goal_id);
+            } catch (err) {
+              if (resultHost) resultHost.textContent = String(err.message || err);
+            }
+          })(),
+        );
+      }
+    } catch (err) {
+      host.innerHTML = '<div class="command-brief-err">' + String(err.message || err) + '</div>';
+    }
+  }
+
   async function renderGovernanceGoals() {
     const listHost = $('governanceGoalsList');
     const detailHost = $('governanceGoalsDetail');
     if (!listHost || !detailHost) return;
+    await renderGoalIntakeForm();
     listHost.innerHTML = '<div class="command-brief-meta">Loading goals…</div>';
     detailHost.innerHTML = '';
     try {
@@ -571,13 +717,38 @@ const AnimusGovernanceHelpers = {
           ' · pending ' +
           (releaseGates.pending_count || 0)
         : '';
+      const repoMeta =
+        (tierPolicy && tierPolicy.repo_path) ||
+        (goal.repo_id ? 'repo ' + goal.repo_id : 'repo —');
+      const budgetMeta = AnimusGovernanceHelpers.formatBudgetCaps(tierPolicy);
+      const memoryFlag = goal.research && goal.research.include_research ? 'enabled' : 'disabled';
+      const showApproval = AnimusGovernanceHelpers.shouldShowBreakdownApproval(goal);
+      const approvalBlock = showApproval
+        ? '<div class="command-brief-card" id="governanceBreakdownReview" style="margin-top:12px">' +
+          '<div class="command-brief-card-title"><strong>Review breakdown</strong></div>' +
+          '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' +
+          '<button type="button" class="btn btn-primary" id="governanceGoalApprove" data-breakdown-action="approve">Approve breakdown</button>' +
+          '<button type="button" class="btn btn-ghost" id="governanceGoalReject" data-breakdown-action="reject">Reject breakdown</button>' +
+          '</div>' +
+          '<div class="command-brief-meta" id="governanceBreakdownActionResult" style="margin-top:8px"></div>' +
+          '</div>'
+        : '';
       host.innerHTML =
-        '<div class="command-brief-card">' +
+        '<div class="command-brief-card" id="governanceGoalDetailPanel">' +
         '<div class="command-brief-card-title"><strong>Goal</strong><span class="command-brief-status">' +
         AnimusGovernanceHelpers.formatGoalStatus(goal) +
         '</span></div>' +
         '<div class="command-brief-meta">' +
         (goal.statement || '') +
+        '</div>' +
+        '<div class="command-brief-meta">Repo: ' +
+        repoMeta +
+        '</div>' +
+        '<div class="command-brief-meta">' +
+        budgetMeta +
+        '</div>' +
+        '<div class="command-brief-meta">Memory: opt-in at intake · Research: ' +
+        memoryFlag +
         '</div>' +
         '<div class="command-brief-meta">Milestones: ' +
         summary.milestone_count +
@@ -616,7 +787,56 @@ const AnimusGovernanceHelpers = {
           .join('') +
         '</tbody></table>' +
         AnimusGovernanceHelpers.buildResearchSectionHtml(goal, findingsPayload) +
+        approvalBlock +
         '</div>';
+      const repoPath =
+        (tierPolicy && tierPolicy.repo_path) || (await resolveRepoPath());
+      const approveBtn = $('governanceGoalApprove');
+      const rejectBtn = $('governanceGoalReject');
+      const actionHost = $('governanceBreakdownActionResult');
+      if (approveBtn) {
+        approveBtn.addEventListener('click', () =>
+          void (async () => {
+            if (actionHost) actionHost.textContent = 'Approving breakdown…';
+            try {
+              const resp = await approveGoalBreakdown(
+                goalId,
+                goal.breakdown_version || 1,
+                repoPath,
+              );
+              if (actionHost) {
+                actionHost.textContent = (resp.event || 'governance.goal.breakdown.approved') + ' ok';
+              }
+              await showGoalDetail(goalId);
+            } catch (err) {
+              if (actionHost) actionHost.textContent = String(err.message || err);
+            }
+          })(),
+        );
+      }
+      if (rejectBtn) {
+        rejectBtn.addEventListener('click', () =>
+          void (async () => {
+            const reason = window.prompt('Rejection reason', 'scope drift');
+            if (!reason) return;
+            if (actionHost) actionHost.textContent = 'Rejecting breakdown…';
+            try {
+              const resp = await rejectGoalBreakdown(
+                goalId,
+                goal.breakdown_version || 1,
+                repoPath,
+                reason,
+              );
+              if (actionHost) {
+                actionHost.textContent = (resp.event || 'governance.goal.breakdown.rejected') + ' ok';
+              }
+              await showGoalDetail(goalId);
+            } catch (err) {
+              if (actionHost) actionHost.textContent = String(err.message || err);
+            }
+          })(),
+        );
+      }
     } catch (err) {
       host.innerHTML = '<div class="command-brief-err">' + String(err.message || err) + '</div>';
     }

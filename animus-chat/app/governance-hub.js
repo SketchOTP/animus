@@ -34,6 +34,98 @@ const AnimusGovernanceHelpers = {
   shouldShowSignOff(goalStatus) {
     return String(goalStatus || '') === 'pending_completion';
   },
+  formatResearchLabel(research) {
+    const meta = research && typeof research === 'object' ? research : {};
+    const enabled = !!meta.include_research;
+    const count = meta.finding_count != null ? Number(meta.finding_count) : 0;
+    const last = meta.last_scout_at ? String(meta.last_scout_at) : '—';
+    const flag = enabled ? 'enabled' : 'disabled (default false)';
+    return 'Scout: ' + flag + ' · findings ' + count + ' · last ' + last;
+  },
+  formatLicenseBadge(license, licenseFlags) {
+    const label = String(license || 'UNKNOWN');
+    const flags = Array.isArray(licenseFlags) ? licenseFlags : [];
+    const referenceOnly = flags.indexOf('reference_only') >= 0;
+    return {
+      label: label,
+      referenceOnly: referenceOnly,
+      className: referenceOnly ? 'scout-license scout-license-ref' : 'scout-license',
+    };
+  },
+  formatRelevanceBar(relevance) {
+    const value = Number(relevance);
+    const pct = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value * 100))) : 0;
+    return { pct: pct, label: Number.isFinite(value) ? value.toFixed(2) : '—' };
+  },
+  buildEvidenceArtifactPath(repoId, goalId, evidenceRef) {
+    if (!repoId || !goalId || !evidenceRef) return '';
+    return (
+      'repos/' +
+      encodeURIComponent(repoId) +
+      '/runs/' +
+      encodeURIComponent(goalId) +
+      '/artifacts/' +
+      encodeURIComponent(String(evidenceRef))
+    );
+  },
+  buildFindingRowHtml(finding, repoId, goalId) {
+    const row = finding && typeof finding === 'object' ? finding : {};
+    const badge = AnimusGovernanceHelpers.formatLicenseBadge(row.license, row.license_flags);
+    const rel = AnimusGovernanceHelpers.formatRelevanceBar(row.relevance);
+    const evidencePath = AnimusGovernanceHelpers.buildEvidenceArtifactPath(
+      repoId,
+      row.goal_id || goalId || '',
+      row.evidence_ref,
+    );
+    const evidenceCell = evidencePath
+      ? '<a href="/api/governance/' + evidencePath + '" target="_blank" rel="noopener">evidence</a>'
+      : '—';
+    return (
+      '<tr><td>' +
+      (row.source || '') +
+      '</td><td><span class="' +
+      badge.className +
+      '">' +
+      badge.label +
+      (badge.referenceOnly ? ' · ref-only' : '') +
+      '</span></td><td><span class="scout-relevance">' +
+      rel.label +
+      '</span></td><td>' +
+      evidenceCell +
+      '</td></tr>'
+    );
+  },
+  buildResearchSectionHtml(goal, findingsPayload) {
+    const research = goal && goal.research ? goal.research : {};
+    const findings = Array.isArray(findingsPayload && findingsPayload.findings)
+      ? findingsPayload.findings
+      : [];
+    const repoId = goal && goal.repo_id ? String(goal.repo_id) : '';
+    const goalId = goal && goal.goal_id ? String(goal.goal_id) : '';
+    let body = '';
+    if (!findings.length) {
+      body =
+        '<div class="command-brief-meta">No scout findings indexed for this goal.</div>';
+    } else {
+      body =
+        '<table class="command-brief-table"><thead><tr><th>Source</th><th>License</th><th>Relevance</th><th>Evidence</th></tr></thead><tbody>' +
+        findings
+          .map(function (item) {
+            return AnimusGovernanceHelpers.buildFindingRowHtml(item, repoId, goalId);
+          })
+          .join('') +
+        '</tbody></table>';
+    }
+    return (
+      '<div class="command-brief-card" style="margin-top:12px">' +
+      '<div class="command-brief-card-title"><strong>Research</strong></div>' +
+      '<div class="command-brief-meta">' +
+      AnimusGovernanceHelpers.formatResearchLabel(research) +
+      '</div>' +
+      body +
+      '</div>'
+    );
+  },
   buildHierarchySummary(milestonesPayload, queuePayload) {
     const milestones = Array.isArray(milestonesPayload && milestonesPayload.milestones)
       ? milestonesPayload.milestones
@@ -316,10 +408,15 @@ const AnimusGovernanceHelpers = {
     host.innerHTML = '<div class="command-brief-meta">Loading goal ' + goalId.slice(0, 8) + '…</div>';
     try {
       const q = 'project_id=' + encodeURIComponent(PLATFORM_PROJECT_ID);
-      const [goal, milestones, queue] = await Promise.all([
+      const [goal, milestones, queue, findingsPayload] = await Promise.all([
         govFetch('goals/' + encodeURIComponent(goalId) + '?' + q),
         govFetch('goals/' + encodeURIComponent(goalId) + '/milestones'),
         govFetch('goals/' + encodeURIComponent(goalId) + '/queue'),
+        govFetch('goals/' + encodeURIComponent(goalId) + '/research/findings?' + q).catch(
+          function () {
+            return null;
+          },
+        ),
       ]);
       const summary = AnimusGovernanceHelpers.buildHierarchySummary(milestones, queue);
       const queueRows = Array.isArray(queue.queue_entries) ? queue.queue_entries : [];
@@ -359,7 +456,9 @@ const AnimusGovernanceHelpers = {
               '</td></tr>',
           )
           .join('') +
-        '</tbody></table></div>';
+        '</tbody></table>' +
+        AnimusGovernanceHelpers.buildResearchSectionHtml(goal, findingsPayload) +
+        '</div>';
     } catch (err) {
       host.innerHTML = '<div class="command-brief-err">' + String(err.message || err) + '</div>';
     }

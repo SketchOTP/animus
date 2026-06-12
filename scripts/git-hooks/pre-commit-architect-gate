@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Block git commit when Architect diff gate is not APPROVED for the active request.
+# Block git commit when Architect diff + release gates are not fresh for the active request.
 # Emergency override: ARCHITECT_GATE_OVERRIDE=1 ARCHITECT_GATE_OVERRIDE_REASON="..." git commit ...
 set -euo pipefail
 
@@ -7,9 +7,8 @@ repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 
 architect_dir="$repo_root/.architect"
-active_file="$architect_dir/active_request.json"
-review_file="$architect_dir/last_review.json"
 override_log="$architect_dir/gate_override.log"
+check_script="$repo_root/scripts/architect_pre_commit_check.py"
 
 if [[ "${ARCHITECT_GATE_OVERRIDE:-}" == "1" ]]; then
   reason="${ARCHITECT_GATE_OVERRIDE_REASON:-unspecified}"
@@ -20,32 +19,9 @@ if [[ "${ARCHITECT_GATE_OVERRIDE:-}" == "1" ]]; then
   exit 0
 fi
 
-if [[ ! -f "$active_file" || ! -f "$review_file" ]]; then
-  echo "architect-gate: BLOCKED — missing .architect/active_request.json or .architect/last_review.json" >&2
-  echo "Run architect_start_request → architect_review_plan → implement → architect_review_diff before commit." >&2
+if [[ ! -f "$check_script" ]]; then
+  echo "architect-gate: BLOCKED — missing $check_script" >&2
   exit 1
 fi
 
-python3 - <<'PY' "$active_file" "$review_file"
-import json, sys
-active_path, review_path = sys.argv[1:3]
-active = json.load(open(active_path, encoding="utf-8"))
-review = json.load(open(review_path, encoding="utf-8"))
-request_id = str(active.get("request_id") or "").strip()
-if not request_id:
-    raise SystemExit("architect-gate: BLOCKED — active_request.json has no request_id")
-if review.get("request_id") != request_id:
-    raise SystemExit(
-        f"architect-gate: BLOCKED — last_review request_id {review.get('request_id')!r} "
-        f"does not match active {request_id!r}"
-    )
-if review.get("review_type") != "diff":
-    raise SystemExit(
-        f"architect-gate: BLOCKED — last_review review_type={review.get('review_type')!r}; need 'diff'"
-    )
-if review.get("status") != "APPROVED":
-    raise SystemExit(
-        f"architect-gate: BLOCKED — diff gate status={review.get('status')!r}; need APPROVED"
-    )
-print(f"architect-gate: OK request={request_id} diff=APPROVED")
-PY
+python3 "$check_script" "$architect_dir"

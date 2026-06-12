@@ -57,14 +57,14 @@ const AnimusGovernanceHelpers = {
     const pct = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value * 100))) : 0;
     return { pct: pct, label: Number.isFinite(value) ? value.toFixed(2) : '—' };
   },
-  buildEvidenceArtifactPath(repoId, goalId, evidenceRef) {
+  buildScoutArtifactPath(repoId, goalId, evidenceRef) {
     if (!repoId || !goalId || !evidenceRef) return '';
     return (
       'repos/' +
       encodeURIComponent(repoId) +
-      '/runs/' +
+      '/goals/' +
       encodeURIComponent(goalId) +
-      '/artifacts/' +
+      '/scout/artifacts/' +
       encodeURIComponent(String(evidenceRef))
     );
   },
@@ -72,7 +72,7 @@ const AnimusGovernanceHelpers = {
     const row = finding && typeof finding === 'object' ? finding : {};
     const badge = AnimusGovernanceHelpers.formatLicenseBadge(row.license, row.license_flags);
     const rel = AnimusGovernanceHelpers.formatRelevanceBar(row.relevance);
-    const evidencePath = AnimusGovernanceHelpers.buildEvidenceArtifactPath(
+    const evidencePath = AnimusGovernanceHelpers.buildScoutArtifactPath(
       repoId,
       row.goal_id || goalId || '',
       row.evidence_ref,
@@ -217,8 +217,106 @@ const AnimusGovernanceHelpers = {
     }
     if (tab === 'projects') void renderGovernanceProjects();
     if (tab === 'goals') void renderGovernanceGoals();
+    if (tab === 'queue') void renderGovernanceQueue();
     if (tab === 'driver') void renderGovernanceDriver();
     if (tab === 'runs') void renderGovernanceRuns();
+    if (tab === 'brief') void renderGovernanceBriefExtras();
+  }
+
+  function ensureQueuePanel() {
+    const bar = $('governanceTabBar');
+    const scroll = $('commandBriefMainScroll');
+    if (!bar || !scroll || $('governanceTabQueue')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'governance-tab-btn';
+    btn.id = 'governanceTabQueue';
+    btn.setAttribute('data-governance-tab', 'queue');
+    btn.setAttribute('role', 'tab');
+    btn.textContent = 'Queue';
+    const driverBtn = $('governanceTabDriver');
+    if (driverBtn && driverBtn.parentNode) {
+      driverBtn.parentNode.insertBefore(btn, driverBtn);
+    } else {
+      bar.appendChild(btn);
+    }
+    const panel = document.createElement('div');
+    panel.id = 'governancePanelQueue';
+    panel.className = 'governance-panel';
+    panel.hidden = true;
+    panel.innerHTML = '<div id="governanceQueueDetail"></div>';
+    scroll.appendChild(panel);
+  }
+
+  async function renderGovernanceBriefExtras() {
+    const host = $('governanceBriefMemory');
+    if (!host) return;
+    host.innerHTML = '<div class="command-brief-meta">Loading memory outcomes…</div>';
+    try {
+      const data = await govFetch(
+        'projects/' + encodeURIComponent(PLATFORM_PROJECT_ID) + '/memory?limit=8',
+      );
+      const events = Array.isArray(data.events) ? data.events : [];
+      if (!events.length) {
+        host.innerHTML = '<div class="command-brief-meta">No Mimir outcomes recorded yet.</div>';
+        return;
+      }
+      host.innerHTML =
+        '<ul class="command-brief-list">' +
+        events
+          .map(function (ev) {
+            return (
+              '<li>run ' +
+              (ev.run_id || '').slice(0, 8) +
+              '… · outcome ' +
+              (ev.outcome || '—') +
+              ' · ids ' +
+              (Array.isArray(ev.memory_ids) ? ev.memory_ids.length : 0) +
+              '</li>'
+            );
+          })
+          .join('') +
+        '</ul>';
+    } catch (err) {
+      host.innerHTML = '<div class="command-brief-err">' + String(err.message || err) + '</div>';
+    }
+  }
+
+  async function renderGovernanceQueue() {
+    const host = $('governanceQueueDetail');
+    if (!host) return;
+    host.innerHTML = '<div class="command-brief-meta">Loading directive queue…</div>';
+    try {
+      const data = await govFetch('queue?project_id=' + encodeURIComponent(PLATFORM_PROJECT_ID));
+      const rows = Array.isArray(data.queue_entries) ? data.queue_entries : [];
+      host.innerHTML =
+        '<div class="command-brief-card">' +
+        '<div class="command-brief-card-title"><strong>Directive queue</strong>' +
+        '<span class="command-brief-status">' +
+        rows.length +
+        ' entries</span></div>' +
+        '<table class="command-brief-table"><thead><tr><th>Goal</th><th>#</th><th>Objective</th><th>State</th><th>Tier</th></tr></thead><tbody>' +
+        rows
+          .map(function (row) {
+            return (
+              '<tr><td>' +
+              (row.goal_id || '').slice(0, 8) +
+              '…</td><td>' +
+              (row.ordinal || '') +
+              '</td><td>' +
+              (row.objective || '') +
+              '</td><td>' +
+              (row.materialization || '') +
+              '</td><td>' +
+              (row.tier || '') +
+              '</td></tr>'
+            );
+          })
+          .join('') +
+        '</tbody></table></div>';
+    } catch (err) {
+      host.innerHTML = '<div class="command-brief-err">' + String(err.message || err) + '</div>';
+    }
   }
 
   function ensureGoalsPanel() {
@@ -408,7 +506,7 @@ const AnimusGovernanceHelpers = {
     host.innerHTML = '<div class="command-brief-meta">Loading goal ' + goalId.slice(0, 8) + '…</div>';
     try {
       const q = 'project_id=' + encodeURIComponent(PLATFORM_PROJECT_ID);
-      const [goal, milestones, queue, findingsPayload] = await Promise.all([
+      const [goal, milestones, queue, findingsPayload, tierPolicy, releaseGates] = await Promise.all([
         govFetch('goals/' + encodeURIComponent(goalId) + '?' + q),
         govFetch('goals/' + encodeURIComponent(goalId) + '/milestones'),
         govFetch('goals/' + encodeURIComponent(goalId) + '/queue'),
@@ -417,9 +515,62 @@ const AnimusGovernanceHelpers = {
             return null;
           },
         ),
+        govFetch(
+          'registry/projects/' +
+            encodeURIComponent(PLATFORM_PROJECT_ID) +
+            '/tier-policy?goal_id=' +
+            encodeURIComponent(goalId),
+        ).catch(function () { return null; }),
+        govFetch('goals/' + encodeURIComponent(goalId) + '/release-gates').catch(function () {
+          return null;
+        }),
       ]);
       const summary = AnimusGovernanceHelpers.buildHierarchySummary(milestones, queue);
       const queueRows = Array.isArray(queue.queue_entries) ? queue.queue_entries : [];
+      const milestoneRows = Array.isArray(milestones.milestones) ? milestones.milestones : [];
+      let hierarchyHtml = '';
+      milestoneRows.forEach(function (ms) {
+        hierarchyHtml +=
+          '<div class="command-brief-meta"><strong>M' +
+          (ms.ordinal || '') +
+          '</strong> ' +
+          (ms.title || '') +
+          ' · ' +
+          (ms.status || '') +
+          '</div>';
+        const phases = Array.isArray(ms.phases) ? ms.phases : [];
+        phases.forEach(function (ph) {
+          hierarchyHtml +=
+            '<div class="command-brief-meta" style="padding-left:12px">P' +
+            (ph.ordinal || '') +
+            ' ' +
+            (ph.title || '') +
+            ' · tier ' +
+            (ph.estimated_tier || '—') +
+            ' · ' +
+            (ph.status || '') +
+            '</div>';
+        });
+      });
+      const tierMeta =
+        tierPolicy && tierPolicy.registry_tier_policy
+          ? 'Profile ' +
+            (tierPolicy.registry_tier_policy.governance_profile || '—') +
+            ' · goal tier ' +
+            (tierPolicy.goal_tier || goal.tier || '—') +
+            (tierPolicy.architect_override_visibility
+              ? ' · Architect plan ' +
+                (tierPolicy.architect_override_visibility.request_id || '—')
+              : '')
+          : 'Tier policy unavailable';
+      const releaseMeta = releaseGates
+        ? 'Release gates: approved ' +
+          (releaseGates.approved_count || 0) +
+          ' · blocked ' +
+          (releaseGates.blocked_count || 0) +
+          ' · pending ' +
+          (releaseGates.pending_count || 0)
+        : '';
       host.innerHTML =
         '<div class="command-brief-card">' +
         '<div class="command-brief-card-title"><strong>Goal</strong><span class="command-brief-status">' +
@@ -441,6 +592,13 @@ const AnimusGovernanceHelpers = {
         ', completed: ' +
         summary.completed_count +
         ')</div>' +
+        '<div class="command-brief-meta">' +
+        tierMeta +
+        ' (read-only)</div>' +
+        '<div class="command-brief-meta">' +
+        releaseMeta +
+        '</div>' +
+        hierarchyHtml +
         '<table class="command-brief-table"><thead><tr><th>#</th><th>Objective</th><th>Materialization</th><th>Tier</th></tr></thead><tbody>' +
         queueRows
           .map(
@@ -464,6 +622,24 @@ const AnimusGovernanceHelpers = {
     }
   }
 
+  function formatDriftBadges(driftPayload) {
+    const findings = Array.isArray(driftPayload && driftPayload.findings)
+      ? driftPayload.findings
+      : Array.isArray(driftPayload && driftPayload.drift && driftPayload.drift.findings)
+        ? driftPayload.drift.findings
+        : [];
+    let high = 0;
+    let medium = 0;
+    let low = 0;
+    findings.forEach(function (item) {
+      const sev = String((item && item.severity) || '').toUpperCase();
+      if (sev === 'HIGH') high += 1;
+      else if (sev === 'MEDIUM') medium += 1;
+      else low += 1;
+    });
+    return { high: high, medium: medium, low: low, total: findings.length };
+  }
+
   async function renderGovernanceProjects() {
     const host = $('governanceProjectsList');
     if (!host) return;
@@ -479,14 +655,36 @@ const AnimusGovernanceHelpers = {
       for (const p of rows) {
         const card = document.createElement('div');
         card.className = 'command-brief-card';
-        const animusId = p.animus_project_id ? ` · animus ${p.animus_project_id.slice(0, 8)}…` : '';
+        const animusId = p.animus_project_id ? ' · animus ' + p.animus_project_id.slice(0, 8) + '…' : '';
+        const repos = Array.isArray(p.repos) ? p.repos : [];
+        let driftHtml = '';
+        if (repos.length && repos[0].repo_id) {
+          try {
+            const drift = await govFetch('repos/' + encodeURIComponent(repos[0].repo_id) + '/drift');
+            const badges = formatDriftBadges(drift.drift || drift);
+            driftHtml =
+              '<div class="command-brief-meta">Drift (read-only): ' +
+              '<span class="scout-license scout-license-ref">HIGH ' +
+              badges.high +
+              '</span> · MED ' +
+              badges.medium +
+              ' · LOW ' +
+              badges.low +
+              ' · total ' +
+              badges.total +
+              '</div>';
+          } catch (_err) {
+            driftHtml = '<div class="command-brief-meta">Drift: unavailable</div>';
+          }
+        }
         card.innerHTML =
           '<div class="command-brief-card-title">' +
           '<strong>' + (p.display_name || p.slug || p.project_id) + '</strong>' +
           '<span class="command-brief-status">' + (p.status || 'active') + '</span></div>' +
           '<div class="command-brief-meta">' + (p.slug || '') + animusId + '</div>' +
+          driftHtml +
           '<ul class="command-brief-list">' +
-          (p.repos || []).map((r) => '<li>' + (r.repo_path || r.repo_id) + '</li>').join('') +
+          repos.map(function (r) { return '<li>' + (r.repo_path || r.repo_id) + '</li>'; }).join('') +
           '</ul>';
         host.appendChild(card);
       }
@@ -531,10 +729,25 @@ const AnimusGovernanceHelpers = {
     host.innerHTML = '<div class="command-brief-meta">Loading run ' + runId.slice(0, 8) + '…</div>';
     try {
       const q = 'project_id=' + encodeURIComponent(PLATFORM_PROJECT_ID);
-      const [timeline, verification, release] = await Promise.all([
+      const project = await govFetch('registry/projects/' + encodeURIComponent(PLATFORM_PROJECT_ID));
+      const repos = Array.isArray(project.repos) ? project.repos : [];
+      const repoId = repos.length ? repos[0].repo_id : '';
+      const [timeline, verification, release, evidenceCompleteness, validationAgg] = await Promise.all([
         govFetch('runs/' + encodeURIComponent(runId) + '/timeline'),
         govFetch('runs/' + encodeURIComponent(runId) + '/verification').catch(() => null),
         govFetch('runs/' + encodeURIComponent(runId) + '/release').catch(() => null),
+        repoId
+          ? govFetch(
+              'repos/' +
+                encodeURIComponent(repoId) +
+                '/runs/' +
+                encodeURIComponent(runId) +
+                '/evidence-completeness',
+            ).catch(() => null)
+          : Promise.resolve(null),
+        govFetch('projects/' + encodeURIComponent(PLATFORM_PROJECT_ID) + '/validation').catch(
+          () => null,
+        ),
       ]);
       const events = Array.isArray(timeline.events) ? timeline.events : [];
       host.innerHTML =
@@ -565,8 +778,24 @@ const AnimusGovernanceHelpers = {
         (release
           ? '<div class="command-brief-meta">Release: ' + (release.status || '—') + '</div>'
           : '') +
-        (timeline.goal_id
-          ? '<div class="command-brief-meta">Goal: ' + timeline.goal_id + '</div>'
+        (evidenceCompleteness
+          ? '<div class="command-brief-meta">Evidence complete: ' +
+            (evidenceCompleteness.complete ? 'yes' : 'no') +
+            ' · present ' +
+            (Array.isArray(evidenceCompleteness.present)
+              ? evidenceCompleteness.present.join(', ')
+              : '—') +
+            (Array.isArray(evidenceCompleteness.missing) && evidenceCompleteness.missing.length
+              ? ' · missing ' + evidenceCompleteness.missing.join(', ')
+              : '') +
+            '</div>'
+          : '') +
+        (validationAgg
+          ? '<div class="command-brief-meta">Project validation: ' +
+            validationAgg.run_count +
+            ' runs · blocking ' +
+            validationAgg.blocking_count +
+            '</div>'
           : '') +
         '</div>';
     } catch (err) {
@@ -578,7 +807,18 @@ const AnimusGovernanceHelpers = {
     const bar = $('governanceTabBar');
     if (!bar || bar.dataset.wired) return;
     ensureGoalsPanel();
+    ensureQueuePanel();
     ensureDriverPanel();
+    const briefPanel = $('governancePanelBrief');
+    if (briefPanel && !$('governanceBriefMemory')) {
+      const memoryCard = document.createElement('div');
+      memoryCard.className = 'command-brief-card';
+      memoryCard.style.marginTop = '12px';
+      memoryCard.innerHTML =
+        '<div class="command-brief-card-title"><strong>Memory outcomes</strong></div>' +
+        '<div id="governanceBriefMemory"></div>';
+      briefPanel.appendChild(memoryCard);
+    }
     bar.dataset.wired = '1';
     bar.querySelectorAll('[data-governance-tab]').forEach((btn) => {
       btn.addEventListener('click', () => setGovernanceTab(btn.getAttribute('data-governance-tab') || 'brief'));
@@ -591,6 +831,8 @@ const AnimusGovernanceHelpers = {
     refreshGoals: renderGovernanceGoals,
     refreshDriver: renderGovernanceDriver,
     refreshRuns: renderGovernanceRuns,
+    refreshQueue: renderGovernanceQueue,
+    refreshBriefExtras: renderGovernanceBriefExtras,
     wire: wireGovernanceTabsOnce,
     helpers: AnimusGovernanceHelpers,
     driverControl: driverControl,

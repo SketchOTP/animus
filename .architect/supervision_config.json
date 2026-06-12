@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "enforcement_active": true,
+  "enforcement_mode": "v1_gates_and_hook",
+  "decision_id": "D-082",
+  "decision_date": "2026-06-12",
+  "scope": "animus monorepo (BFF + hermes-agent)",
+  "approved_by": "human operator (D-078 delegated authority)",
+  "rationale": "D-082 enforcement expansion: graduate v1 supervision (plan/diff/release gates + pre-commit hook with release freshness) to animus after animus-platform graduation (D-036).",
+  "rsal_enforcement_active": false,
+  "notes": "RSAL dry-run gates remain advisory. v1 gates and scripts/git-hooks/pre-commit-architect-gate are blocking."
+}

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Animus Command Center</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="ccShell" class="cc-shell">
+    <aside id="ccSidebar" class="cc-sidebar" aria-label="Navigation">
+      <div class="cc-brand">
+        <div id="ccBrandMark" class="cc-brand-mark" aria-hidden="true"></div>
+        <span class="cc-brand-label">Command Center</span>
+      </div>
+      <nav id="ccNav" class="cc-nav" role="tablist"></nav>
+      <div class="cc-sidebar-footer">
+        <button id="ccRefreshBtn" type="button" class="cc-icon-btn" title="Refresh data" aria-label="Refresh">
+          <span id="ccRefreshIcon"></span>
+        </button>
+        <div id="ccConnectionPill" class="cc-pill cc-pill-muted" title="API connection">…</div>
+      </div>
+    </aside>
+
+    <main id="ccMain" class="cc-main">
+      <header class="cc-topbar">
+        <h1 id="ccSectionTitle" class="cc-section-title">Overview</h1>
+        <div id="ccTopbarActions" class="cc-topbar-actions"></div>
+      </header>
+
+      <section id="ccPanelOverview" class="cc-panel cc-panel-active" data-section="overview" aria-label="Overview">
+        <div id="ccStatGrid" class="cc-stat-grid"></div>
+        <div class="cc-chart-row">
+          <article class="cc-card cc-chart-card">
+            <header class="cc-card-head"><span id="ccActivityIcon"></span><h2>Activity</h2></header>
+            <canvas id="ccActivityChart" width="640" height="180" aria-label="Run activity sparkline"></canvas>
+          </article>
+          <article class="cc-card cc-chart-card cc-chart-card-narrow">
+            <header class="cc-card-head"><span id="ccStatusIcon"></span><h2>Health</h2></header>
+            <canvas id="ccHealthDonut" width="220" height="220" aria-label="System health donut"></canvas>
+            <ul id="ccHealthLegend" class="cc-legend"></ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="ccPanelProjects" class="cc-panel" data-section="projects" aria-label="Projects" hidden>
+        <div id="ccProjectGrid" class="cc-project-grid"></div>
+      </section>
+
+      <section id="ccPanelGoals" class="cc-panel" data-section="goals" aria-label="Goals" hidden>
+        <div id="ccGoalBars" class="cc-goal-bars"></div>
+      </section>
+
+      <section id="ccPanelRuns" class="cc-panel" data-section="runs" aria-label="Runs" hidden>
+        <div id="ccRunTimeline" class="cc-run-timeline"></div>
+      </section>
+
+      <section id="ccPanelDriver" class="cc-panel" data-section="driver" aria-label="Driver" hidden>
+        <div class="cc-driver-layout">
+          <article class="cc-card cc-driver-ring-card">
+            <canvas id="ccDriverRing" width="240" height="240" aria-label="Driver state ring"></canvas>
+            <div id="ccDriverStateLabel" class="cc-driver-state">—</div>
+          </article>
+          <article class="cc-card cc-driver-controls">
+            <div id="ccDriverControls" class="cc-control-grid"></div>
+            <dl id="ccDriverMeta" class="cc-meta-list"></dl>
+          </article>
+        </div>
+      </section>
+
+      <section id="ccPanelRelease" class="cc-panel" data-section="release" aria-label="Release gates" hidden>
+        <div id="ccReleaseGrid" class="cc-release-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/icons.js"></script>
+  <script src="/charts.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

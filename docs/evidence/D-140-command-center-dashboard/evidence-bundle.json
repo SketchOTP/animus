@@ -1,0 +1,34 @@
+{
+  "decision": "D-140",
+  "status": "DEDICATED_COMMAND_CENTER_SHELL_READY",
+  "app": {
+    "package": "animus-command-center",
+    "dev_url": "http://127.0.0.1:3010/",
+    "launch_script": "scripts/run-command-center.sh",
+    "bff": "animus.plugins.governance_hub (reuse)"
+  },
+  "ui_contract": {
+    "style": "Apple-inspired minimal visual-first shell",
+    "navigation": ["overview", "projects", "goals", "runs", "driver", "release"],
+    "graphics": ["stat tiles", "sparkline", "health donut", "goal bars", "run timeline", "driver ring", "release gate cards"],
+    "read_endpoints": [
+      "GET /api/governance/projects",
+      "GET /api/governance/goals",
+      "GET /api/governance/runs?limit=24",
+      "GET /api/governance/driver/status",
+      "GET /api/governance/meta"
+    ],
+    "mutations": "none (driver controls disabled in v1 shell)"
+  },
+  "constraints": {
+    "animus_chat_expansion": false,
+    "self_hosting": false,
+    "harness_rerun": false,
+    "operator_sign_off": "human only — pending_completion not self-signed"
+  },
+  "test_results": {
+    "command": "pytest -q tests/test_command_center_d140.py",
+    "result": "9 passed",
+    "healthz": "curl http://127.0.0.1:3010/healthz → status ok, governance_proxy true"
+  }
+}

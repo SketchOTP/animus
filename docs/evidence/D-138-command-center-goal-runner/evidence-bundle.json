@@ -1,0 +1,20 @@
+{
+  "decision": "D-138",
+  "status": "COMMAND_CENTER_GOAL_RUNNER_READY",
+  "ui_contract": {
+    "file": "animus-chat/app/governance-hub.js",
+    "exports": ["AnimusGoalRunnerHelpers", "submitProjectGoalRun", "refreshGoalRunnerView", "refreshGoalRunner"]
+  },
+  "sample_request": {
+    "bff_path": "/api/governance/projects/c9eebdd2-a087-5eae-a074-77b5572fe7b5/goal-runs"
+  },
+  "sample_response": {},
+  "timeline_states": [],
+  "panels": {},
+  "test_results": {
+    "animus": "python3 -m unittest animus-chat.tests.test_governance_hub_d138 -q: 15 passed"
+  },
+  "screenshots_or_dom_evidence": [
+    "animus-chat/tests/test_governance_hub_d138.py"
+  ]
+}

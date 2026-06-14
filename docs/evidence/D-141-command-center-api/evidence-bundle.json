@@ -1,0 +1,41 @@
+{
+  "decision": "D-141",
+  "status": "DEDICATED_COMMAND_CENTER_API_READY",
+  "app": {
+    "package": "animus-command-center",
+    "bff": "animus.plugins.governance_hub (reuse)"
+  },
+  "api_mapping": {
+    "project_list": "GET /api/governance/projects",
+    "project_detail": "GET /api/governance/projects/{project_id}",
+    "goal_run_submit": "POST /api/governance/projects/{project_id}/goal-runs",
+    "goal_run_detail": "GET /api/governance/goal-runs/{goal_run_id}",
+    "goal_detail": "GET /api/governance/goals/{goal_id}",
+    "driver_status": "GET /api/governance/driver/status"
+  },
+  "defaults": {
+    "run_mode": "draft_only",
+    "approval_mode": "manual_approval",
+    "research_mode": "light"
+  },
+  "dom_proof": {
+    "project_registry": ["ccProjectGrid", "ccProjectRegistryMeta", "formatProjectRegistryMeta"],
+    "goal_runner": [
+      "ccGoalRunnerProject",
+      "ccGoalRunnerStatement",
+      "ccGoalRunnerRun",
+      "ccGoalRunnerTimeline",
+      "ccGoalRunnerPanels"
+    ]
+  },
+  "constraints": {
+    "animus_chat_expansion": false,
+    "driver_controls_enabled": false,
+    "self_sign_off": false,
+    "harness_acceptance": "deferred to D-142"
+  },
+  "test_results": {
+    "command": "pytest -q tests/test_command_center_d140.py tests/test_command_center_d141.py",
+    "result": "20 passed (9 D-140 + 11 D-141)"
+  }
+}

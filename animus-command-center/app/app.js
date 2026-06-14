@@ -1,10 +1,231 @@
+/* Dedicated Command Center shell (D-140) + governance API integration (D-141). */
+var CCGoalRunnerHelpers = {
+  ANIMA_LINUX_PROJECT_ID: 'c9eebdd2-a087-5eae-a074-77b5572fe7b5',
+  GOAL_STATEMENT_MAX_LEN: 8000,
+  TIMELINE_STATES: [
+    'created',
+    'preflight_running',
+    'preflight_passed',
+    'research_running',
+    'research_completed',
+    'decomposing',
+    'breakdown_reviewed',
+    'awaiting_approval',
+    'approved',
+    'driver_starting',
+    'running',
+    'entry_dispatched',
+    'entry_verifying',
+    'entry_gating',
+    'entry_committing',
+    'pending_completion',
+    'completed',
+    'blocked',
+    'operator_required'
+  ],
+  validateGoalStatement: function (statement, projectId, alreadyRunning) {
+    var text = String(statement || '').trim();
+    if (!projectId) return { ok: false, error: 'Select a project before running a goal.' };
+    if (!text) return { ok: false, error: 'Goal statement is required.' };
+    if (text.length > CCGoalRunnerHelpers.GOAL_STATEMENT_MAX_LEN) {
+      return {
+        ok: false,
+        error: 'Goal statement exceeds maximum length (' + CCGoalRunnerHelpers.GOAL_STATEMENT_MAX_LEN + ').'
+      };
+    }
+    if (alreadyRunning) return { ok: false, error: 'A goal run is already in progress.' };
+    return { ok: true, statement: text };
+  },
+  buildGoalRunPayload: function (form, profile) {
+    var runMode = form.runMode || 'draft_only';
+    var researchMode = form.researchMode || (profile && profile.research_mode) || 'light';
+    var approvalMode = form.approvalMode || (profile && profile.approval_mode) || 'manual_approval';
+    var budgetDefaults =
+      profile && profile.budget_defaults && typeof profile.budget_defaults === 'object'
+        ? profile.budget_defaults
+        : {};
+    var maxRunCount = form.maxRunCount != null && form.maxRunCount !== ''
+      ? Number(form.maxRunCount)
+      : budgetDefaults.max_run_count;
+    var maxWallHours = form.maxWallHours != null && form.maxWallHours !== ''
+      ? Number(form.maxWallHours)
+      : budgetDefaults.max_wall_clock_hours;
+    return {
+      statement: String(form.statement || '').trim(),
+      run_mode: runMode,
+      goal_size_hint: form.goalSizeHint || 'S',
+      research_mode: researchMode,
+      approval_mode: approvalMode,
+      budget_override: {
+        max_run_count: maxRunCount,
+        max_wall_clock_hours: maxWallHours
+      }
+    };
+  },
+  goalRunPostPath: function (projectId) {
+    return 'projects/' + encodeURIComponent(projectId) + '/goal-runs';
+  },
+  shouldShowResearchRequiredWarning: function (profile, researchMode) {
+    return !!(profile && profile.research_required && String(researchMode || '') === 'off');
+  },
+  shouldShowAutoRunWarning: function (approvalMode) {
+    return String(approvalMode || '') === 'auto_run_if_policy_clean';
+  },
+  shouldShowRunModeWarning: function (runMode) {
+    return String(runMode || '') === 'run';
+  },
+  mapTimelineIndex: function (state, response) {
+    var normalized = String(state || '').trim();
+    if (normalized === 'pending_approval') {
+      return CCGoalRunnerHelpers.TIMELINE_STATES.indexOf('awaiting_approval');
+    }
+    var idx = CCGoalRunnerHelpers.TIMELINE_STATES.indexOf(normalized);
+    if (idx >= 0) return idx;
+    var events = Array.isArray(response && response.events_published) ? response.events_published : [];
+    if (events.indexOf('governance.goal_run.preflight.completed') >= 0) {
+      return CCGoalRunnerHelpers.TIMELINE_STATES.indexOf('preflight_passed');
+    }
+    return 0;
+  },
+  buildTimelineHtml: function (state, response) {
+    var activeIndex = CCGoalRunnerHelpers.mapTimelineIndex(state, response);
+    return (
+      '<ul class="cc-timeline-list">' +
+      CCGoalRunnerHelpers.TIMELINE_STATES.map(function (item, index) {
+        var cls = index <= activeIndex ? 'cc-timeline-active' : 'cc-timeline-pending';
+        return '<li class="' + cls + '">' + item + '</li>';
+      }).join('') +
+      '</ul>'
+    );
+  },
+  buildResearchPanelHtml: function (response, goalDetail) {
+    var research = (response && response.research) || {};
+    var goal = goalDetail || {};
+    var status = research.status || goal.research_status || '—';
+    var mode = research.mode || goal.research_mode || '—';
+    var required = goal.research_required != null ? String(goal.research_required) : '—';
+    var confidence = research.confidence || goal.research_confidence || '—';
+    var strategy = research.recommended_strategy || goal.recommended_strategy || '—';
+    var artifactRef = research.artifact_ref || goal.research_artifact_ref || '—';
+    return (
+      '<div class="cc-meta-line">research_status: ' + status + ' · mode: ' + mode + ' · required: ' + required + '</div>' +
+      '<div class="cc-meta-line">confidence: ' + confidence + ' · strategy: ' + strategy + '</div>' +
+      '<div class="cc-meta-line">artifact: ' + artifactRef + '</div>'
+    );
+  },
+  buildBreakdownPanelHtml: function (response, queuePayload, profile) {
+    var breakdown = (response && response.breakdown) || {};
+    var queue = Array.isArray(queuePayload && queuePayload.queue_entries) ? queuePayload.queue_entries : [];
+    var validator = (profile && profile.default_validator) || '—';
+    var first = queue.length ? queue[0] : null;
+    var allowed = first && first.allowed_files_hint_json
+      ? first.allowed_files_hint_json
+      : first && first.allowed_files_hint
+        ? JSON.stringify(first.allowed_files_hint)
+        : '—';
+    return (
+      '<div class="cc-meta-line">breakdown_version: ' + (breakdown.version || '—') +
+      ' · status: ' + (breakdown.status || '—') +
+      ' · queue entries: ' + (breakdown.queue_entry_count != null ? breakdown.queue_entry_count : queue.length) + '</div>' +
+      '<div class="cc-meta-line">entry tier: ' + (first && first.tier ? first.tier : '—') +
+      ' · validator: ' + validator + '</div>' +
+      '<div class="cc-meta-line">allowed files: ' + allowed + '</div>'
+    );
+  },
+  buildExecutionPanelHtml: function (response, driverPayload, runMode) {
+    var driver = (response && response.driver) || {};
+    var remote = driverPayload || {};
+    var started = !!driver.started;
+    var lines = [
+      'driver status: ' + (remote.status || remote.state || 'idle'),
+      'driver started: ' + (started ? 'yes' : 'no'),
+      'active_goal_id: ' + (remote.active_goal_id || '—'),
+      'run_id: ' + (driver.run_id || '—')
+    ];
+    if (runMode === 'draft_only' && !started) {
+      lines.push('draft_only: Driver not started (expected)');
+    }
+    return lines.map(function (line) {
+      return '<div class="cc-meta-line">' + line + '</div>';
+    }).join('');
+  },
+  buildBlockerRecoveryPanelHtml: function (response, goalRunProjection) {
+    var blockReason = (response && response.block_reason) || (goalRunProjection && goalRunProjection.block_reason);
+    var state = String((response && response.status) || (goalRunProjection && goalRunProjection.state) || '');
+    if (!blockReason && state !== 'blocked' && state !== 'operator_required') {
+      return '<div class="cc-meta-line">No blocker detected.</div>';
+    }
+    var operatorRequired = state === 'operator_required';
+    var guidance = operatorRequired ? 'Operator decision required.' : 'Recovery prepared automatically.';
+    return (
+      '<div class="cc-meta-line">blocker_class: ' + (blockReason || '—') + '</div>' +
+      '<div class="cc-meta-line">operator_required: ' + String(operatorRequired) + '</div>' +
+      '<div class="cc-meta-line">' + guidance + '</div>'
+    );
+  },
+  buildMemoryPanelHtml: function (response) {
+    var memory = (response && response.memory) || {};
+    var mode = memory.mode || memory.memory_mode || 'advisory';
+    return (
+      '<div class="cc-meta-line">memory mode: ' + mode +
+      ' · recall: ' + (memory.recall_status || 'skipped') +
+      ' · record: ' + (memory.record_status || 'skipped') + '</div>' +
+      '<div class="cc-meta-line">memory_refs: ' +
+      (Array.isArray(memory.memory_refs) ? memory.memory_refs.join(', ') : '—') + '</div>' +
+      '<div class="cc-meta-line"><strong>Mimir is advisory memory, not approval authority.</strong></div>'
+    );
+  },
+  buildOutcomePanelHtml: function (response, goalDetail) {
+    var status = String((response && response.status) || (goalDetail && goalDetail.status) || '');
+    var displayStatus = status === 'pending_completion' ? 'Pending final review/sign-off' : status || '—';
+    var evidence = Array.isArray(response && response.evidence_refs) ? response.evidence_refs : [];
+    var evidenceLinks = evidence.length
+      ? evidence.map(function (ref, i) {
+          return '<a class="cc-evidence-link" href="' + String(ref) + '" target="_blank" rel="noopener">Evidence ' + (i + 1) + '</a>';
+        }).join(' ')
+      : '—';
+    return (
+      '<div class="cc-meta-line">status: ' + displayStatus +
+      ' · goal_run_id: ' + ((response && response.goal_run_id) || '—') +
+      ' · goal_id: ' + ((response && response.goal_id) || '—') + '</div>' +
+      '<div class="cc-meta-line">evidence refs: ' + evidence.length + ' · ' + evidenceLinks + '</div>' +
+      '<div class="cc-meta-line">No self-sign-off from Goal Runner.</div>'
+    );
+  },
+  formatProjectOptionLabel: function (project) {
+    var row = project || {};
+    var name = row.name || row.display_name || row.slug || row.project_id || 'project';
+    var dirty = row.dirty_tree && row.dirty_tree.blocking
+      ? ' · dirty (blocking)'
+      : row.dirty_tree && row.dirty_tree.blocking_reason
+        ? ' · dirty: ' + row.dirty_tree.blocking_reason
+        : '';
+    return name + ' · ' + (row.project_id || '') + ' · ' + (row.repo_path || '') + dirty;
+  },
+  formatProjectRegistryMeta: function (profile) {
+    var p = profile || {};
+    var dirty = p.dirty_tree || {};
+    var preflight = p.preflight_status || p.preflight || (dirty.blocking ? 'blocked' : '—');
+    return [
+      ['Repo path', p.repo_path || '—'],
+      ['Profile status', p.status || p.profile_status || '—'],
+      ['Default validator', p.default_validator || '—'],
+      ['Research mode', p.research_mode || '—'],
+      ['Memory mode', p.memory_mode || 'advisory'],
+      ['Architect import', p.architect_import_status || '—'],
+      ['Dirty tree', dirty.blocking ? 'blocking' : dirty.blocking_reason || 'clean'],
+      ['Preflight', preflight]
+    ];
+  }
+};
+
 (function () {
   'use strict';
 
   var SECTIONS = [
     { id: 'overview', label: 'Overview', icon: 'overview' },
     { id: 'projects', label: 'Projects', icon: 'projects' },
-    { id: 'goals', label: 'Goals', icon: 'goals' },
+    { id: 'goals', label: 'Goal Runner', icon: 'goals' },
     { id: 'runs', label: 'Runs', icon: 'runs' },
     { id: 'driver', label: 'Driver', icon: 'driver' },
     { id: 'release', label: 'Release', icon: 'release' }
@@ -14,10 +235,18 @@
     section: 'overview',
     connected: false,
     projects: [],
+    projectDetails: {},
     goals: [],
     runs: [],
     driver: null,
-    meta: null
+    meta: null,
+    goalRunner: {
+      selectedProjectId: CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID,
+      selectedProfile: null,
+      lastResponse: null,
+      running: false,
+      wired: false
+    }
   };
 
   function $(id) {
@@ -40,10 +269,11 @@
     return '';
   }
 
-  async function govFetch(path) {
-    var resp = await fetch('/api/governance/' + String(path).replace(/^\//, ''), {
+  async function govFetch(path, options) {
+    var opts = options || {};
+    var resp = await fetch('/api/governance/' + String(path).replace(/^\//, ''), Object.assign({
       headers: { Accept: 'application/json' }
-    });
+    }, opts));
     if (!resp.ok) {
       var detail = resp.statusText;
       try {
@@ -94,25 +324,20 @@
     document.querySelectorAll('.cc-nav-btn').forEach(function (btn) {
       btn.classList.toggle('cc-nav-active', btn.getAttribute('data-section') === sectionId);
     });
+    if (sectionId === 'goals' && !state.goalRunner.wired) {
+      void renderGoalRunnerForm();
+    }
   }
 
   function renderStats() {
     var grid = $('ccStatGrid');
     if (!grid) return;
-    var goalCount = state.goals.length;
-    var runCount = state.runs.length;
-    var projectCount = state.projects.length;
-    var driverState = state.driver && state.driver.state ? state.driver.state : 'unknown';
-    var pending = state.goals.filter(function (g) {
-      return /pending_completion|awaiting|blocked/.test(String(g.status || ''));
-    }).length;
     var stats = [
-      { icon: 'projects', label: 'Projects', value: projectCount },
-      { icon: 'goals', label: 'Goals', value: goalCount },
-      { icon: 'runs', label: 'Runs', value: runCount },
-      { icon: 'driver', label: 'Driver', value: driverState.replace(/_/g, ' ') }
+      { icon: 'projects', label: 'Projects', value: state.projects.length },
+      { icon: 'goals', label: 'Goals', value: state.goals.length },
+      { icon: 'runs', label: 'Runs', value: state.runs.length },
+      { icon: 'driver', label: 'Driver', value: ((state.driver && state.driver.state) || 'unknown').replace(/_/g, ' ') }
     ];
-    if (pending) stats.push({ icon: 'release', label: 'Needs you', value: pending });
     grid.innerHTML = stats.map(function (stat) {
       return (
         '<article class="cc-stat-card">' +
@@ -154,47 +379,54 @@
     }
   }
 
+  function renderProjectCard(project, detail) {
+    var p = detail || project || {};
+    var name = p.display_name || p.name || p.slug || p.project_id || 'project';
+    var metaRows = CCGoalRunnerHelpers.formatProjectRegistryMeta(p);
+    return (
+      '<article class="cc-project-card" data-project-id="' + escapeHtml(p.project_id || project.project_id || '') + '">' +
+      '<div class="cc-project-head">' +
+      '<div class="cc-project-avatar">' + CCIcons.icon('folder') + '</div>' +
+      '<div><div class="cc-project-name">' + escapeHtml(name) + '</div>' +
+      '<div class="cc-project-slug">' + escapeHtml(p.slug || '') + '</div></div></div>' +
+      '<dl class="cc-project-meta">' +
+      metaRows.map(function (row) {
+        return '<div><dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1]) + '</dd></div>';
+      }).join('') +
+      '</dl></article>'
+    );
+  }
+
   function renderProjects() {
     var grid = $('ccProjectGrid');
+    var metaHost = $('ccProjectRegistryMeta');
     if (!grid) return;
     if (!state.projects.length) {
       grid.innerHTML = '<div class="cc-empty">No projects — start governance-api or check registry.</div>';
+      if (metaHost) metaHost.textContent = '';
       return;
     }
-    grid.innerHTML = state.projects.map(function (p) {
-      var repos = (p.repos && p.repos.length) || p.repo_count || 0;
-      return (
-        '<article class="cc-project-card">' +
-        '<div class="cc-project-head">' +
-        '<div class="cc-project-avatar">' + CCIcons.icon('folder') + '</div>' +
-        '<div><div class="cc-project-name">' + escapeHtml(p.display_name || p.slug || p.project_id) + '</div>' +
-        '<div class="cc-project-slug">' + escapeHtml(p.slug || '') + '</div></div></div>' +
-        '<div class="cc-chip-row">' +
-        '<span class="cc-chip">' + repos + ' repos</span>' +
-        '<span class="cc-chip">' + escapeHtml(p.status || 'active') + '</span>' +
-        '</div></article>'
-      );
+    if (metaHost) {
+      metaHost.textContent = state.projects.length + ' project(s) from GET /api/governance/projects';
+    }
+    grid.innerHTML = state.projects.map(function (project) {
+      var detail = state.projectDetails[project.project_id] || project;
+      return renderProjectCard(project, detail);
     }).join('');
   }
 
-  function renderGoals() {
-    var host = $('ccGoalBars');
-    if (!host) return;
-    if (!state.goals.length) {
-      host.innerHTML = '<div class="cc-empty">No goals in projection store.</div>';
-      return;
-    }
-    host.innerHTML = state.goals.slice(0, 20).map(function (g) {
-      var pct = Math.min(100, Math.max(8, Number(g.progress_pct || 35)));
-      return (
-        '<div class="cc-goal-row">' +
-        '<div><strong>' + escapeHtml((g.title || g.goal_id || '').slice(0, 28)) + '</strong>' +
-        '<div class="cc-project-slug">' + escapeHtml(g.status || '—') + '</div></div>' +
-        '<div class="cc-goal-bar-track"><div class="cc-goal-bar-fill" style="width:' + pct + '%"></div></div>' +
-        '<div class="' + statusClass(g.status) + '">' + escapeHtml(g.status || '—') + '</div>' +
-        '</div>'
-      );
-    }).join('');
+  async function loadProjectDetails() {
+    state.projectDetails = {};
+    await Promise.all(state.projects.map(async function (project) {
+      if (!project.project_id) return;
+      try {
+        state.projectDetails[project.project_id] = await govFetch(
+          'projects/' + encodeURIComponent(project.project_id)
+        );
+      } catch (_err) {
+        state.projectDetails[project.project_id] = project;
+      }
+    }));
   }
 
   function renderRuns() {
@@ -234,7 +466,7 @@
     ];
     $('ccDriverControls').innerHTML = controls.map(function (c) {
       return (
-        '<button type="button" class="cc-control-btn" disabled title="Read-only shell v1">' +
+        '<button type="button" class="cc-control-btn" disabled title="Read-only shell v1 — Driver controls disabled in command center">' +
         CCIcons.icon(c.icon) + '<span>' + escapeHtml(c.label) + '</span></button>'
       );
     }).join('');
@@ -273,11 +505,246 @@
     }).join('');
   }
 
+  function readGoalRunnerForm() {
+    return {
+      projectId: ($('ccGoalRunnerProject') || {}).value || '',
+      statement: ($('ccGoalRunnerStatement') || {}).value || '',
+      researchMode: ($('ccGoalRunnerResearchMode') || {}).value || 'light',
+      runMode: ($('ccGoalRunnerRunMode') || {}).value || 'draft_only',
+      approvalMode: ($('ccGoalRunnerApprovalMode') || {}).value || 'manual_approval',
+      maxRunCount: ($('ccGoalRunnerMaxRuns') || {}).value || '',
+      maxWallHours: ($('ccGoalRunnerMaxHours') || {}).value || '',
+      goalSizeHint: 'S'
+    };
+  }
+
+  function updateGoalRunnerWarnings() {
+    var host = $('ccGoalRunnerWarnings');
+    if (!host) return;
+    var form = readGoalRunnerForm();
+    var profile = state.goalRunner.selectedProfile;
+    var warnings = [];
+    if (CCGoalRunnerHelpers.shouldShowResearchRequiredWarning(profile, form.researchMode)) {
+      warnings.push('Research is required for this project unless skip is policy-approved.');
+    }
+    if (CCGoalRunnerHelpers.shouldShowAutoRunWarning(form.approvalMode)) {
+      warnings.push('Will start Driver if policy/preflight pass.');
+    }
+    if (CCGoalRunnerHelpers.shouldShowRunModeWarning(form.runMode)) {
+      warnings.push('Full run mode may start Driver execution when policy allows.');
+    }
+    host.innerHTML = warnings.length
+      ? warnings.map(function (line) {
+          return '<div class="cc-meta-line cc-goal-runner-warning">' + escapeHtml(line) + '</div>';
+        }).join('')
+      : '';
+  }
+
+  async function loadGoalRunnerProjectProfile(projectId) {
+    if (!projectId) return;
+    state.goalRunner.selectedProjectId = projectId;
+    var profile = await govFetch('projects/' + encodeURIComponent(projectId));
+    state.goalRunner.selectedProfile = profile;
+    state.projectDetails[projectId] = profile;
+    var metaHost = $('ccGoalRunnerProjectMeta');
+    if (metaHost) {
+      metaHost.textContent =
+        'Profile default research: ' + (profile.research_mode || '—') +
+        ' · approval: ' + (profile.approval_mode || '—') +
+        ' · validator: ' + (profile.default_validator || '—');
+    }
+    var researchSelect = $('ccGoalRunnerResearchMode');
+    if (researchSelect && profile.research_mode) researchSelect.value = profile.research_mode;
+    var approvalSelect = $('ccGoalRunnerApprovalMode');
+    if (approvalSelect) approvalSelect.value = profile.approval_mode || 'manual_approval';
+    var runModeSelect = $('ccGoalRunnerRunMode');
+    if (runModeSelect) runModeSelect.value = 'draft_only';
+    var maxRuns = $('ccGoalRunnerMaxRuns');
+    if (maxRuns && profile.budget_defaults && profile.budget_defaults.max_run_count != null) {
+      maxRuns.value = String(profile.budget_defaults.max_run_count);
+    }
+    var maxHours = $('ccGoalRunnerMaxHours');
+    if (maxHours && profile.budget_defaults && profile.budget_defaults.max_wall_clock_hours != null) {
+      maxHours.value = String(profile.budget_defaults.max_wall_clock_hours);
+    }
+    updateGoalRunnerWarnings();
+  }
+
+  async function renderGoalRunnerForm() {
+    var controlsHost = $('ccGoalRunnerControls');
+    if (!controlsHost) return;
+    controlsHost.innerHTML = '<div class="cc-meta-line">Loading Goal Runner…</div>';
+    try {
+      if (!state.projects.length) {
+        var data = await govFetch('projects');
+        state.projects = data.projects || [];
+      }
+      var options = state.projects.map(function (project) {
+        var selected = project.project_id === state.goalRunner.selectedProjectId ? ' selected' : '';
+        return (
+          '<option value="' + escapeHtml(project.project_id) + '"' + selected + '>' +
+          escapeHtml(CCGoalRunnerHelpers.formatProjectOptionLabel(project)) +
+          '</option>'
+        );
+      }).join('');
+      controlsHost.innerHTML =
+        '<article class="cc-card" id="ccGoalRunnerPanel">' +
+        '<header class="cc-card-head"><span>' + CCIcons.icon('goals') + '</span><h2>Goal Runner</h2></header>' +
+        '<label class="cc-form-label">Project<select data-goal-runner-field="project_id" id="ccGoalRunnerProject">' +
+        options + '</select></label>' +
+        '<div class="cc-meta-line" id="ccGoalRunnerProjectMeta"></div>' +
+        '<label class="cc-form-label">Goal statement<textarea data-goal-runner-field="statement" id="ccGoalRunnerStatement" rows="4"></textarea></label>' +
+        '<div class="cc-form-row">' +
+        '<label class="cc-form-label">Research mode<select data-goal-runner-field="research_mode" id="ccGoalRunnerResearchMode">' +
+        '<option value="off">off</option><option value="light" selected>light</option>' +
+        '<option value="standard">standard</option><option value="deep">deep</option></select></label>' +
+        '<label class="cc-form-label">Run mode<select data-goal-runner-field="run_mode" id="ccGoalRunnerRunMode">' +
+        '<option value="draft_only" selected>Research + plan only</option>' +
+        '<option value="approve_only">Research + plan + approve</option>' +
+        '<option value="run">Full run</option></select></label>' +
+        '<label class="cc-form-label">Approval mode<select data-goal-runner-field="approval_mode" id="ccGoalRunnerApprovalMode">' +
+        '<option value="manual_approval" selected>manual_approval</option>' +
+        '<option value="auto_approve_if_policy_clean">auto_approve_if_policy_clean</option>' +
+        '<option value="auto_run_if_policy_clean">auto_run_if_policy_clean</option></select></label>' +
+        '</div>' +
+        '<div class="cc-form-row">' +
+        '<label class="cc-form-label">Budget max runs<input data-goal-runner-field="max_run_count" id="ccGoalRunnerMaxRuns" type="number" min="1"></label>' +
+        '<label class="cc-form-label">Budget wall-clock hours<input data-goal-runner-field="max_wall_clock_hours" id="ccGoalRunnerMaxHours" type="number" min="0.1" step="0.1"></label>' +
+        '</div>' +
+        '<div id="ccGoalRunnerWarnings"></div>' +
+        '<div class="cc-form-actions">' +
+        '<button type="button" class="cc-primary-btn" id="ccGoalRunnerRun">Run draft_only</button>' +
+        '<button type="button" class="cc-ghost-btn" id="ccGoalRunnerRefresh">Refresh</button>' +
+        '</div>' +
+        '<div class="cc-meta-line" id="ccGoalRunnerResult"></div>' +
+        '</article>';
+
+      $('ccGoalRunnerProject').addEventListener('change', function () {
+        void loadGoalRunnerProjectProfile($('ccGoalRunnerProject').value);
+      });
+      ['ccGoalRunnerResearchMode', 'ccGoalRunnerRunMode', 'ccGoalRunnerApprovalMode'].forEach(function (id) {
+        var el = $(id);
+        if (el) el.addEventListener('change', updateGoalRunnerWarnings);
+      });
+      $('ccGoalRunnerRun').addEventListener('click', function () { void submitProjectGoalRun(); });
+      $('ccGoalRunnerRefresh').addEventListener('click', function () { void refreshGoalRunnerView(); });
+
+      await loadGoalRunnerProjectProfile(
+        state.goalRunner.selectedProjectId || CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID
+      );
+      state.goalRunner.wired = true;
+      if (state.goalRunner.lastResponse) await refreshGoalRunnerView();
+    } catch (err) {
+      controlsHost.innerHTML = '<div class="cc-empty">' + escapeHtml(err.message) + '</div>';
+    }
+  }
+
+  async function submitProjectGoalRun() {
+    var resultHost = $('ccGoalRunnerResult');
+    var form = readGoalRunnerForm();
+    var validation = CCGoalRunnerHelpers.validateGoalStatement(
+      form.statement,
+      form.projectId,
+      state.goalRunner.running
+    );
+    if (!validation.ok) {
+      if (resultHost) resultHost.textContent = validation.error;
+      return;
+    }
+    var payload = CCGoalRunnerHelpers.buildGoalRunPayload(form, state.goalRunner.selectedProfile);
+    if (resultHost) resultHost.textContent = 'Submitting goal run…';
+    state.goalRunner.running = true;
+    try {
+      var response = await govFetch(CCGoalRunnerHelpers.goalRunPostPath(form.projectId), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      state.goalRunner.lastResponse = response;
+      if (resultHost) {
+        resultHost.textContent =
+          'goal_run_id ' + (response.goal_run_id || '—') +
+          ' · goal_id ' + (response.goal_id || '—') +
+          ' · status ' + (response.status || '—');
+      }
+      await refreshGoalRunnerView();
+    } catch (err) {
+      if (resultHost) resultHost.textContent = String(err.message || err);
+    } finally {
+      state.goalRunner.running = false;
+    }
+  }
+
+  async function refreshGoalRunnerView() {
+    var response = state.goalRunner.lastResponse;
+    var summaryHost = $('ccGoalRunnerSummary');
+    var timelineHost = $('ccGoalRunnerTimeline');
+    var panelsHost = $('ccGoalRunnerPanels');
+    if (!response || !summaryHost || !timelineHost || !panelsHost) {
+      if (summaryHost && !response) {
+        summaryHost.innerHTML = '<div class="cc-empty">Run a goal to see lifecycle output.</div>';
+      }
+      return;
+    }
+    var projectId = response.project_id || state.goalRunner.selectedProjectId;
+    var goalId = response.goal_id;
+    var goalDetail = null;
+    var queuePayload = null;
+    var driverPayload = null;
+    var goalRunProjection = null;
+    try {
+      var fetches = [
+        govFetch('goals/' + encodeURIComponent(goalId) + '?project_id=' + encodeURIComponent(projectId)),
+        govFetch('goals/' + encodeURIComponent(goalId) + '/queue'),
+        govFetch('driver/status')
+      ];
+      if (response.goal_run_id) {
+        fetches.push(
+          govFetch('goal-runs/' + encodeURIComponent(response.goal_run_id)).catch(function () { return null; })
+        );
+      }
+      var results = await Promise.all(fetches);
+      goalDetail = results[0];
+      queuePayload = results[1];
+      driverPayload = results[2];
+      goalRunProjection = results[3] || null;
+    } catch (_err) {
+      goalDetail = goalDetail || {};
+    }
+    summaryHost.innerHTML =
+      '<article class="cc-card"><header class="cc-card-head"><h2>Run summary</h2></header>' +
+      '<div class="cc-meta-line">goal_run_id: ' + escapeHtml(response.goal_run_id || '—') +
+      ' · goal_id: ' + escapeHtml(goalId || '—') +
+      ' · status: ' + escapeHtml(response.status || '—') + '</div>' +
+      '<div class="cc-meta-line">research: ' + escapeHtml((response.research && response.research.status) || '—') +
+      ' · breakdown: ' + escapeHtml((response.breakdown && response.breakdown.status) || '—') +
+      ' · driver started: ' + ((response.driver && response.driver.started) ? 'yes' : 'no') + '</div></article>';
+
+    var timelineState = (goalRunProjection && goalRunProjection.state) || response.status || 'created';
+    timelineHost.innerHTML =
+      '<article class="cc-card"><header class="cc-card-head"><h2>Timeline</h2></header>' +
+      CCGoalRunnerHelpers.buildTimelineHtml(timelineState, response) +
+      '</article>';
+
+    panelsHost.innerHTML =
+      '<article class="cc-card"><header class="cc-card-head"><h2>Research</h2></header>' +
+      CCGoalRunnerHelpers.buildResearchPanelHtml(response, goalDetail) + '</article>' +
+      '<article class="cc-card"><header class="cc-card-head"><h2>Breakdown</h2></header>' +
+      CCGoalRunnerHelpers.buildBreakdownPanelHtml(response, queuePayload, state.goalRunner.selectedProfile) + '</article>' +
+      '<article class="cc-card"><header class="cc-card-head"><h2>Execution</h2></header>' +
+      CCGoalRunnerHelpers.buildExecutionPanelHtml(response, driverPayload, response.run_mode || readGoalRunnerForm().runMode) + '</article>' +
+      '<article class="cc-card"><header class="cc-card-head"><h2>Blocker / Recovery</h2></header>' +
+      CCGoalRunnerHelpers.buildBlockerRecoveryPanelHtml(response, goalRunProjection) + '</article>' +
+      '<article class="cc-card"><header class="cc-card-head"><h2>Memory</h2></header>' +
+      CCGoalRunnerHelpers.buildMemoryPanelHtml(response) + '</article>' +
+      '<article class="cc-card"><header class="cc-card-head"><h2>Outcome report</h2></header>' +
+      CCGoalRunnerHelpers.buildOutcomePanelHtml(response, goalDetail) + '</article>';
+  }
+
   function renderAll() {
     renderStats();
     renderCharts();
     renderProjects();
-    renderGoals();
     renderRuns();
     renderDriver();
     renderRelease();
@@ -289,6 +756,7 @@
     try {
       var projectsPayload = await govFetch('projects');
       state.projects = projectsPayload.projects || [];
+      await loadProjectDetails();
       var goalsPayload = await govFetch('goals');
       state.goals = goalsPayload.goals || [];
       var runsPayload = await govFetch('runs?limit=24');
@@ -298,6 +766,7 @@
       setConnection(true);
     } catch (err) {
       state.projects = [];
+      state.projectDetails = {};
       state.goals = [];
       state.runs = [];
       state.driver = null;
@@ -305,6 +774,9 @@
     } finally {
       if (shell) shell.classList.remove('cc-loading');
       renderAll();
+      if (state.section === 'goals' && state.goalRunner.wired) {
+        renderProjects();
+      }
     }
   }
 

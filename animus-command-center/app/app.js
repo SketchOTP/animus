@@ -368,9 +368,13 @@ var CCGoalRunnerHelpers = {
     var queueHtml = queue.length
       ? '<div class="cc-meta-line cc-breakdown-queue-head">Queue entries</div><ul class="cc-breakdown-tree">' +
         queue.map(function (entry) {
+          var releaseLine = entry.release_status ? ' · release: ' + entry.release_status : '';
+          var commitLine = entry.commit_sha ? ' · commit: ' + String(entry.commit_sha).slice(0, 12) : '';
+          var runLine = entry.run_id ? ' · run: ' + String(entry.run_id).slice(0, 12) + '…' : '';
           return '<li>#' + String(entry.ordinal != null ? entry.ordinal : '—') +
             ' · tier ' + String(entry.tier || '—') +
             ' · ' + String(entry.materialization || '—') +
+            runLine + releaseLine + commitLine +
             ' · ' + String(entry.objective || '').slice(0, 120) + '</li>';
         }).join('') + '</ul>'
       : '';

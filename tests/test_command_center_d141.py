@@ -38,24 +38,22 @@ class CommandCenterD141Tests(unittest.TestCase):
         )
         for element_id in dynamic_ids:
             self.assertIn(f'id="{element_id}"', self.app_js)
-        self.assertIn('data-goal-runner-field="run_mode"', self.app_js)
-        self.assertIn('data-goal-runner-field="research_mode"', self.app_js)
-        self.assertIn('data-goal-runner-field="approval_mode"', self.app_js)
+        self.assertIn("ccGoalRunnerIncludeMemory", self.app_js)
+        self.assertIn("ccGoalRunnerIncludeResearch", self.app_js)
+        self.assertIn("submitGoalIntake", self.app_js)
 
     def test_goal_run_payload_is_correct(self) -> None:
-        self.assertIn("buildGoalRunPayload", self.app_js)
-        self.assertIn("submitProjectGoalRun", self.app_js)
-        self.assertIn("goal-runs", self.app_js)
+        self.assertIn("buildGoalIntakePayload", self.app_js)
+        self.assertIn("submitGoalIntake", self.app_js)
+        self.assertIn("include_memory", self.app_js)
+        self.assertIn("include_research", self.app_js)
         self.assertIn("budget_override", self.app_js)
-        self.assertIn("run_mode", self.app_js)
-        self.assertIn("research_mode", self.app_js)
-        self.assertIn("approval_mode", self.app_js)
         self.assertIn("method: 'POST'", self.app_js)
 
     def test_draft_only_submission_renders_goal_run_id(self) -> None:
         self.assertIn("goal_run_id", self.app_js)
-        self.assertIn("Run plan only", self.app_js)
-        self.assertIn("draft_only", self.app_js)
+        self.assertIn("Create goal", self.app_js)
+        self.assertIn("Driver not started", self.app_js)
 
     def test_goal_statement_help_tooltip(self) -> None:
         self.assertIn("GOAL_STATEMENT_HELP", self.app_js)
@@ -90,7 +88,8 @@ class CommandCenterD141Tests(unittest.TestCase):
         self.assertIn("buildResearchPanelHtml", self.app_js)
         self.assertIn("research_status", self.app_js)
         self.assertIn("buildBreakdownPanelHtml", self.app_js)
-        self.assertIn("allowed files", self.app_js)
+        self.assertIn("approval_state", self.app_js)
+        self.assertIn("buildBreakdownHierarchyHtml", self.app_js)
         self.assertIn("buildOutcomePanelHtml", self.app_js)
         self.assertIn("Pending final review/sign-off", self.app_js)
 
@@ -99,9 +98,10 @@ class CommandCenterD141Tests(unittest.TestCase):
         self.assertIn("Full run mode may start Driver", self.app_js)
 
     def test_no_auto_sign_off_on_goal_submit(self) -> None:
-        chunk = self.app_js.split("async function submitProjectGoalRun")[1].split("async function refreshGoalRunnerView")[0]
+        chunk = self.app_js.split("async function submitGoalIntake")[1].split("async function submitProjectGoalRun")[0]
         self.assertNotIn("postGoalSignOff", chunk)
         self.assertNotIn("signOffGoal", chunk)
+        self.assertNotIn("postDriverControl", chunk)
         self.assertIn("postGoalSignOff", self.app_js)
         self.assertIn("data-goal-action=\"sign-off\"", self.app_js)
         self.assertIn("buildGoalApprovalPanelHtml", self.app_js)

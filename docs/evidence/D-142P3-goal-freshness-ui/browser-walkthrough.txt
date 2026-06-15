@@ -1,0 +1,13 @@
+Browser walkthrough — D-142P3 freshness/archive (http://127.0.0.1:3010/)
+
+1. Preflight: GET /healthz → governance_proxy true.
+2. Projects tab — Add project button visible; project grid rendered (24 projects).
+3. Project create (governed API): POST /api/governance/projects slug `cc-browser-test-d142p3` → 201.
+4. Project edit (governed API): POST /projects/{id}/update display_name updated.
+5. Project archive (governed API): POST /projects/{id}/update status `archived` → archived.
+6. Goals tab — Anima Linux selected.
+7. Freshness display: goal card shows `Current` badge; filter tabs include Stale; hidden stale count surfaced via `Archive 17 stale duplicates` button (stale_count from GET /goals).
+8. Stale/archive action path: dry_run POST /projects/{anima-linux}/goals/archive-stale returns stale_count=17 without mutation.
+9. No mock success paths observed; archive button wired to real `goals/archive-stale` endpoint.
+
+Cleanup: ephemeral project `cc-browser-test-d142p3` archived via governed API (not hand-edited registry).

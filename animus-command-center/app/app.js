@@ -378,6 +378,17 @@ var CCGoalRunnerHelpers = {
   },
   computeDriverLaunchGate: function (ctx) {
     ctx = ctx || {};
+    var readiness = ctx.readiness || null;
+    if (readiness && readiness.ready === false) {
+      return {
+        ok: false,
+        reason: readiness.display_reason ||
+          (readiness.blocking_reason ? String(readiness.blocking_reason).replace(/_/g, ' ') : 'Launch blocked')
+      };
+    }
+    if (readiness && readiness.ready === true) {
+      return { ok: true, reason: '' };
+    }
     var goalDetail = ctx.goalDetail || {};
     var profile = ctx.profile || {};
     var connected = ctx.connected !== false;
@@ -407,6 +418,26 @@ var CCGoalRunnerHelpers = {
       };
     }
     return { ok: true, reason: '' };
+  },
+  buildLaunchReadinessPanelHtml: function (readiness) {
+    if (!readiness) {
+      return '<div class="cc-meta-line">Launch readiness: not loaded</div>';
+    }
+    var ready = readiness.ready === true;
+    var reason = readiness.display_reason ||
+      (readiness.blocking_reason ? String(readiness.blocking_reason).replace(/_/g, ' ') : '—');
+    var lines = [
+      'launch ready: ' + (ready ? 'yes' : 'no'),
+      'blocking reason: ' + reason
+    ];
+    var dirty = readiness.dirty_path_classification || {};
+    var stray = dirty.stray_unexpected || [];
+    if (stray.length) {
+      lines.push('unexpected dirty paths: ' + stray.map(function (row) { return row.path; }).join(', '));
+    }
+    return lines.map(function (line) {
+      return '<div class="cc-meta-line cc-launch-readiness-line">' + line + '</div>';
+    }).join('');
   },
   buildExecutionPanelHtml: function (response, driverPayload, runMode) {
     var driver = (response && response.driver) || {};
@@ -529,7 +560,8 @@ var CCGoalRunnerHelpers = {
       running: false,
       wired: false,
       filterTab: 'active',
-      goalDetailsCache: {}
+      goalDetailsCache: {},
+      launchReadinessCache: {}
     },
     history: {
       selectedProjectId: CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID
@@ -887,7 +919,8 @@ var CCGoalRunnerHelpers = {
     var launchGate = CCGoalRunnerHelpers.computeDriverLaunchGate({
       goalDetail: goalDetail,
       profile: state.goalRunner.selectedProfile,
-      connected: state.connected
+      connected: state.connected,
+      readiness: state.goalRunner.launchReadinessCache[goalId]
     });
     var startDisabled = !launchGate.ok ? ' disabled title="' + escapeHtml(launchGate.reason) + '"' : '';
     function actionBtn(action, icon, label, extraAttrs) {
@@ -914,7 +947,7 @@ var CCGoalRunnerHelpers = {
       actionBtn('stop', 'stop', 'Stop') +
       goalBtn('edit', 'edit', 'Edit') +
       goalBtn('remove', 'trash', 'Remove').replace('cc-icon-action-labeled', 'cc-icon-action-labeled cc-icon-action-danger') +
-      (launchGate.ok ? '' : '<div class="cc-meta-line cc-driver-launch-block">' + escapeHtml(launchGate.reason) + '</div>') +
+      (launchGate.ok ? '' : '<div class="cc-meta-line cc-driver-launch-block cc-launch-readiness-block" data-launch-readiness="' + escapeHtml(goalId) + '">' + escapeHtml(launchGate.reason) + '</div>') +
       '</div>'
     );
   }
@@ -1423,6 +1456,26 @@ var CCGoalRunnerHelpers = {
     throw new Error('No repo path — set the repo path when editing the project above.');
   }
 
+  async function fetchDriverLaunchReadiness(goalId, projectId) {
+    if (!goalId) return null;
+    var repoPath = await resolveDriverRepoPath(projectId, goalId);
+    var query = 'driver/launch-readiness?repo_path=' + encodeURIComponent(repoPath) +
+      '&goal_id=' + encodeURIComponent(goalId);
+    var payload = await govFetch(query);
+    state.goalRunner.launchReadinessCache[goalId] = payload;
+    return payload;
+  }
+
+  async function refreshLaunchReadinessForGoals(projectId, goals) {
+    var rows = goals || state.goalRunner.projectGoals || [];
+    await Promise.all(rows.map(function (goal) {
+      if (!goal || !goal.goal_id) return Promise.resolve();
+      return fetchDriverLaunchReadiness(goal.goal_id, projectId || goal.project_id).catch(function () {
+        return null;
+      });
+    }));
+  }
+
   async function postDriverControl(action, goalId, projectId) {
     var select = $('ccDriverProjectSelect');
     var pid = (select && select.value) || projectId || state.goalRunner.selectedProjectId;
@@ -1615,10 +1668,17 @@ var CCGoalRunnerHelpers = {
               var cachedDetail = state.goalRunner.goalDetailsCache[activeGoalId] ||
                 state.goalRunner.projectGoals.find(function (g) { return g.goal_id === activeGoalId; }) ||
                 {};
+              var readiness = null;
+              try {
+                readiness = await fetchDriverLaunchReadiness(activeGoalId, pid);
+              } catch (_readinessErr) {
+                readiness = state.goalRunner.launchReadinessCache[activeGoalId] || null;
+              }
               var launchGate = CCGoalRunnerHelpers.computeDriverLaunchGate({
                 goalDetail: cachedDetail,
                 profile: state.goalRunner.selectedProfile || state.projectDetails[pid],
-                connected: state.connected
+                connected: state.connected,
+                readiness: readiness
               });
               if (!launchGate.ok) {
                 if (resultHost) resultHost.textContent = launchGate.reason;
@@ -2266,6 +2326,7 @@ var CCGoalRunnerHelpers = {
       if (loadSeq != null && loadSeq !== projectLoadSeq) return;
       state.goalRunner.projectGoals = results[0].goals || [];
       state.goalRunner.projectRuns = results[1].runs || [];
+      await refreshLaunchReadinessForGoals(projectId, state.goalRunner.projectGoals);
       updateArchiveStaleButton(results[0].stale_count || 0);
       syncGoalsRunsForProject(projectId, state.goalRunner.projectGoals, state.goalRunner.projectRuns);
       if (!state.goalRunner.selectedGoalId && state.goalRunner.projectGoals.length) {
@@ -2470,11 +2531,16 @@ var CCGoalRunnerHelpers = {
     if (goalDetail) {
       state.goalRunner.goalDetailsCache[goalId] = goalDetail;
     }
+    try {
+      await fetchDriverLaunchReadiness(goalId, projectId);
+    } catch (_launchReadyErr) { /* mirror falls back to client-side gate */ }
     var panelsHtml =
       '<article class="cc-card"><header class="cc-card-head"><h2>Research</h2></header>' +
       CCGoalRunnerHelpers.buildResearchPanelHtml(response, goalDetail) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Breakdown</h2></header>' +
       CCGoalRunnerHelpers.buildBreakdownPanelHtml(response, queuePayload, state.goalRunner.selectedProfile, milestonesPayload, goalDetail) + '</article>' +
+      '<article class="cc-card"><header class="cc-card-head"><h2>Launch readiness</h2></header>' +
+      CCGoalRunnerHelpers.buildLaunchReadinessPanelHtml(state.goalRunner.launchReadinessCache[goalId]) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Execution</h2></header>' +
       CCGoalRunnerHelpers.buildExecutionPanelHtml(response, driverPayload, response.run_mode || readGoalRunnerForm().runMode) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Blocker / Recovery</h2></header>' +

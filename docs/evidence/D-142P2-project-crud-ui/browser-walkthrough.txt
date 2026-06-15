@@ -1,0 +1,10 @@
+Browser walkthrough — Projects tab CRUD (http://127.0.0.1:3010/)
+
+1. Navigated to Command Center — Live pill green, governance proxy active.
+2. Opened Projects tab — Add project button visible, project grid rendered.
+3. Add project modal — filled slug `d142p2-browser-test`, display name `D-142P2 Browser Test`, repo path `/tmp`.
+4. Clicked Create project — modal closed after refresh; project count increased.
+5. API verification:
+   GET /api/governance/projects → project `d142p2-browser-test` present with display_name and repo_path `/tmp`.
+
+Create flow hits real backend (POST /api/governance/projects via BFF proxy). No mock success path observed.

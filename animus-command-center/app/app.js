@@ -1731,8 +1731,12 @@ var CCGoalRunnerHelpers = {
         detail = state.projectDetails[projectId] || await govFetch('projects/' + encodeURIComponent(projectId));
         state.projectDetails[projectId] = detail;
       } catch (err) {
-        host.innerHTML = '<div class="cc-form-error">' + escapeHtml(err.message) + '</div>';
-        return;
+        detail = state.projects.find(function (p) { return p.project_id === projectId; }) || {};
+        if (!detail.project_id) {
+          host.innerHTML = '<div class="cc-form-error">' + escapeHtml(err.message) + '</div>';
+          return;
+        }
+        state.projectDetails[projectId] = detail;
       }
     }
     host.innerHTML = buildProjectFormHtml(mode, detail);

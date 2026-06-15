@@ -3,84 +3,119 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0a0a">
   <title>Animus Command Center</title>
+  <link rel="icon" href="/ghostonlyicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/ghostonlyicon.png">
+  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+  <link rel="stylesheet" href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|jetbrains-mono:400,500,600|outfit:500,600,700">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <div class="cc-app-bg" aria-hidden="true"></div>
   <div id="ccShell" class="cc-shell">
     <aside id="ccSidebar" class="cc-sidebar" aria-label="Navigation">
       <div class="cc-brand">
-        <div id="ccBrandMark" class="cc-brand-mark" aria-hidden="true"></div>
-        <span class="cc-brand-label">Command Center</span>
+        <img id="ccBrandMark" class="cc-brand-ghost" src="/ghostonlyicon.png" width="44" height="44" alt="Animus">
+        <div class="cc-brand-copy">
+          <span class="cc-brand-title">Animus</span>
+          <span class="cc-brand-label">Command Center</span>
+        </div>
       </div>
+      <p class="cc-nav-group-label">Navigate</p>
       <nav id="ccNav" class="cc-nav" role="tablist"></nav>
       <div class="cc-sidebar-footer">
-        <button id="ccRefreshBtn" type="button" class="cc-icon-btn" title="Refresh data" aria-label="Refresh">
-          <span id="ccRefreshIcon"></span>
+        <button id="ccRefreshBtn" type="button" class="cc-ghost-btn cc-sidebar-refresh" title="Refresh all data" aria-label="Refresh">
+          <span id="ccRefreshIcon" aria-hidden="true"></span>
+          Refresh
         </button>
         <div id="ccConnectionPill" class="cc-pill cc-pill-muted" title="API connection">…</div>
       </div>
     </aside>
 
     <main id="ccMain" class="cc-main">
+      <div class="cc-main-spotlight" aria-hidden="true"></div>
       <header class="cc-topbar">
-        <h1 id="ccSectionTitle" class="cc-section-title">Overview</h1>
-        <div id="ccTopbarActions" class="cc-topbar-actions"></div>
+        <div class="cc-topbar-copy">
+          <p id="ccSectionEyebrow" class="cc-section-eyebrow">Platform pulse</p>
+          <h1 id="ccSectionTitle" class="cc-section-title">Overview</h1>
+        </div>
+        <div id="ccTopbarBadge" class="cc-topbar-badge" hidden></div>
       </header>
 
       <section id="ccPanelOverview" class="cc-panel cc-panel-active" data-section="overview" aria-label="Overview">
+        <p id="ccOverviewIntro" class="cc-panel-intro"></p>
         <div id="ccStatGrid" class="cc-stat-grid"></div>
-        <div class="cc-chart-row">
-          <article class="cc-card cc-chart-card">
-            <header class="cc-card-head"><span id="ccActivityIcon"></span><h2>Activity</h2></header>
-            <canvas id="ccActivityChart" width="640" height="180" aria-label="Run activity sparkline"></canvas>
-          </article>
-          <article class="cc-card cc-chart-card cc-chart-card-narrow">
-            <header class="cc-card-head"><span id="ccStatusIcon"></span><h2>Health</h2></header>
-            <canvas id="ccHealthDonut" width="220" height="220" aria-label="System health donut"></canvas>
-            <ul id="ccHealthLegend" class="cc-legend"></ul>
-          </article>
-        </div>
+        <div id="ccActionInbox" class="cc-action-inbox" hidden></div>
+        <div id="ccOverviewBody" class="cc-overview-body"></div>
       </section>
 
       <section id="ccPanelProjects" class="cc-panel" data-section="projects" aria-label="Projects" hidden>
-        <div id="ccProjectRegistryMeta" class="cc-registry-meta"></div>
+        <p id="ccProjectsIntro" class="cc-panel-intro"></p>
+        <div class="cc-projects-toolbar">
+          <div id="ccProjectRegistryMeta" class="cc-registry-meta"></div>
+          <button type="button" id="ccProjectAddBtn" class="cc-primary-btn">Add project</button>
+        </div>
         <div id="ccProjectGrid" class="cc-project-grid"></div>
       </section>
 
-      <section id="ccPanelGoals" class="cc-panel" data-section="goals" aria-label="Goal Runner" hidden>
-        <div id="ccGoalRunnerLayout" class="cc-goal-runner-layout">
-          <div id="ccGoalRunnerControls" class="cc-goal-runner-controls"></div>
-          <div id="ccGoalRunnerDetail" class="cc-goal-runner-detail">
-            <div id="ccGoalRunnerSummary"></div>
-            <div id="ccGoalRunnerTimeline"></div>
-            <div id="ccGoalRunnerPanels"></div>
-          </div>
+      <section id="ccPanelGoals" class="cc-panel" data-section="goals" aria-label="Goals" hidden>
+        <p id="ccGoalsIntro" class="cc-panel-intro"></p>
+        <div id="ccGoalsToolbar" class="cc-goals-toolbar">
+          <label class="cc-form-label cc-goals-project-select">
+            Project
+            <span class="cc-select-wrap">
+              <select id="ccGoalsProjectSelect" class="cc-select"></select>
+            </span>
+          </label>
+          <button type="button" id="ccArchiveStaleBtn" class="cc-ghost-btn cc-archive-stale-btn" hidden>
+            Archive stale duplicates
+          </button>
         </div>
+        <details id="ccGoalNewGoalCollapsible" class="cc-goal-new-collapsible">
+          <summary class="cc-goal-new-summary">New goal</summary>
+          <div id="ccGoalNewGoalHost" class="cc-goal-new-host"></div>
+        </details>
+        <div id="ccGoalFilterTabs" class="cc-goal-filter-tabs" role="tablist"></div>
+        <div id="ccGoalList" class="cc-goal-list-panel"></div>
       </section>
 
-      <section id="ccPanelRuns" class="cc-panel" data-section="runs" aria-label="Runs" hidden>
-        <div id="ccRunTimeline" class="cc-run-timeline"></div>
-      </section>
-
-      <section id="ccPanelDriver" class="cc-panel" data-section="driver" aria-label="Driver" hidden>
-        <div class="cc-driver-layout">
-          <article class="cc-card cc-driver-ring-card">
-            <canvas id="ccDriverRing" width="240" height="240" aria-label="Driver state ring"></canvas>
-            <div id="ccDriverStateLabel" class="cc-driver-state">—</div>
-          </article>
-          <article class="cc-card cc-driver-controls">
-            <div id="ccDriverControls" class="cc-control-grid"></div>
-            <dl id="ccDriverMeta" class="cc-meta-list"></dl>
-          </article>
+      <section id="ccPanelHistory" class="cc-panel" data-section="history" aria-label="History" hidden>
+        <p id="ccHistoryIntro" class="cc-panel-intro"></p>
+        <div id="ccHistoryToolbar" class="cc-goals-toolbar">
+          <label class="cc-form-label cc-goals-project-select">
+            Project
+            <span class="cc-select-wrap">
+              <select id="ccHistoryProjectSelect" class="cc-select"></select>
+            </span>
+          </label>
         </div>
-      </section>
-
-      <section id="ccPanelRelease" class="cc-panel" data-section="release" aria-label="Release gates" hidden>
-        <div id="ccReleaseGrid" class="cc-release-grid"></div>
+        <div id="ccHistoryList" class="cc-history-list"></div>
       </section>
     </main>
+
+    <div id="ccLegacyTemplateRoots" class="cc-legacy-templates" hidden inert aria-hidden="true">
+      <div id="ccGoalRunnerControls"></div>
+      <div id="ccGoalRunnerActivity"></div>
+      <div id="ccGoalRunnerSummary"></div>
+      <div id="ccGoalRunnerTimeline"></div>
+      <div id="ccGoalRunnerPanels"></div>
+      <section id="ccPanelRuns" class="cc-panel" data-section="runs" hidden aria-hidden="true">
+        <div id="ccRunTimeline"></div>
+      </section>
+    </div>
+
+    <div id="ccProjectModal" class="cc-modal" hidden>
+      <div class="cc-modal-backdrop" id="ccProjectModalBackdrop"></div>
+      <div class="cc-modal-panel" role="dialog" aria-modal="true" aria-labelledby="ccProjectModalTitle">
+        <header class="cc-modal-head">
+          <h2 id="ccProjectModalTitle">Project</h2>
+          <button type="button" id="ccProjectModalClose" class="cc-icon-btn" aria-label="Close">×</button>
+        </header>
+        <div id="ccProjectFormHost" class="cc-modal-body"></div>
+      </div>
+    </div>
   </div>
 
   <script src="/icons.js"></script>

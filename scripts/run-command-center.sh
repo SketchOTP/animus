@@ -12,7 +12,7 @@ if [[ -f "${ROOT}/animus.env" ]]; then
   set +a
 fi
 
-export COMMAND_CENTER_HOST="${COMMAND_CENTER_HOST:-127.0.0.1}"
+export COMMAND_CENTER_HOST="${COMMAND_CENTER_HOST:-0.0.0.0}"
 export COMMAND_CENTER_PORT="${COMMAND_CENTER_PORT:-3010}"
 export GOVERNANCE_API_URL="${GOVERNANCE_API_URL:-http://127.0.0.1:8120}"
 
@@ -21,8 +21,15 @@ if [[ ! -x "${PYTHON}" ]]; then
   PYTHON="$(command -v python3)"
 fi
 
+LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 URL="http://${COMMAND_CENTER_HOST}:${COMMAND_CENTER_PORT}/"
 echo "Starting Animus Command Center on ${URL}"
+if [[ "${COMMAND_CENTER_HOST}" == "0.0.0.0" || "${COMMAND_CENTER_HOST}" == "::" ]]; then
+  echo "Local browser: http://127.0.0.1:${COMMAND_CENTER_PORT}/"
+  if [[ -n "${LAN_IP}" ]]; then
+    echo "LAN access:    http://${LAN_IP}:${COMMAND_CENTER_PORT}/"
+  fi
+fi
 echo "Governance API: ${GOVERNANCE_API_URL}"
 
 exec "${PYTHON}" animus-command-center/server.py

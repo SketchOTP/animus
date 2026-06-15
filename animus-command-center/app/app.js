@@ -2,6 +2,29 @@
 var CCGoalRunnerHelpers = {
   ANIMA_LINUX_PROJECT_ID: 'c9eebdd2-a087-5eae-a074-77b5572fe7b5',
   GOAL_STATEMENT_MAX_LEN: 8000,
+  GOAL_STATEMENT_HELP:
+    'Describe the outcome you want — not implementation steps. Example: ' +
+    '"Add retry logic to the intake API with tests." Scout research and Oracle ' +
+    'breakdown use this statement; artifacts are stored under the target repo ' +
+    '.evidence/goals/{goal_id}/.',
+  RUN_MODE_LABELS: {
+    draft_only: 'Plan only (research + breakdown)',
+    approve_only: 'Plan + approve breakdown',
+    run: 'Full run (plan through Driver execution)'
+  },
+  RUN_MODE_BUTTON: {
+    draft_only: 'Run plan only',
+    approve_only: 'Run plan + approve',
+    run: 'Run full goal'
+  },
+  APPROVAL_HELP:
+    'Manual: you approve the breakdown here when status is pending approval. ' +
+    'Auto-approve: policy-clean breakdowns approve automatically. ' +
+    'Auto-run: also starts Driver when idle and policy allows.',
+  RESEARCH_HELP:
+    'Scout writes scout_research_v1.json under the target repo. Oracle reads it ' +
+    'when decomposing. Draft/plan runs persist research for a later full run on ' +
+    'the same goal.',
   TIMELINE_STATES: [
     'created',
     'preflight_running',
@@ -23,7 +46,139 @@ var CCGoalRunnerHelpers = {
     'blocked',
     'operator_required'
   ],
-  validateGoalStatement: function (statement, projectId, alreadyRunning) {
+  USER_WORKFLOW: [
+    {
+      id: 'project',
+      label: 'Pick a project',
+      hint: 'Choose which registered codebase this work applies to.'
+    },
+    {
+      id: 'goal',
+      label: 'Describe your goal',
+      hint: 'State the outcome you want — not step-by-step instructions.'
+    },
+    {
+      id: 'approve',
+      label: 'Approve the plan',
+      hint: 'Review the generated breakdown and approve when it looks right.'
+    },
+    {
+      id: 'execute',
+      label: 'Driver executes',
+      hint: 'The autonomous agent works through approved tasks in your repo.'
+    },
+    {
+      id: 'signoff',
+      label: 'Sign off',
+      hint: 'Confirm the work is complete when results look good.'
+    }
+  ],
+  USER_PHASES: [
+    { label: 'Submitted', match: /^(created|preflight)/ },
+    { label: 'Researching', match: /research|decompos/ },
+    { label: 'Awaiting your approval', match: /pending_approval|awaiting_approval|breakdown_review/ },
+    { label: 'Running', match: /approved|running|dispatch|entry_|driver_start/ },
+    { label: 'Ready to sign off', match: /pending_completion/ },
+    { label: 'Complete', match: /completed|released/ },
+    { label: 'Needs attention', match: /blocked|operator_required|fail|halt|error/ }
+  ],
+  mapUserPhaseIndex: function (state) {
+    var normalized = String(state || '').trim().toLowerCase();
+    if (normalized === 'pending_approval') normalized = 'awaiting_approval';
+    var i;
+    for (i = 0; i < CCGoalRunnerHelpers.USER_PHASES.length; i += 1) {
+      if (CCGoalRunnerHelpers.USER_PHASES[i].match.test(normalized)) return i;
+    }
+    return 0;
+  },
+  buildSimpleProgressHtml: function (state) {
+    var activeIndex = CCGoalRunnerHelpers.mapUserPhaseIndex(state);
+    return (
+      '<ol class="cc-progress-steps">' +
+      CCGoalRunnerHelpers.USER_PHASES.map(function (phase, index) {
+        var cls = index < activeIndex ? ' cc-progress-done'
+          : index === activeIndex ? ' cc-progress-active' : ' cc-progress-next';
+        return '<li class="cc-progress-step' + cls + '">' +
+          '<span class="cc-progress-dot" aria-hidden="true"></span>' +
+          '<span class="cc-progress-label">' + phase.label + '</span></li>';
+      }).join('') +
+      '</ol>'
+    );
+  },
+  inferWorkflowStep: function (ctx) {
+    ctx = ctx || {};
+    var goals = ctx.goals || [];
+    var selectedGoal = ctx.selectedGoal;
+    var status = selectedGoal
+      ? String(selectedGoal.display_status || selectedGoal.status || '').toLowerCase()
+      : '';
+    if (/pending_approval|awaiting_approval/.test(status)) return 2;
+    if (/pending_completion/.test(status)) return 4;
+    if (/running|approved|dispatch|entry_/.test(status)) return 3;
+    if (selectedGoal) return 1;
+    if (goals.some(function (g) {
+      return /pending_approval|pending_completion/.test(String(g.status || ''));
+    })) return 2;
+    if (!ctx.projectId) return 0;
+    return 1;
+  },
+  GOAL_FILTER_TABS: [
+    { id: 'pending_review', label: 'Pending review' },
+    { id: 'pending_completion', label: 'Pending completion' },
+    { id: 'active', label: 'Active' },
+    { id: 'stale', label: 'Stale' },
+    { id: 'complete', label: 'Complete' }
+  ],
+  isGoalHidden: function (goal) {
+    var s = String((goal && (goal.display_status || goal.status)) || '').toLowerCase();
+    return /cancelled|canceled|rejected|removed|archived/.test(s);
+  },
+  goalFilterBucket: function (goal) {
+    if (goal && goal.freshness === 'stale') return 'stale';
+    var s = String((goal && (goal.display_status || goal.status)) || '').toLowerCase();
+    if (/pending_approval|awaiting_approval/.test(s)) return 'pending_review';
+    if (s === 'pending_completion') return 'pending_completion';
+    if (/completed|released|halted|failed|blocked/.test(s)) return 'complete';
+    return 'active';
+  },
+  goalProgressPct: function (goal) {
+    var s = String((goal && (goal.display_status || goal.status)) || '').toLowerCase();
+    if (/completed|released/.test(s)) return 100;
+    if (/pending_completion/.test(s)) return 90;
+    if (/running|dispatch|entry_|approved|active/.test(s)) return 65;
+    if (/pending_approval|awaiting_approval/.test(s)) return 45;
+    if (/research|decompos|preflight/.test(s)) return 30;
+    if (/blocked|halt|fail|error|operator/.test(s)) return 100;
+    return 15;
+  },
+  goalProgressColor: function (goal) {
+    var s = String((goal && (goal.display_status || goal.status)) || '').toLowerCase();
+    if (/completed|released/.test(s)) return '#22c55e';
+    if (/blocked|halt|fail|error|operator/.test(s)) return '#ef4444';
+    if (/pending_approval|pending_completion/.test(s)) return '#f59e0b';
+    return '#7c3aed';
+  },
+  runsForGoal: function (goalId, runs, goals) {
+    var gid = String(goalId || '');
+    if (!gid) return [];
+    var goalRow = (goals || []).find(function (g) {
+      return String(g.goal_id || '') === gid;
+    });
+    var goalCorrelation = goalRow && goalRow.correlation_id ? String(goalRow.correlation_id) : '';
+    return (runs || []).filter(function (r) {
+      if (r.goal_id && String(r.goal_id) === gid) return true;
+      var correlation = String(r.correlation_id || '');
+      var requestId = String(r.request_id || '');
+      var runId = String(r.run_id || '');
+      if (correlation === gid || requestId === gid || runId === gid) return true;
+      if (correlation.indexOf(gid) >= 0 || requestId.indexOf(gid) >= 0) return true;
+      if (goalCorrelation && (correlation === goalCorrelation || requestId === goalCorrelation)) {
+        return true;
+      }
+      return false;
+    });
+  },
+  validateGoalStatement: function (statement, projectId, alreadyRunning, projectGoals) {
     var text = String(statement || '').trim();
     if (!projectId) return { ok: false, error: 'Select a project before running a goal.' };
     if (!text) return { ok: false, error: 'Goal statement is required.' };
@@ -34,6 +189,21 @@ var CCGoalRunnerHelpers = {
       };
     }
     if (alreadyRunning) return { ok: false, error: 'A goal run is already in progress.' };
+    var normalized = text.toLowerCase().replace(/\s+/g, ' ');
+    var duplicate = (projectGoals || []).find(function (g) {
+      if (CCGoalRunnerHelpers.isGoalHidden(g)) return false;
+      var gs = String(g.statement || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      if (gs !== normalized) return false;
+      var status = String(g.display_status || g.status || '').toLowerCase();
+      return /pending|active|approved|decompos|proposed/.test(status);
+    });
+    if (duplicate) {
+      return {
+        ok: false,
+        error: 'An open goal with this statement already exists. Open it from the list instead of creating a duplicate.',
+        existingGoalId: duplicate.goal_id
+      };
+    }
     return { ok: true, statement: text };
   },
   buildGoalRunPayload: function (form, profile) {
@@ -189,18 +359,15 @@ var CCGoalRunnerHelpers = {
       ' · goal_run_id: ' + ((response && response.goal_run_id) || '—') +
       ' · goal_id: ' + ((response && response.goal_id) || '—') + '</div>' +
       '<div class="cc-meta-line">evidence refs: ' + evidence.length + ' · ' + evidenceLinks + '</div>' +
-      '<div class="cc-meta-line">No self-sign-off from Goal Runner.</div>'
+      '<div class="cc-meta-line">Governance actions (approve breakdown, sign-off) appear in the panel above when required.</div>'
     );
   },
-  formatProjectOptionLabel: function (project) {
+  formatProjectDisplayName: function (project) {
     var row = project || {};
-    var name = row.name || row.display_name || row.slug || row.project_id || 'project';
-    var dirty = row.dirty_tree && row.dirty_tree.blocking
-      ? ' · dirty (blocking)'
-      : row.dirty_tree && row.dirty_tree.blocking_reason
-        ? ' · dirty: ' + row.dirty_tree.blocking_reason
-        : '';
-    return name + ' · ' + (row.project_id || '') + ' · ' + (row.repo_path || '') + dirty;
+    return row.display_name || row.name || row.slug || row.project_id || 'project';
+  },
+  formatProjectOptionLabel: function (project) {
+    return CCGoalRunnerHelpers.formatProjectDisplayName(project);
   },
   formatProjectRegistryMeta: function (profile) {
     var p = profile || {};
@@ -223,12 +390,10 @@ var CCGoalRunnerHelpers = {
   'use strict';
 
   var SECTIONS = [
-    { id: 'overview', label: 'Overview', icon: 'overview' },
-    { id: 'projects', label: 'Projects', icon: 'projects' },
-    { id: 'goals', label: 'Goal Runner', icon: 'goals' },
-    { id: 'runs', label: 'Runs', icon: 'runs' },
-    { id: 'driver', label: 'Driver', icon: 'driver' },
-    { id: 'release', label: 'Release', icon: 'release' }
+    { id: 'overview', label: 'Overview', eyebrow: 'Platform pulse', icon: 'overview' },
+    { id: 'projects', label: 'Projects', eyebrow: 'Registry', icon: 'projects' },
+    { id: 'goals', label: 'Goals', eyebrow: 'Governance workflow', icon: 'goals' },
+    { id: 'history', label: 'History', eyebrow: 'Execution audit', icon: 'runs' }
   ];
 
   var state = {
@@ -241,14 +406,37 @@ var CCGoalRunnerHelpers = {
     runs: [],
     driver: null,
     meta: null,
+    projectById: {},
+    projectEditor: {
+      open: false,
+      mode: 'create',
+      projectId: null,
+      saving: false
+    },
     goalRunner: {
       selectedProjectId: CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID,
+      selectedGoalId: null,
       selectedProfile: null,
+      projectGoals: [],
+      projectRuns: [],
       lastResponse: null,
       running: false,
-      wired: false
-    }
+      wired: false,
+      filterTab: 'active',
+      goalDetailsCache: {}
+    },
+    history: {
+      selectedProjectId: CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID
+    },
+    historyRuns: []
   };
+
+  var AUTO_REFRESH_MS = 60000;
+  var refreshInFlight = false;
+  var governanceActionInFlight = false;
+  var projectLoadSeq = 0;
+  var refreshTimerId = null;
+  var initialized = false;
 
   function $(id) {
     return document.getElementById(id);
@@ -279,9 +467,16 @@ var CCGoalRunnerHelpers = {
       var detail = resp.statusText;
       try {
         var body = await resp.json();
-        detail = body.detail || body.error || detail;
+        var raw = body.detail != null ? body.detail : (body.error || detail);
+        if (raw && typeof raw === 'object') {
+          detail = raw.message || raw.error || JSON.stringify(raw);
+        } else {
+          detail = raw || detail;
+        }
       } catch (_e) { /* ignore */ }
-      throw new Error(String(detail || 'governance_fetch_failed'));
+      var err = new Error(String(detail || 'governance_fetch_failed'));
+      err.status = resp.status;
+      throw err;
     }
     return resp.json();
   }
@@ -290,8 +485,10 @@ var CCGoalRunnerHelpers = {
     state.connected = ok;
     var pill = $('ccConnectionPill');
     if (!pill) return;
-    pill.textContent = ok ? 'Live' : 'Offline';
-    pill.className = 'cc-pill ' + (ok ? 'cc-pill-ok' : 'cc-pill-warn');
+    pill.innerHTML = ok
+      ? '<span class="cc-live-dot" aria-hidden="true"></span> Live'
+      : 'Offline';
+    pill.className = 'cc-pill ' + (ok ? 'cc-pill-ok cc-pill-live' : 'cc-pill-warn');
     pill.title = ok ? 'Governance API connected' : (detail || 'API unreachable');
   }
 
@@ -313,26 +510,169 @@ var CCGoalRunnerHelpers = {
       : 'driver/status';
   }
 
+  async function mergeProjectGoalsAndRuns(projectId) {
+    var project = state.projectById[projectId] ||
+      state.projects.find(function (p) { return p.project_id === projectId; });
+    if (!project) return;
+    var goals = [];
+    var runs = [];
+    try {
+      var goalsPayload = await govFetch(
+        'goals?project_id=' + encodeURIComponent(projectId)
+      );
+      goals = goalsPayload.goals || [];
+    } catch (_goalsErr) { /* per-project goals optional */ }
+    try {
+      var runsPayload = await govFetch(
+        'runs?limit=24&project_id=' + encodeURIComponent(projectId)
+      );
+      runs = runsPayload.runs || [];
+    } catch (_runsErr) { /* per-project runs optional */ }
+    syncGoalsRunsForProject(projectId, goals, runs);
+  }
+
   async function loadGoalsAndRunsAcrossProjects() {
-    state.goals = [];
-    state.runs = [];
-    for (var i = 0; i < state.projects.length; i += 1) {
-      var project = state.projects[i];
+    var results = await Promise.all(state.projects.map(async function (project) {
       var projectId = project && project.project_id;
-      if (!projectId) continue;
+      if (!projectId) return { goals: [], runs: [] };
+      var goals = [];
+      var runs = [];
       try {
         var goalsPayload = await govFetch(
           'goals?project_id=' + encodeURIComponent(projectId)
         );
-        state.goals = state.goals.concat(goalsPayload.goals || []);
+        goals = (goalsPayload.goals || []).map(function (g) {
+          return Object.assign({}, g, {
+            project_id: projectId,
+            _project_name: CCGoalRunnerHelpers.formatProjectDisplayName(project)
+          });
+        });
       } catch (_goalsErr) { /* per-project goals optional */ }
       try {
         var runsPayload = await govFetch(
           'runs?limit=24&project_id=' + encodeURIComponent(projectId)
         );
-        state.runs = state.runs.concat(runsPayload.runs || []);
+        runs = (runsPayload.runs || []).map(function (r) {
+          return Object.assign({}, r, {
+            project_id: projectId,
+            _project_name: CCGoalRunnerHelpers.formatProjectDisplayName(project)
+          });
+        });
       } catch (_runsErr) { /* per-project runs optional */ }
+      return { goals: goals, runs: runs };
+    }));
+    state.goals = [];
+    state.runs = [];
+    results.forEach(function (item) {
+      state.goals = state.goals.concat(item.goals);
+      state.runs = state.runs.concat(item.runs);
+    });
+  }
+
+  function rebuildProjectIndex() {
+    state.projectById = {};
+    state.projects.forEach(function (project) {
+      if (project && project.project_id) state.projectById[project.project_id] = project;
+    });
+  }
+
+  function projectLabel(projectId) {
+    var p = state.projectById[projectId] || {};
+    return CCGoalRunnerHelpers.formatProjectDisplayName(p) || projectId || '—';
+  }
+
+  function driverStatusLabel() {
+    var d = state.driver || {};
+    var raw = d.status || d.state || 'unknown';
+    return String(raw).replace(/_/g, ' ');
+  }
+
+  function goalStatusBuckets() {
+    var completed = 0;
+    var pending = 0;
+    var blocked = 0;
+    visiblePlatformGoals().forEach(function (g) {
+      var s = String(g.display_status || g.status || '').toLowerCase();
+      if (/complete|approved|released/.test(s)) completed += 1;
+      else if (/block|fail|halt|error|rejected/.test(s)) blocked += 1;
+      else pending += 1;
+    });
+    return { completed: completed, pending: pending, blocked: blocked };
+  }
+
+  function visiblePlatformGoals() {
+    return (state.goals || []).filter(function (g) {
+      if (CCGoalRunnerHelpers.isGoalHidden(g)) return false;
+      if (g.freshness === 'stale') return false;
+      return true;
+    });
+  }
+
+  function platformStaleGoalCount() {
+    return (state.goals || []).filter(function (g) {
+      return g.freshness === 'stale' && !CCGoalRunnerHelpers.isGoalHidden(g);
+    }).length;
+  }
+
+  function syncGoalsRunsForProject(projectId, goals, runs) {
+    var project = state.projectById[projectId] ||
+      state.projects.find(function (p) { return p.project_id === projectId; });
+    if (!project) return;
+    var projectName = CCGoalRunnerHelpers.formatProjectDisplayName(project);
+    var enrichedGoals = (goals || []).map(function (g) {
+      return Object.assign({}, g, {
+        project_id: projectId,
+        _project_name: projectName
+      });
+    });
+    var enrichedRuns = (runs || []).map(function (r) {
+      return Object.assign({}, r, {
+        project_id: projectId,
+        _project_name: projectName
+      });
+    });
+    state.goals = state.goals.filter(function (g) {
+      return g.project_id !== projectId;
+    }).concat(enrichedGoals);
+    state.runs = state.runs.filter(function (r) {
+      return r.project_id !== projectId;
+    }).concat(enrichedRuns);
+    renderStats();
+    renderActionInbox();
+    if (state.section === 'overview') renderOverviewBody();
+  }
+
+  function resolveProjectProfile(projectId) {
+    var cached = state.projectDetails[projectId] || state.projectById[projectId];
+    if (!cached) return null;
+    var repoPath = cached.repo_path;
+    if (!repoPath && cached.repos && cached.repos.length) {
+      repoPath = cached.repos[0].repo_path;
     }
+    return Object.assign({}, cached, { repo_path: repoPath || cached.repo_path || '' });
+  }
+
+  function runProgressPct(run) {
+    var s = String(run.status || '').toLowerCase();
+    if (/complete|approved|released/.test(s)) return 100;
+    if (/block|fail|halt|error/.test(s)) return 100;
+    if (/running|active|dispatch|execut/.test(s)) return 60;
+    if (/pending|await|review|draft/.test(s)) return 30;
+    return 20;
+  }
+
+  function runBarColor(run) {
+    var s = String(run.status || '').toLowerCase();
+    if (/complete|approved|released/.test(s)) return '#22c55e';
+    if (/block|fail|halt|error/.test(s)) return '#ef4444';
+    return '#7c3aed';
+  }
+
+  function seedProjectDetailsFromList() {
+    state.projects.forEach(function (project) {
+      if (!project || !project.project_id) return;
+      state.projectDetails[project.project_id] = project;
+    });
   }
 
   function buildNav() {
@@ -343,7 +683,8 @@ var CCGoalRunnerHelpers = {
       return (
         '<button type="button" class="cc-nav-btn' + active + '" data-section="' + sec.id + '" ' +
         'title="' + escapeHtml(sec.label) + '" aria-label="' + escapeHtml(sec.label) + '" role="tab">' +
-        CCIcons.icon(sec.icon) + '</button>'
+        '<span class="cc-nav-icon">' + CCIcons.icon(sec.icon) + '</span>' +
+        '<span class="cc-nav-link-label">' + escapeHtml(sec.label) + '</span></button>'
       );
     }).join('');
     nav.querySelectorAll('[data-section]').forEach(function (btn) {
@@ -356,7 +697,20 @@ var CCGoalRunnerHelpers = {
   function switchSection(sectionId) {
     state.section = sectionId;
     var title = SECTIONS.find(function (s) { return s.id === sectionId; });
-    $('ccSectionTitle').textContent = title ? title.label : 'Overview';
+    var titleEl = $('ccSectionTitle');
+    var eyebrowEl = $('ccSectionEyebrow');
+    if (titleEl) titleEl.textContent = title ? title.label : 'Overview';
+    if (eyebrowEl) eyebrowEl.textContent = title && title.eyebrow ? title.eyebrow : 'Command Center';
+    var badge = $('ccTopbarBadge');
+    if (badge) {
+      if (sectionId === 'overview') {
+        badge.hidden = false;
+        badge.textContent = state.projects.length + ' projects · ' + visiblePlatformGoals().length + ' active goals';
+      } else {
+        badge.hidden = true;
+        badge.textContent = '';
+      }
+    }
     document.querySelectorAll('.cc-panel').forEach(function (panel) {
       var active = panel.getAttribute('data-section') === sectionId;
       panel.hidden = !active;
@@ -365,67 +719,899 @@ var CCGoalRunnerHelpers = {
     document.querySelectorAll('.cc-nav-btn').forEach(function (btn) {
       btn.classList.toggle('cc-nav-active', btn.getAttribute('data-section') === sectionId);
     });
-    if (sectionId === 'goals' && !state.goalRunner.wired) {
-      void renderGoalRunnerForm();
+    if (sectionId === 'goals') {
+      if (!state.goalRunner.wired) {
+        void initGoalsTab();
+      } else {
+        renderGoalsProjectSelect();
+        renderGoalFilterTabs();
+        renderGoalList();
+      }
+    }
+    if (sectionId === 'history') {
+      renderHistoryProjectSelect();
+      void loadHistoryForProject(
+        state.history.selectedProjectId || state.goalRunner.selectedProjectId
+      );
+    }
+  }
+
+  function syncGoalProjectSelectors(projectId) {
+    if (!projectId) return;
+    var goalsSelect = $('ccGoalsProjectSelect');
+    if (goalsSelect && goalsSelect.value !== projectId) {
+      goalsSelect.value = projectId;
+    }
+    var hiddenProject = $('ccGoalRunnerProject');
+    if (hiddenProject) {
+      hiddenProject.value = projectId;
+    }
+  }
+
+  async function postGoalReject(goalId, projectId, breakdownVersion, reason) {
+    var repoPath = await resolveDriverRepoPath(projectId, goalId);
+    return govFetch('goals/' + encodeURIComponent(goalId) + '/breakdown/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repo_path: repoPath,
+        breakdown_version: breakdownVersion || 1,
+        reason: reason || 'removed_by_operator'
+      })
+    });
+  }
+
+  function visibleProjectGoals() {
+    return (state.goalRunner.projectGoals || []).filter(function (g) {
+      return !CCGoalRunnerHelpers.isGoalHidden(g);
+    });
+  }
+
+  function filteredProjectGoals() {
+    var tab = state.goalRunner.filterTab || 'active';
+    return visibleProjectGoals().filter(function (g) {
+      return CCGoalRunnerHelpers.goalFilterBucket(g) === tab;
+    }).sort(function (a, b) {
+      return (b.last_seq || 0) - (a.last_seq || 0);
+    });
+  }
+
+  function buildGoalQuickActionsHtml(goalId, projectId) {
+    var attrs = ' data-goal-id="' + escapeHtml(goalId) + '" data-project-id="' + escapeHtml(projectId) + '"';
+    function actionBtn(action, icon, label) {
+      return (
+        '<button type="button" class="cc-icon-action cc-icon-action-labeled" title="' + escapeHtml(label) + '" ' +
+        'aria-label="' + escapeHtml(label) + '"' + attrs + ' data-driver-action="' + action + '">' +
+        CCIcons.icon(icon) + '<span class="cc-icon-action-label">' + escapeHtml(label) + '</span></button>'
+      );
+    }
+    function goalBtn(action, icon, label) {
+      return (
+        '<button type="button" class="cc-icon-action cc-icon-action-labeled" title="' + escapeHtml(label) + '" ' +
+        'aria-label="' + escapeHtml(label) + '"' + attrs + ' data-goal-action="' + action + '">' +
+        CCIcons.icon(icon) + '<span class="cc-icon-action-label">' + escapeHtml(label) + '</span></button>'
+      );
+    }
+    return (
+      '<div class="cc-goal-quick-actions">' +
+      actionBtn('start', 'play', 'Start') +
+      actionBtn('pause', 'pause', 'Pause') +
+      actionBtn('resume', 'resume', 'Resume') +
+      actionBtn('halt', 'halt', 'Halt') +
+      actionBtn('stop', 'stop', 'Stop') +
+      goalBtn('edit', 'edit', 'Edit') +
+      goalBtn('remove', 'trash', 'Remove').replace('cc-icon-action-labeled', 'cc-icon-action-labeled cc-icon-action-danger') +
+      '</div>'
+    );
+  }
+
+  function buildInlineApprovalHtml(goal, goalDetail) {
+    var gid = escapeHtml(goal.goal_id);
+    var pid = escapeHtml(goal.project_id || state.goalRunner.selectedProjectId);
+    var baseAttrs = ' data-goal-id="' + gid + '" data-project-id="' + pid + '"';
+    if (shouldShowBreakdownApproval(goalDetail || goal)) {
+      var bVersion = (goalDetail && goalDetail.breakdown_version) ||
+        (goal && goal.breakdown_version) || 1;
+      return (
+        '<div class="cc-goal-inline-approval">' +
+        '<span>Plan ready — approve to run.</span>' +
+        '<button type="button" class="cc-primary-btn cc-btn-sm" data-goal-action="approve-breakdown"' + baseAttrs +
+        ' data-breakdown-version="' + escapeHtml(String(bVersion)) + '">Approve</button></div>'
+      );
+    }
+    if (shouldShowGoalSignOff(goalDetail || goal)) {
+      return (
+        '<div class="cc-goal-inline-approval">' +
+        '<span>Work finished — sign off when ready.</span>' +
+        '<button type="button" class="cc-primary-btn cc-btn-sm" data-goal-action="sign-off"' + baseAttrs +
+        '>Sign off</button></div>'
+      );
+    }
+    return '';
+  }
+
+  function buildGoalRunsHtml(goalId, runs, goals) {
+    var goalRuns = CCGoalRunnerHelpers.runsForGoal(goalId, runs, goals);
+    if (!goalRuns.length) {
+      return '<div class="cc-meta-line cc-goal-runs-empty">No runs linked yet.</div>';
+    }
+    return (
+      '<div class="cc-goal-runs">' +
+      goalRuns.slice(0, 6).map(function (r) {
+        var pct = runProgressPct(r);
+        return (
+          '<div class="cc-run-row cc-run-row-compact">' +
+          '<div class="cc-run-meta"><strong>' + escapeHtml(String(r.run_id || '').slice(0, 10)) + '…</strong>' +
+          '<div class="cc-run-summary">' + escapeHtml(goalStatusLabel(r.status)) + '</div></div>' +
+          '<div class="cc-run-bar"><span style="width:' + pct + '%;background:' + runBarColor(r) + '"></span></div>' +
+          '</div>'
+        );
+      }).join('') +
+      '</div>'
+    );
+  }
+
+  function buildGoalCardHtml(goal, options) {
+    options = options || {};
+    var goalId = goal.goal_id;
+    var projectId = goal.project_id || state.goalRunner.selectedProjectId;
+    var isExpanded = state.goalRunner.selectedGoalId === goalId;
+    var detail = state.goalRunner.goalDetailsCache[goalId] || goal;
+    var status = goalStatusLabel(detail.display_status || detail.status || goal.status);
+    var freshness = goal.freshness ? String(goal.freshness) : '';
+    var freshnessBadge = freshness === 'stale'
+      ? '<span class="cc-goal-freshness cc-goal-freshness-stale">Stale duplicate</span>'
+      : (freshness === 'fresh' && goal.duplicate_group_size > 1
+        ? '<span class="cc-goal-freshness cc-goal-freshness-fresh">Current</span>'
+        : '');
+    var pct = CCGoalRunnerHelpers.goalProgressPct(goal);
+    var color = CCGoalRunnerHelpers.goalProgressColor(goal);
+    var runs = state.goalRunner.projectRuns || [];
+    var goals = state.goalRunner.projectGoals || [];
+    var expandedCls = isExpanded ? ' cc-goal-card-expanded' : '';
+    var expandedBody = '';
+    if (isExpanded && options.expandedHtml) {
+      expandedBody = options.expandedHtml;
+    }
+    return (
+      '<article class="cc-goal-card' + expandedCls + '" data-goal-card="' + escapeHtml(goalId) + '">' +
+      '<div class="cc-goal-card-head">' +
+      '<button type="button" class="cc-goal-card-main" data-goal-select="' + escapeHtml(goalId) + '">' +
+      '<div class="cc-goal-card-title">' +
+      '<span class="' + statusClass(detail.display_status || detail.status) + '">' + escapeHtml(status) + '</span>' +
+      freshnessBadge +
+      '<strong>' + escapeHtml(truncate(goal.statement, 120)) + '</strong></div>' +
+      '<div class="cc-run-bar cc-goal-progress-bar"><span style="width:' + pct + '%;background:' + color + '"></span></div>' +
+      '</button>' +
+      buildGoalQuickActionsHtml(goalId, projectId) +
+      '</div>' +
+      buildInlineApprovalHtml(goal, detail) +
+      buildGoalRunsHtml(goalId, runs, goals) +
+      expandedBody +
+      '</article>'
+    );
+  }
+
+  function renderGoalsProjectSelect() {
+    var select = $('ccGoalsProjectSelect');
+    if (!select) return;
+    var current = state.goalRunner.selectedProjectId;
+    select.innerHTML = state.projects.map(function (p) {
+      var sel = p.project_id === current ? ' selected' : '';
+      return '<option value="' + escapeHtml(p.project_id) + '"' + sel + '>' +
+        escapeHtml(CCGoalRunnerHelpers.formatProjectDisplayName(p)) + '</option>';
+    }).join('');
+    if (!select.dataset.wired) {
+      select.dataset.wired = '1';
+      select.addEventListener('change', function () {
+        state.goalRunner.selectedGoalId = null;
+        state.goalRunner.goalDetailsCache = {};
+        var listHost = $('ccGoalList');
+        if (listHost) listHost.innerHTML = '<div class="cc-meta-line cc-goals-loading">Loading goals…</div>';
+        void loadGoalRunnerProjectProfile(select.value);
+      });
+    }
+  }
+
+  function renderHistoryProjectSelect() {
+    var select = $('ccHistoryProjectSelect');
+    if (!select) return;
+    if (!state.history.selectedProjectId) {
+      state.history.selectedProjectId = state.goalRunner.selectedProjectId;
+    }
+    var current = state.history.selectedProjectId;
+    select.innerHTML = state.projects.map(function (p) {
+      var sel = p.project_id === current ? ' selected' : '';
+      return '<option value="' + escapeHtml(p.project_id) + '"' + sel + '>' +
+        escapeHtml(CCGoalRunnerHelpers.formatProjectDisplayName(p)) + '</option>';
+    }).join('');
+    if (!select.dataset.wired) {
+      select.dataset.wired = '1';
+      select.addEventListener('change', function () {
+        state.history.selectedProjectId = select.value;
+        void loadHistoryForProject(select.value);
+      });
+    }
+  }
+
+  function renderGoalFilterTabs() {
+    var host = $('ccGoalFilterTabs');
+    if (!host) return;
+    var tab = state.goalRunner.filterTab || 'active';
+    var counts = { pending_review: 0, pending_completion: 0, active: 0, stale: 0, complete: 0 };
+    visibleProjectGoals().forEach(function (g) {
+      var bucket = CCGoalRunnerHelpers.goalFilterBucket(g);
+      if (counts[bucket] != null) counts[bucket] += 1;
+    });
+    host.innerHTML = CCGoalRunnerHelpers.GOAL_FILTER_TABS.map(function (item) {
+      var active = item.id === tab ? ' cc-filter-tab-active' : '';
+      return (
+        '<button type="button" class="cc-filter-tab' + active + '" data-goal-filter="' + item.id + '">' +
+        escapeHtml(item.label) + ' <span class="cc-filter-count">' + (counts[item.id] || 0) + '</span></button>'
+      );
+    }).join('');
+    if (!host.dataset.wired) {
+      host.dataset.wired = '1';
+      host.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-goal-filter]');
+        if (!btn) return;
+        state.goalRunner.filterTab = btn.getAttribute('data-goal-filter');
+        renderGoalFilterTabs();
+        renderGoalList();
+      });
+    }
+  }
+
+  function renderGoalList() {
+    var host = $('ccGoalList');
+    if (!host) return;
+    var goals = filteredProjectGoals();
+    if (!goals.length) {
+      host.innerHTML = '<div class="cc-empty">No goals in this tab for the selected project.</div>';
+      return;
+    }
+    host.innerHTML = goals.map(function (g) {
+      return buildGoalCardHtml(g, {});
+    }).join('');
+    if (!host.dataset.wired) {
+      host.dataset.wired = '1';
+      host.addEventListener('click', function (ev) {
+        var selectBtn = ev.target.closest('[data-goal-select]');
+        if (selectBtn) {
+          var gid = selectBtn.getAttribute('data-goal-select');
+          if (state.goalRunner.selectedGoalId === gid) {
+            state.goalRunner.selectedGoalId = null;
+          } else {
+            state.goalRunner.selectedGoalId = gid;
+          }
+          renderGoalList();
+          if (state.goalRunner.selectedGoalId) {
+            void expandGoalCard(state.goalRunner.selectedGoalId, state.goalRunner.selectedProjectId);
+          }
+          return;
+        }
+        var editBtn = ev.target.closest('[data-goal-action="edit"]');
+        if (editBtn) {
+          var goal = state.goalRunner.projectGoals.find(function (g) {
+            return g.goal_id === editBtn.getAttribute('data-goal-id');
+          });
+          if (goal && $('ccGoalRunnerStatement')) {
+            $('ccGoalRunnerStatement').value = goal.statement || '';
+            var collapsible = $('ccGoalNewGoalCollapsible');
+            if (collapsible) collapsible.open = true;
+          }
+        }
+      });
+    }
+  }
+
+  async function expandGoalCard(goalId, projectId) {
+    var card = document.querySelector('[data-goal-card="' + goalId + '"]');
+    if (!card) return;
+    var existing = card.querySelector('.cc-goal-card-detail');
+    if (existing) return;
+    try {
+      var detail = await govFetch(
+        'goals/' + encodeURIComponent(goalId) + '?project_id=' + encodeURIComponent(projectId)
+      );
+      state.goalRunner.goalDetailsCache[goalId] = detail;
+      var detailHost = document.createElement('div');
+      detailHost.className = 'cc-goal-card-detail';
+      detailHost.innerHTML =
+        '<div class="cc-goal-card-detail-inner">' +
+        CCGoalRunnerHelpers.buildSimpleProgressHtml(detail.display_status || detail.status) +
+        '<details class="cc-technical-details"><summary>Technical details</summary>' +
+        '<div id="ccGoalDetailPanels-' + escapeHtml(goalId) + '">Loading…</div></details></div>';
+      card.appendChild(detailHost);
+      card.classList.add('cc-goal-card-expanded');
+      var panelsTarget = $('ccGoalDetailPanels-' + goalId);
+      await refreshGoalRunnerView({
+        projectId: projectId,
+        goalId: goalId,
+        panelsTarget: panelsTarget
+      });
+      renderGoalFilterTabs();
+    } catch (err) {
+      if (card) {
+        var errEl = document.createElement('div');
+        errEl.className = 'cc-form-error';
+        errEl.textContent = String(err.message || err);
+        card.appendChild(errEl);
+      }
+    }
+  }
+
+  async function loadHistoryForProject(projectId) {
+    if (!projectId) return;
+    try {
+      var payload = await govFetch('runs?limit=48&project_id=' + encodeURIComponent(projectId));
+      state.historyRuns = payload.runs || [];
+    } catch (_err) {
+      state.historyRuns = [];
+    }
+    renderHistoryList();
+  }
+
+  function renderHistoryList() {
+    var host = $('ccHistoryList');
+    if (!host) return;
+    var projectId = state.history.selectedProjectId || state.goalRunner.selectedProjectId;
+    var runs = state.historyRuns || [];
+    if (!projectId) {
+      host.innerHTML = '<div class="cc-empty">Select a project to view run history.</div>';
+      return;
+    }
+    if (!runs.length) {
+      host.innerHTML = '<div class="cc-empty">No runs recorded for this project yet.</div>';
+      return;
+    }
+    var sorted = runs.slice().sort(function (a, b) {
+      return (b.last_seq || b.started_seq || 0) - (a.last_seq || a.started_seq || 0);
+    });
+    host.innerHTML = sorted.map(function (r, index) {
+      var pct = runProgressPct(r);
+      var color = runBarColor(r);
+      var summary = /complete|approved|released/.test(String(r.status || ''))
+        ? 'Finished · ' + goalStatusLabel(r.status)
+        : 'Tier ' + (r.tier || '—');
+      return (
+        '<details class="cc-history-item"' + (index === 0 ? '' : '') + '>' +
+        '<summary class="cc-history-summary">' +
+        '<span class="cc-history-run-id">' + escapeHtml(String(r.run_id || '').slice(0, 14)) + '…</span>' +
+        '<span class="' + statusClass(r.status) + '">' + escapeHtml(goalStatusLabel(r.status)) + '</span>' +
+        '<span class="cc-history-run-meta">' + escapeHtml(summary) + '</span>' +
+        '<span class="cc-run-bar cc-history-bar"><span style="width:' + pct + '%;background:' + color + '"></span></span>' +
+        '</summary>' +
+        '<div class="cc-history-body">' +
+        (r.goal_id
+          ? '<div class="cc-meta-line">goal: ' + escapeHtml(truncate(r.goal_id, 28)) + '</div>'
+          : '') +
+        '<div class="cc-meta-line">correlation: ' + escapeHtml(truncate(r.correlation_id || r.request_id || '—', 40)) + '</div>' +
+        '<div class="cc-meta-line">tier: ' + escapeHtml(r.tier || '—') + ' · seq: ' + escapeHtml(String(r.last_seq || r.started_seq || '—')) + '</div>' +
+        '</div></details>'
+      );
+    }).join('');
+  }
+
+  function renderNewGoalForm() {
+    var host = $('ccGoalNewGoalHost');
+    if (!host) return;
+    var panel = $('ccGoalRunnerPanel');
+    if (panel && panel.parentNode !== host) {
+      host.appendChild(panel);
+    }
+  }
+
+  async function initGoalsTab() {
+    renderGoalsProjectSelect();
+    var controlsHost = $('ccGoalRunnerControls');
+    if (controlsHost && !state.goalRunner.wired) {
+      await renderGoalRunnerForm();
+    }
+    renderNewGoalForm();
+    renderGoalFilterTabs();
+    await loadGoalRunnerProjectProfile(state.goalRunner.selectedProjectId);
+  }
+
+  function collectActionInboxItems() {
+    return visiblePlatformGoals().filter(function (g) {
+      var s = String(g.display_status || g.status || '').toLowerCase();
+      return s === 'pending_approval' || s === 'pending_completion';
+    }).map(function (g) {
+      var s = String(g.display_status || g.status || '').toLowerCase();
+      return {
+        goalId: g.goal_id,
+        projectId: g.project_id,
+        projectName: g._project_name || projectLabel(g.project_id),
+        statement: g.statement || '',
+        kind: s === 'pending_approval' ? 'approve' : 'signoff',
+        label: s === 'pending_approval' ? 'Approve plan' : 'Sign off completion'
+      };
+    });
+  }
+
+  function renderWorkflowStrip() {
+    var host = $('ccWorkflowStrip');
+    if (!host) return;
+    var selectedGoal = state.goalRunner.projectGoals.find(function (g) {
+      return g.goal_id === state.goalRunner.selectedGoalId;
+    }) || state.goals.find(function (g) {
+      return g.goal_id === state.goalRunner.selectedGoalId;
+    }) || null;
+    var activeStep = CCGoalRunnerHelpers.inferWorkflowStep({
+      projectId: state.goalRunner.selectedProjectId,
+      goals: state.goals,
+      selectedGoal: selectedGoal
+    });
+    host.innerHTML =
+      '<div class="cc-workflow-head">' +
+      '<h2 class="cc-workflow-title">How it works</h2>' +
+      '<p class="cc-workflow-sub">Five steps from idea to done — you stay in control at approval and sign-off.</p></div>' +
+      '<ol class="cc-workflow-steps">' +
+      CCGoalRunnerHelpers.USER_WORKFLOW.map(function (step, index) {
+        var cls = index < activeStep ? ' cc-workflow-done'
+          : index === activeStep ? ' cc-workflow-current' : '';
+        return (
+          '<li class="cc-workflow-step' + cls + '">' +
+          '<span class="cc-workflow-num">' + (index + 1) + '</span>' +
+          '<div class="cc-workflow-copy">' +
+          '<strong>' + escapeHtml(step.label) + '</strong>' +
+          '<span>' + escapeHtml(step.hint) + '</span></div></li>'
+        );
+      }).join('') +
+      '</ol>';
+  }
+
+  function renderActionInbox() {
+    var host = $('ccActionInbox');
+    if (!host) return;
+    var items = collectActionInboxItems();
+    if (!items.length) {
+      host.innerHTML = '';
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    host.innerHTML =
+      '<article class="cc-card cc-inbox-card">' +
+      '<header class="cc-card-head"><span>' + CCIcons.icon('goals') + '</span>' +
+      '<h2>Needs your attention</h2></header>' +
+      '<p class="cc-card-desc">These goals are waiting for you — click to open and take action.</p>' +
+      '<ul class="cc-inbox-list">' +
+      items.map(function (item) {
+        return (
+          '<li class="cc-inbox-item">' +
+          '<div class="cc-inbox-copy">' +
+          '<strong>' + escapeHtml(item.label) + '</strong>' +
+          '<span class="cc-inbox-project">' + escapeHtml(item.projectName) + '</span>' +
+          '<span class="cc-inbox-statement">' + escapeHtml(truncate(item.statement, 100)) + '</span></div>' +
+          '<button type="button" class="cc-primary-btn cc-inbox-open" data-inbox-goal="' +
+          escapeHtml(item.goalId) + '" data-inbox-project="' + escapeHtml(item.projectId) + '">Open</button>' +
+          '</li>'
+        );
+      }).join('') +
+      '</ul></article>';
+    if (!host.dataset.inboxWired) {
+      host.dataset.inboxWired = '1';
+      host.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-inbox-goal]');
+        if (!btn) return;
+        var goalId = btn.getAttribute('data-inbox-goal');
+        var projectId = btn.getAttribute('data-inbox-project');
+        state.goalRunner.selectedProjectId = projectId;
+        var projectSelect = $('ccGoalRunnerProject');
+        if (projectSelect) projectSelect.value = projectId;
+        void loadGoalRunnerProjectProfile(projectId).then(function () {
+          return viewGoalLifecycle(goalId, projectId);
+        }).then(function () {
+          scrollToSection('ccPanelGoals');
+        });
+      });
     }
   }
 
   function renderStats() {
     var grid = $('ccStatGrid');
     if (!grid) return;
+    var buckets = goalStatusBuckets();
+    var inboxCount = collectActionInboxItems().length;
+    var visibleGoals = visiblePlatformGoals();
+    var staleCount = platformStaleGoalCount();
     var stats = [
-      { icon: 'projects', label: 'Projects', value: state.projects.length },
-      { icon: 'goals', label: 'Goals', value: state.goals.length },
-      { icon: 'runs', label: 'Runs', value: state.runs.length },
-      { icon: 'driver', label: 'Driver', value: ((state.driver && state.driver.state) || 'unknown').replace(/_/g, ' ') }
+      {
+        icon: 'projects',
+        label: 'Projects',
+        scope: 'All projects',
+        value: state.projects.length,
+        hint: 'Registered codebases you can run governed work against.'
+      },
+      {
+        icon: 'goals',
+        label: 'Active goals',
+        scope: 'All projects',
+        value: visibleGoals.length,
+        hint: inboxCount
+          ? inboxCount + ' need your action · ' + buckets.completed + ' done · ' + buckets.blocked + ' blocked'
+          : buckets.pending + ' in progress · ' + buckets.completed + ' done · ' + buckets.blocked + ' blocked'
+            + (staleCount ? ' · ' + staleCount + ' stale duplicates hidden' : '')
+      },
+      {
+        icon: 'runs',
+        label: 'Executions',
+        scope: 'All projects',
+        value: state.runs.length,
+        hint: 'Driver runs across every registered project. Use History for one project.'
+      }
     ];
     grid.innerHTML = stats.map(function (stat) {
+      var mod = ' cc-stat-card--' + stat.icon;
       return (
-        '<article class="cc-stat-card">' +
+        '<article class="cc-stat-card' + mod + '">' +
+        '<div class="cc-stat-card-inner">' +
+        '<div class="cc-stat-head">' +
         '<div class="cc-stat-icon">' + CCIcons.icon(stat.icon) + '</div>' +
-        '<div class="cc-stat-value">' + escapeHtml(stat.value) + '</div>' +
+        '<span class="cc-stat-scope">' + escapeHtml(stat.scope) + '</span>' +
+        '</div>' +
+        '<div class="cc-stat-value">' + escapeHtml(String(stat.value)) + '</div>' +
         '<div class="cc-stat-label">' + escapeHtml(stat.label) + '</div>' +
-        '</article>'
+        '<div class="cc-stat-hint">' + escapeHtml(stat.hint) + '</div>' +
+        '</div></article>'
       );
     }).join('');
+    if (state.section === 'overview') {
+      var badge = $('ccTopbarBadge');
+      if (badge) {
+        badge.hidden = false;
+        badge.textContent = state.projects.length + ' projects · ' + visiblePlatformGoals().length + ' active goals';
+      }
+    }
   }
 
-  function renderCharts() {
-    var runCounts = state.runs.slice(0, 12).map(function (_r, i) {
-      return Math.max(1, (i % 5) + 1 + (state.runs.length > 3 ? 1 : 0));
-    });
-    if (!runCounts.length) runCounts = [2, 4, 3, 6, 5, 7, 4, 8, 6, 9, 7, 10];
-    CCCharts.drawSparkline($('ccActivityChart'), runCounts);
-
-    var ok = state.runs.filter(function (r) { return /complete|approved/.test(String(r.status || '')); }).length;
-    var warn = state.goals.filter(function (g) { return /pending|await/.test(String(g.status || '')); }).length;
-    var bad = state.goals.filter(function (g) { return /block|fail/.test(String(g.status || '')); }).length;
-    var idle = Math.max(0, state.projects.length - ok - warn - bad);
-    CCCharts.drawDonut($('ccHealthDonut'), [
-      { value: ok || 1, color: '#34c759' },
-      { value: warn, color: '#ff9f0a' },
-      { value: bad, color: '#ff3b30' },
-      { value: idle, color: 'rgba(110,110,115,0.25)' }
-    ]);
-    var legend = $('ccHealthLegend');
-    if (legend) {
-      legend.innerHTML = [
-        { label: 'Healthy', color: '#34c759', n: ok },
-        { label: 'Pending', color: '#ff9f0a', n: warn },
-        { label: 'Blocked', color: '#ff3b30', n: bad }
-      ].map(function (item) {
-        return '<li><span class="cc-legend-dot" style="background:' + item.color + '"></span>' +
-          escapeHtml(item.label) + ' · ' + item.n + '</li>';
-      }).join('');
+  function newDriverRunId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
     }
+    return 'run-' + Date.now();
+  }
+
+  async function resolveDriverRepoPath(projectId, goalId) {
+    var pid = projectId || state.goalRunner.selectedProjectId;
+    var profile = pid ? resolveProjectProfile(pid) : null;
+    if (profile && profile.repo_path) {
+      return profile.repo_path;
+    }
+    if (pid && state.projectDetails[pid] && state.projectDetails[pid].repo_path) {
+      return state.projectDetails[pid].repo_path;
+    }
+    if (pid) {
+      try {
+        var detail = await govFetch('projects/' + encodeURIComponent(pid));
+        state.projectDetails[pid] = detail;
+        if (detail.repo_path) return detail.repo_path;
+        if (detail.repos && detail.repos.length && detail.repos[0].repo_path) {
+          return detail.repos[0].repo_path;
+        }
+      } catch (_err) { /* fall through */ }
+    }
+    if (goalId) {
+      var match = state.goals.find(function (g) { return g.goal_id === goalId; });
+      if (match && match.project_id) {
+        return resolveDriverRepoPath(match.project_id, null);
+      }
+    }
+    var driverGoal = state.driver && state.driver.active_goal_id;
+    if (driverGoal) {
+      var g2 = state.goals.find(function (g) { return g.goal_id === driverGoal; });
+      if (g2 && g2.project_id) return resolveDriverRepoPath(g2.project_id, null);
+    }
+    throw new Error('No repo path — set the repo path when editing the project above.');
+  }
+
+  async function postDriverControl(action, goalId, projectId) {
+    var select = $('ccDriverProjectSelect');
+    var pid = (select && select.value) || projectId || state.goalRunner.selectedProjectId;
+    var repoPath = await resolveDriverRepoPath(pid, goalId);
+    var body = {
+      repo_path: repoPath,
+      run_id: newDriverRunId(),
+      goal_id: goalId || null
+    };
+    if (action === 'stop') {
+      body.reason = 'operator_requested_stop';
+    }
+    return govFetch('driver/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  }
+
+  async function postGoalSignOff(goalId, projectId) {
+    var repoPath = await resolveDriverRepoPath(projectId, goalId);
+    return govFetch('goals/' + encodeURIComponent(goalId) + '/sign-off', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repo_path: repoPath,
+        request_id: 'cc-sign-off-' + Date.now()
+      })
+    });
+  }
+
+  async function postBreakdownApprove(goalId, projectId, breakdownVersion) {
+    var repoPath = await resolveDriverRepoPath(projectId, goalId);
+    return govFetch('goals/' + encodeURIComponent(goalId) + '/breakdown/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        repo_path: repoPath,
+        breakdown_version: breakdownVersion,
+        request_id: 'cc-approve-' + Date.now()
+      })
+    });
+  }
+
+  function shouldShowBreakdownApproval(goalDetail) {
+    var status = String((goalDetail && (goalDetail.display_status || goalDetail.status)) || '');
+    return status === 'pending_approval';
+  }
+
+  function shouldShowGoalSignOff(goalDetail) {
+    return String((goalDetail && (goalDetail.display_status || goalDetail.status)) || '') === 'pending_completion';
+  }
+
+  function driverControlButtonsHtml(options) {
+    options = options || {};
+    var showSignOff = !!options.showSignOff;
+    return (
+      '<div class="cc-driver-controls">' +
+      '<button type="button" class="cc-ghost-btn" data-driver-action="start">Start</button>' +
+      '<button type="button" class="cc-ghost-btn" data-driver-action="pause">Pause</button>' +
+      '<button type="button" class="cc-ghost-btn" data-driver-action="resume">Resume</button>' +
+      '<button type="button" class="cc-ghost-btn" data-driver-action="halt">Halt</button>' +
+      '<button type="button" class="cc-ghost-btn" data-driver-action="stop">Stop</button>' +
+      (showSignOff
+        ? '<button type="button" class="cc-primary-btn" data-goal-action="sign-off">Sign off completion</button>'
+        : '') +
+      '</div>'
+    );
+  }
+
+  function buildGoalApprovalPanelHtml(goalDetail, goalId, projectId) {
+    var status = goalStatusLabel(
+      (goalDetail && (goalDetail.display_status || goalDetail.status)) || ''
+    );
+    var gid = escapeHtml(goalId);
+    var pid = escapeHtml(projectId);
+    var baseAttrs = ' data-goal-id="' + gid + '" data-project-id="' + pid + '"';
+
+    if (shouldShowBreakdownApproval(goalDetail)) {
+      var bVersion = (goalDetail && goalDetail.breakdown_version) || 1;
+      return (
+        '<article class="cc-card cc-approval-panel" id="ccGoalApprovalPanel">' +
+        '<header class="cc-card-head"><h2>Your approval is needed</h2></header>' +
+        '<p class="cc-card-desc">The plan for this goal is ready. Review the breakdown below, then approve to ' +
+        'let the Driver start working.</p>' +
+        '<dl class="cc-approval-meta">' +
+        '<dt>Status</dt><dd>' + escapeHtml(status) + '</dd>' +
+        '<dt>Goal</dt><dd class="cc-mono">' + gid + '</dd>' +
+        '</dl>' +
+        '<div class="cc-form-actions">' +
+        '<button type="button" class="cc-primary-btn" data-goal-action="approve-breakdown"' + baseAttrs +
+        ' data-breakdown-version="' + escapeHtml(String(bVersion)) + '">Approve breakdown</button>' +
+        '</div>' +
+        '<div class="cc-meta-line cc-approval-result" id="ccGoalActionResult" data-governance-result></div>' +
+        '</article>'
+      );
+    }
+
+    if (shouldShowGoalSignOff(goalDetail)) {
+      return (
+        '<article class="cc-card cc-approval-panel" id="ccGoalApprovalPanel">' +
+        '<header class="cc-card-head"><h2>Ready for sign-off</h2></header>' +
+        '<p class="cc-card-desc">The Driver finished this goal. Review the results, then sign off to mark it complete.</p>' +
+        '<dl class="cc-approval-meta">' +
+        '<dt>Status</dt><dd>' + escapeHtml(status) + '</dd>' +
+        '<dt>Goal</dt><dd class="cc-mono">' + gid + '</dd>' +
+        '</dl>' +
+        '<div class="cc-form-actions">' +
+        '<button type="button" class="cc-primary-btn" data-goal-action="sign-off"' + baseAttrs +
+        '>Sign off completion</button>' +
+        '</div>' +
+        '<div class="cc-meta-line cc-approval-result" id="ccGoalActionResult" data-governance-result></div>' +
+        '</article>'
+      );
+    }
+
+    var idleMsg = status && status !== '—'
+      ? 'No governance action is required for this goal right now.'
+      : 'Inspect goal panels below for research, breakdown, and execution status.';
+    return (
+      '<article class="cc-card cc-approval-panel cc-approval-panel-idle" id="ccGoalApprovalPanel">' +
+      '<header class="cc-card-head"><h2>Governance</h2></header>' +
+      '<p class="cc-card-desc">' + escapeHtml(idleMsg) + '</p>' +
+      '<dl class="cc-approval-meta">' +
+      '<dt>Status</dt><dd>' + escapeHtml(status) + '</dd>' +
+      '</dl>' +
+      '<div class="cc-meta-line cc-approval-result" id="ccGoalActionResult" data-governance-result></div>' +
+      '</article>'
+    );
+  }
+
+  async function refreshAfterGovernanceAction(projectId, goalId) {
+    try {
+      state.driver = await govFetch(driverStatusPath());
+    } catch (_driverErr) { /* optional */ }
+    if (projectId) {
+      await mergeProjectGoalsAndRuns(projectId);
+      state.goalRunner.projectGoals = state.goals.filter(function (g) {
+        return g.project_id === projectId;
+      });
+      state.goalRunner.projectRuns = state.runs.filter(function (r) {
+        return r.project_id === projectId;
+      });
+    }
+    renderAll();
+    if (state.section === 'goals') {
+      renderGoalFilterTabs();
+      renderGoalList();
+      if (goalId) {
+        state.goalRunner.selectedGoalId = goalId;
+        renderGoalList();
+        await expandGoalCard(goalId, projectId);
+      }
+    }
+    if (state.section === 'history' && projectId) {
+      await loadHistoryForProject(state.history.selectedProjectId || projectId);
+    }
+  }
+
+  function wireGovernanceActionsOnce() {
+    var shell = $('ccShell');
+    if (!shell || shell.dataset.govActionsWired === '1') return;
+    shell.dataset.govActionsWired = '1';
+    shell.addEventListener('click', function (ev) {
+      var driverBtn = ev.target.closest('[data-driver-action]');
+      var goalBtn = ev.target.closest('[data-goal-action]');
+      if (!driverBtn && !goalBtn) return;
+      if (governanceActionInFlight) return;
+
+      void (async function () {
+        governanceActionInFlight = true;
+        var activeBtn = driverBtn || goalBtn;
+        activeBtn.disabled = true;
+        activeBtn.classList.add('cc-busy');
+        var resultHost = (goalBtn && goalBtn.closest('[data-governance-result], .cc-approval-panel'))
+          ? document.getElementById('ccGoalActionResult')
+          : $('ccDriverActionResult');
+
+        try {
+          if (driverBtn) {
+            var action = driverBtn.getAttribute('data-driver-action') || '';
+            var pid = driverBtn.getAttribute('data-project-id') || state.goalRunner.selectedProjectId;
+            var activeGoalId = driverBtn.getAttribute('data-goal-id') ||
+              state.goalRunner.selectedGoalId ||
+              (state.driver && state.driver.active_goal_id);
+            await postDriverControl(action, activeGoalId, pid);
+            await refreshAfterGovernanceAction(pid, activeGoalId);
+          } else if (goalBtn) {
+            var gAction = goalBtn.getAttribute('data-goal-action') || '';
+            if (gAction === 'edit') return;
+            var goalId = goalBtn.getAttribute('data-goal-id') || state.goalRunner.selectedGoalId;
+            var projectId = goalBtn.getAttribute('data-project-id') || state.goalRunner.selectedProjectId;
+            if (!goalId || !projectId) return;
+            if (gAction === 'remove') {
+              if (!window.confirm('Remove this goal? Pending plans will be rejected.')) return;
+              var cached = state.goalRunner.goalDetailsCache[goalId] || {};
+              var listGoal = state.goalRunner.projectGoals.find(function (g) {
+                return g.goal_id === goalId;
+              }) || {};
+              await postGoalReject(
+                goalId,
+                projectId,
+                cached.breakdown_version || listGoal.breakdown_version || 1,
+                'removed_by_operator'
+              );
+              if (state.goalRunner.selectedGoalId === goalId) {
+                state.goalRunner.selectedGoalId = null;
+              }
+              delete state.goalRunner.goalDetailsCache[goalId];
+              await refreshAfterGovernanceAction(projectId, null);
+              return;
+            }
+            if (gAction === 'sign-off') {
+              if (!window.confirm('Sign off marks this goal complete in governance. Continue?')) {
+                return;
+              }
+            }
+            if (gAction === 'sign-off') {
+              await postGoalSignOff(goalId, projectId);
+            } else if (gAction === 'approve-breakdown') {
+              var version = Number(goalBtn.getAttribute('data-breakdown-version') || 1);
+              await postBreakdownApprove(goalId, projectId, version);
+            } else {
+              return;
+            }
+            await refreshAfterGovernanceAction(projectId, goalId);
+          }
+        } catch (err) {
+          if (resultHost) resultHost.textContent = String(err.message || err);
+        } finally {
+          governanceActionInFlight = false;
+          if (activeBtn) {
+            activeBtn.disabled = false;
+            activeBtn.classList.remove('cc-busy');
+          }
+        }
+      })();
+    });
+  }
+
+  function renderOverviewBody() {
+    var host = $('ccOverviewBody');
+    if (!host) return;
+    var inboxCount = collectActionInboxItems().length;
+    var buckets = goalStatusBuckets();
+    var staleCount = platformStaleGoalCount();
+    var recentRuns = state.runs.slice(0, 5);
+    var runsHtml = recentRuns.length
+      ? '<ul class="cc-overview-run-list">' + recentRuns.map(function (run) {
+        var label = run.project_id ? projectLabel(run.project_id) : 'Run';
+        return (
+          '<li class="cc-overview-run-item">' +
+          '<span class="cc-overview-run-project">' + escapeHtml(label) + '</span>' +
+          '<span class="cc-overview-run-status">' + escapeHtml(String(run.status || run.state || 'unknown')) + '</span>' +
+          '</li>'
+        );
+      }).join('') + '</ul>'
+      : '<p class="cc-card-desc">No executions yet. Start work from the Goals tab.</p>';
+    host.innerHTML =
+      '<article class="cc-card cc-overview-secondary">' +
+      '<header class="cc-card-head"><span>' + CCIcons.icon('runs') + '</span><h2>Recent executions</h2></header>' +
+      runsHtml +
+      '<div class="cc-overview-links">' +
+      '<button type="button" class="cc-ghost-btn cc-quick-link" data-goto-section="goals">Open Goals' +
+      (inboxCount ? ' (' + inboxCount + ' need you)' : '') + '</button>' +
+      '<button type="button" class="cc-ghost-btn cc-quick-link" data-goto-section="projects">Projects</button>' +
+      '<button type="button" class="cc-ghost-btn cc-quick-link" data-goto-section="history">History</button>' +
+      '</div></article>' +
+      '<article class="cc-card cc-overview-secondary">' +
+      '<header class="cc-card-head"><span>' + CCIcons.icon('goals') + '</span><h2>Goal pipeline</h2></header>' +
+      '<dl class="cc-overview-pipeline">' +
+      '<div><dt>Needs you</dt><dd>' + inboxCount + '</dd></div>' +
+      '<div><dt>In progress</dt><dd>' + buckets.pending + '</dd></div>' +
+      '<div><dt>Complete</dt><dd>' + buckets.completed + '</dd></div>' +
+      '<div><dt>Blocked</dt><dd>' + buckets.blocked + '</dd></div>' +
+      (staleCount ? '<div><dt>Stale duplicates</dt><dd>' + staleCount + '</dd></div>' : '') +
+      '</dl></article>';
+    if (!host.dataset.quickLinksWired) {
+      host.dataset.quickLinksWired = '1';
+      host.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('[data-goto-section]');
+        if (!btn) return;
+        switchSection(btn.getAttribute('data-goto-section'));
+      });
+    }
+  }
+
+  function renderDriverPanelHost() {
+    /* Driver controls live on each goal card in the Goals tab. */
+  }
+
+  function projectSelectOptions(values, selected) {
+    return values.map(function (v) {
+      var sel = v === selected ? ' selected' : '';
+      return '<option value="' + escapeHtml(v) + '"' + sel + '>' + escapeHtml(v.replace(/_/g, ' ')) + '</option>';
+    }).join('');
   }
 
   function renderProjectCard(project, detail) {
     var p = detail || project || {};
     var name = p.display_name || p.name || p.slug || p.project_id || 'project';
     var metaRows = CCGoalRunnerHelpers.formatProjectRegistryMeta(p);
+    var pid = p.project_id || project.project_id || '';
     return (
-      '<article class="cc-project-card" data-project-id="' + escapeHtml(p.project_id || project.project_id || '') + '">' +
+      '<article class="cc-project-card" data-project-id="' + escapeHtml(pid) + '">' +
       '<div class="cc-project-head">' +
       '<div class="cc-project-avatar">' + CCIcons.icon('folder') + '</div>' +
       '<div><div class="cc-project-name">' + escapeHtml(name) + '</div>' +
@@ -434,21 +1620,227 @@ var CCGoalRunnerHelpers = {
       metaRows.map(function (row) {
         return '<div><dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1]) + '</dd></div>';
       }).join('') +
-      '</dl></article>'
+      '</dl>' +
+      '<div class="cc-project-card-actions">' +
+      '<button type="button" class="cc-ghost-btn" data-work-project="' + escapeHtml(pid) + '">Work on this</button>' +
+      '<button type="button" class="cc-project-edit-btn" data-edit-project="' + escapeHtml(pid) + '">Edit</button>' +
+      '</div></article>'
     );
   }
 
+  function readProjectForm() {
+    return {
+      slug: ($('ccProjectSlug') || {}).value || '',
+      display_name: ($('ccProjectDisplayName') || {}).value || '',
+      description: ($('ccProjectDescription') || {}).value || '',
+      repo_path: ($('ccProjectRepoPath') || {}).value || '',
+      status: ($('ccProjectStatus') || {}).value || 'active',
+      default_validator: ($('ccProjectDefaultValidator') || {}).value || '',
+      full_validator: ($('ccProjectFullValidator') || {}).value || '',
+      research_mode: ($('ccProjectResearchMode') || {}).value || 'light',
+      research_required: !!($('ccProjectResearchRequired') || {}).checked,
+      memory_recall_mode: ($('ccProjectMemoryMode') || {}).value || 'light',
+      memory_include_mimir: !!($('ccProjectMemoryInclude') || {}).checked,
+      approval_mode: ($('ccProjectApprovalMode') || {}).value || 'manual_approval',
+      architect_import_required: !!($('ccProjectArchitectImport') || {}).checked,
+      architect_supervision_required: !!($('ccProjectArchitectSupervision') || {}).checked,
+      goal_file: ($('ccProjectGoalFile') || {}).value || 'project_goals.md',
+      budget_max_run_count: Number(($('ccProjectBudgetRuns') || {}).value || 5),
+      budget_max_wall_clock_hours: Number(($('ccProjectBudgetHours') || {}).value || 4)
+    };
+  }
+
+  function buildProjectFormHtml(mode, detail) {
+    var p = detail || {};
+    var budget = p.budget_defaults || {};
+    var isCreate = mode === 'create';
+    return (
+      '<label class="cc-form-label">Slug<input id="ccProjectSlug" type="text" ' +
+      (isCreate ? '' : 'readonly ') + 'value="' + escapeHtml(p.slug || '') + '" placeholder="my-project"></label>' +
+      '<label class="cc-form-label">Display name<input id="ccProjectDisplayName" type="text" value="' +
+      escapeHtml(p.display_name || p.name || '') + '"></label>' +
+      '<label class="cc-form-label">Description<textarea id="ccProjectDescription" rows="2">' +
+      escapeHtml(p.description || '') + '</textarea></label>' +
+      '<label class="cc-form-label">Repo path<input id="ccProjectRepoPath" type="text" value="' +
+      escapeHtml(p.repo_path || '') + '" placeholder="/home/you/Projects/my-repo"></label>' +
+      '<div class="cc-form-row">' +
+      '<label class="cc-form-label">Status<select id="ccProjectStatus">' +
+      projectSelectOptions(['active', 'bench', 'archived'], p.status || 'active') +
+      '</select></label>' +
+      '<label class="cc-form-label">Goal file<input id="ccProjectGoalFile" type="text" value="' +
+      escapeHtml(p.goal_file || 'project_goals.md') + '"></label></div>' +
+      '<label class="cc-form-label">Default validator<input id="ccProjectDefaultValidator" type="text" value="' +
+      escapeHtml(p.default_validator || '.venv/bin/pytest -q') + '"></label>' +
+      '<label class="cc-form-label">Full validator (optional)<input id="ccProjectFullValidator" type="text" value="' +
+      escapeHtml(p.validator_full || p.default_validator || '') + '"></label>' +
+      '<div class="cc-form-row">' +
+      '<label class="cc-form-label">Research mode<select id="ccProjectResearchMode">' +
+      projectSelectOptions(['off', 'light', 'standard', 'deep'], p.research_mode || 'light') +
+      '</select></label>' +
+      '<label class="cc-form-label">Memory recall<select id="ccProjectMemoryMode">' +
+      projectSelectOptions(['off', 'light', 'standard', 'deep'], p.memory_mode || 'light') +
+      '</select></label>' +
+      '<label class="cc-form-label">Approval mode<select id="ccProjectApprovalMode">' +
+      projectSelectOptions(
+        ['manual_approval', 'auto_approve_if_policy_clean', 'auto_run_if_policy_clean'],
+        p.approval_mode || 'manual_approval'
+      ) +
+      '</select></label></div>' +
+      '<label class="cc-form-check"><input id="ccProjectResearchRequired" type="checkbox"' +
+      (p.research_required !== false ? ' checked' : '') + '> Research required before Oracle breakdown</label>' +
+      '<label class="cc-form-check"><input id="ccProjectMemoryInclude" type="checkbox"' +
+      (p.memory_include_mimir !== false ? ' checked' : '') + '> Include Mimir in memory recall</label>' +
+      '<label class="cc-form-check"><input id="ccProjectArchitectImport" type="checkbox"' +
+      (p.architect_import_required !== false ? ' checked' : '') + '> Architect import required</label>' +
+      '<label class="cc-form-check"><input id="ccProjectArchitectSupervision" type="checkbox"' +
+      (p.architect_supervision_required !== false ? ' checked' : '') + '> Architect supervision required</label>' +
+      '<div class="cc-form-row">' +
+      '<label class="cc-form-label">Budget max runs<input id="ccProjectBudgetRuns" type="number" min="1" value="' +
+      escapeHtml(String(budget.max_run_count != null ? budget.max_run_count : 5)) + '"></label>' +
+      '<label class="cc-form-label">Budget max hours<input id="ccProjectBudgetHours" type="number" min="0.1" step="0.1" value="' +
+      escapeHtml(String(budget.max_wall_clock_hours != null ? budget.max_wall_clock_hours : 4)) + '"></label></div>' +
+      '<div id="ccProjectFormError" class="cc-form-error"></div>' +
+      '<div class="cc-form-actions">' +
+      '<button type="button" class="cc-primary-btn" id="ccProjectSaveBtn">' +
+      (isCreate ? 'Create project' : 'Save changes') + '</button>' +
+      '<button type="button" class="cc-ghost-btn" id="ccProjectCancelBtn">Cancel</button></div>'
+    );
+  }
+
+  function closeProjectEditor() {
+    state.projectEditor.open = false;
+    state.projectEditor.projectId = null;
+    var modal = $('ccProjectModal');
+    if (modal) modal.hidden = true;
+  }
+
+  async function openProjectEditor(mode, projectId) {
+    state.projectEditor.mode = mode;
+    state.projectEditor.projectId = projectId || null;
+    state.projectEditor.open = true;
+    var modal = $('ccProjectModal');
+    var title = $('ccProjectModalTitle');
+    var host = $('ccProjectFormHost');
+    if (!modal || !host) return;
+    modal.hidden = false;
+    if (title) title.textContent = mode === 'create' ? 'Add project' : 'Edit project';
+    host.innerHTML = '<div class="cc-meta-line">Loading…</div>';
+    var detail = {};
+    if (mode === 'edit' && projectId) {
+      try {
+        detail = state.projectDetails[projectId] || await govFetch('projects/' + encodeURIComponent(projectId));
+        state.projectDetails[projectId] = detail;
+      } catch (err) {
+        host.innerHTML = '<div class="cc-form-error">' + escapeHtml(err.message) + '</div>';
+        return;
+      }
+    }
+    host.innerHTML = buildProjectFormHtml(mode, detail);
+    $('ccProjectSaveBtn').addEventListener('click', function () { void saveProject(); });
+    $('ccProjectCancelBtn').addEventListener('click', closeProjectEditor);
+  }
+
+  async function saveProject() {
+    var errHost = $('ccProjectFormError');
+    if (state.projectEditor.saving) return;
+    var form = readProjectForm();
+    if (!form.display_name.trim()) {
+      if (errHost) errHost.textContent = 'Display name is required.';
+      return;
+    }
+    if (!form.repo_path.trim()) {
+      if (errHost) errHost.textContent = 'Repo path is required.';
+      return;
+    }
+    if (state.projectEditor.mode === 'create' && !form.slug.trim()) {
+      if (errHost) errHost.textContent = 'Slug is required for new projects.';
+      return;
+    }
+    state.projectEditor.saving = true;
+    if (errHost) errHost.textContent = 'Saving…';
+    try {
+      if (state.projectEditor.mode === 'create') {
+        await govFetch('projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+      } else {
+        var updatePayload = Object.assign({}, form);
+        delete updatePayload.slug;
+        await govFetch('projects/' + encodeURIComponent(state.projectEditor.projectId) + '/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload)
+        });
+      }
+      closeProjectEditor();
+      await refreshData({ showLoading: true, loadDetails: true });
+    } catch (err) {
+      if (errHost) errHost.textContent = String(err.message || err);
+    } finally {
+      state.projectEditor.saving = false;
+    }
+  }
+
+  function wireProjectEditorChrome() {
+    var addBtn = $('ccProjectAddBtn');
+    if (addBtn && !addBtn.dataset.wired) {
+      addBtn.dataset.wired = '1';
+      addBtn.addEventListener('click', function () { void openProjectEditor('create'); });
+    }
+    var closeBtn = $('ccProjectModalClose');
+    var backdrop = $('ccProjectModalBackdrop');
+    if (closeBtn && !closeBtn.dataset.wired) {
+      closeBtn.dataset.wired = '1';
+      closeBtn.addEventListener('click', closeProjectEditor);
+    }
+    if (backdrop && !backdrop.dataset.wired) {
+      backdrop.dataset.wired = '1';
+      backdrop.addEventListener('click', closeProjectEditor);
+    }
+    var grid = $('ccProjectGrid');
+    if (grid && !grid.dataset.wired) {
+      grid.dataset.wired = '1';
+      grid.addEventListener('click', function (ev) {
+        var editBtn = ev.target.closest('[data-edit-project]');
+        if (editBtn) {
+          void openProjectEditor('edit', editBtn.getAttribute('data-edit-project'));
+          return;
+        }
+        var workBtn = ev.target.closest('[data-work-project]');
+        if (workBtn) {
+          var pid = workBtn.getAttribute('data-work-project');
+          state.goalRunner.selectedProjectId = pid;
+          state.goalRunner.selectedGoalId = null;
+          var projectSelect = $('ccGoalRunnerProject');
+          if (projectSelect) projectSelect.value = pid;
+          void loadGoalRunnerProjectProfile(pid).then(function () {
+            switchSection('goals');
+          });
+        }
+      });
+    }
+  }
+
   function renderProjects() {
+    wireProjectEditorChrome();
     var grid = $('ccProjectGrid');
     var metaHost = $('ccProjectRegistryMeta');
+    var intro = $('ccProjectsIntro');
+    if (intro) {
+      intro.textContent =
+        'Each project links a codebase (repo path) to governance rules — validators, research depth, ' +
+        'and approval policy. Add a project first, or select one to work on below.';
+    }
     if (!grid) return;
     if (!state.projects.length) {
-      grid.innerHTML = '<div class="cc-empty">No projects — start governance-api or check registry.</div>';
+      grid.innerHTML = '<div class="cc-empty">No projects yet — click Add project to register one.</div>';
       if (metaHost) metaHost.textContent = '';
       return;
     }
     if (metaHost) {
-      metaHost.textContent = state.projects.length + ' project(s) from GET /api/governance/projects';
+      metaHost.textContent = state.projects.length + ' registered project(s)';
     }
     grid.innerHTML = state.projects.map(function (project) {
       var detail = state.projectDetails[project.project_id] || project;
@@ -472,83 +1864,62 @@ var CCGoalRunnerHelpers = {
 
   function renderRuns() {
     var host = $('ccRunTimeline');
+    var intro = $('ccRunsIntro');
+    if (intro) {
+      intro.textContent =
+        'Past Driver executions across all projects. Select a goal above for full lifecycle detail.';
+    }
     if (!host) return;
     if (!state.runs.length) {
       host.innerHTML = '<div class="cc-empty">No runs recorded yet.</div>';
       return;
     }
-    host.innerHTML = state.runs.slice(0, 16).map(function (r) {
-      var pct = Math.min(100, Math.max(12, Number(r.progress_pct || 50)));
-      var color = /complete|approved/.test(String(r.status || '')) ? '#34c759'
-        : /block|fail/.test(String(r.status || '')) ? '#ff3b30' : '#0071e3';
+    var sorted = state.runs.slice().sort(function (a, b) {
+      return (b.last_seq || b.started_seq || 0) - (a.last_seq || a.started_seq || 0);
+    });
+    host.innerHTML = sorted.slice(0, 20).map(function (r) {
+      var pct = runProgressPct(r);
+      var color = runBarColor(r);
+      var summary = /complete|approved|released/.test(String(r.status || ''))
+        ? 'Run finished with status ' + String(r.status || '').replace(/_/g, ' ')
+        : 'Tier ' + (r.tier || '—') + ' · correlation ' + truncate(r.correlation_id || r.request_id || '—', 24);
       return (
         '<div class="cc-run-row">' +
-        '<div class="cc-project-slug">' + escapeHtml((r.run_id || '').slice(0, 10)) + '</div>' +
-        '<div class="cc-run-bar"><span style="width:' + pct + '%;background:' + color + '"></span></div>' +
-        '<div class="' + statusClass(r.status) + '">' + escapeHtml(r.status || '—') + '</div>' +
+        '<div class="cc-run-meta"><strong>' + escapeHtml(r._project_name || projectLabel(r.project_id)) + '</strong>' +
+        '<div class="cc-run-summary">' + escapeHtml((r.run_id || '').slice(0, 12)) + '…</div>' +
+        '<div class="cc-run-summary">' + escapeHtml(summary) + '</div></div>' +
+        '<div><div class="cc-run-bar"><span style="width:' + pct + '%;background:' + color + '"></span></div></div>' +
+        '<div class="' + statusClass(r.status) + '">' + escapeHtml(String(r.status || '—').replace(/_/g, ' ')) + '</div>' +
         '</div>'
       );
     }).join('');
   }
 
-  function renderDriver() {
-    var d = state.driver || {};
-    var stateName = d.state || d.status || 'unknown';
-    $('ccDriverStateLabel').textContent = stateName.replace(/_/g, ' ');
-    var pct = /running|active/.test(stateName) ? 0.75 : /idle|paused/.test(stateName) ? 0.35 : 0.15;
-    var color = /running/.test(stateName) ? '#34c759' : /halt|stop|block/.test(stateName) ? '#ff3b30' : '#0071e3';
-    CCCharts.drawRing($('ccDriverRing'), pct, color, Math.round(pct * 100) + '%');
-
-    var controls = [
-      { icon: 'driver', label: 'Start', key: 'start' },
-      { icon: 'pause', label: 'Pause', key: 'pause' },
-      { icon: 'resume', label: 'Resume', key: 'resume' },
-      { icon: 'halt', label: 'Halt', key: 'halt' }
-    ];
-    $('ccDriverControls').innerHTML = controls.map(function (c) {
-      return (
-        '<button type="button" class="cc-control-btn" disabled title="Read-only shell v1 — Driver controls disabled in command center">' +
-        CCIcons.icon(c.icon) + '<span>' + escapeHtml(c.label) + '</span></button>'
-      );
-    }).join('');
-
-    var meta = [
-      ['Active goal', d.active_goal_id || '—'],
-      ['Run', d.run_id || '—'],
-      ['Stop reason', d.stop_reason || '—'],
-      ['Budget', d.budget_hint || '—']
-    ];
-    $('ccDriverMeta').innerHTML = meta.map(function (row) {
-      return '<div><dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1]) + '</dd></div>';
-    }).join('');
+  function truncate(text, maxLen) {
+    var s = String(text == null ? '' : text);
+    if (s.length <= maxLen) return s;
+    return s.slice(0, Math.max(0, maxLen - 1)) + '…';
   }
 
-  function renderRelease() {
-    var host = $('ccReleaseGrid');
-    if (!host) return;
-    var gates = [
-      { label: 'Plan', ok: state.connected },
-      { label: 'Diff', ok: state.runs.some(function (r) { return /approved|complete/.test(String(r.status || '')); }) },
-      { label: 'Verify', ok: state.runs.length > 0 },
-      { label: 'Release', ok: state.goals.some(function (g) { return /complete|approved/.test(String(g.status || '')); }) }
-    ];
-    host.innerHTML = gates.map(function (g) {
-      var cls = g.ok ? 'cc-status-ok' : 'cc-status-warn';
-      var sym = g.ok ? '✓' : '…';
-      var bg = g.ok ? 'rgba(52,199,89,0.15)' : 'rgba(255,159,10,0.12)';
-      return (
-        '<article class="cc-release-card">' +
-        '<div class="cc-release-ring ' + cls + '" style="background:' + bg + '">' + sym + '</div>' +
-        '<strong>' + escapeHtml(g.label) + '</strong>' +
-        '<div class="cc-project-slug">' + (g.ok ? 'Ready' : 'Awaiting data') + '</div>' +
-        '</article>'
-      );
-    }).join('');
+  function goalRunnerHelpHtml(title, body) {
+    return (
+      '<button type="button" class="cc-info-btn" title="' + escapeHtml(body) + '" aria-label="' +
+      escapeHtml(title) + '">?</button>'
+    );
+  }
+
+  function updateGoalRunnerRunButton() {
+    var btn = $('ccGoalRunnerRun');
+    var modeSelect = $('ccGoalRunnerRunMode');
+    if (!btn || !modeSelect) return;
+    var mode = modeSelect.value || 'draft_only';
+    btn.textContent = CCGoalRunnerHelpers.RUN_MODE_BUTTON[mode] || 'Run goal';
   }
 
   function readGoalRunnerForm() {
+    var projectSelect = $('ccGoalsProjectSelect') || $('ccGoalRunnerProject');
     return {
-      projectId: ($('ccGoalRunnerProject') || {}).value || '',
+      projectId: (projectSelect && projectSelect.value) || state.goalRunner.selectedProjectId || '',
       statement: ($('ccGoalRunnerStatement') || {}).value || '',
       researchMode: ($('ccGoalRunnerResearchMode') || {}).value || 'light',
       runMode: ($('ccGoalRunnerRunMode') || {}).value || 'draft_only',
@@ -583,8 +1954,19 @@ var CCGoalRunnerHelpers = {
 
   async function loadGoalRunnerProjectProfile(projectId) {
     if (!projectId) return;
+    var loadSeq = ++projectLoadSeq;
     state.goalRunner.selectedProjectId = projectId;
-    var profile = await govFetch('projects/' + encodeURIComponent(projectId));
+    syncGoalProjectSelectors(projectId);
+    var profile = resolveProjectProfile(projectId);
+    if (!profile || (!profile.research_mode && !profile.profile_missing)) {
+      try {
+        profile = await govFetch('projects/' + encodeURIComponent(projectId));
+        state.projectDetails[projectId] = profile;
+      } catch (_fetchErr) {
+        profile = profile || resolveProjectProfile(projectId);
+      }
+    }
+    if (!profile) return;
     state.goalRunner.selectedProfile = profile;
     state.projectDetails[projectId] = profile;
     var metaHost = $('ccGoalRunnerProjectMeta');
@@ -600,6 +1982,7 @@ var CCGoalRunnerHelpers = {
     if (approvalSelect) approvalSelect.value = profile.approval_mode || 'manual_approval';
     var runModeSelect = $('ccGoalRunnerRunMode');
     if (runModeSelect) runModeSelect.value = 'draft_only';
+    updateGoalRunnerRunButton();
     var maxRuns = $('ccGoalRunnerMaxRuns');
     if (maxRuns && profile.budget_defaults && profile.budget_defaults.max_run_count != null) {
       maxRuns.value = String(profile.budget_defaults.max_run_count);
@@ -609,10 +1992,161 @@ var CCGoalRunnerHelpers = {
       maxHours.value = String(profile.budget_defaults.max_wall_clock_hours);
     }
     updateGoalRunnerWarnings();
+    await loadGoalRunnerProjectActivity(projectId, loadSeq);
+  }
+
+  function goalStatusLabel(status) {
+    return String(status || '—').replace(/_/g, ' ');
+  }
+
+  function renderGoalRunnerActivity() {
+    var host = $('ccGoalRunnerActivity');
+    if (!host) return;
+    var goals = state.goalRunner.projectGoals || [];
+    var runs = state.goalRunner.projectRuns || [];
+    var selectedGoal = state.goalRunner.selectedGoalId;
+    var goalRows = goals.length
+      ? goals.slice().sort(function (a, b) {
+          return (b.last_seq || 0) - (a.last_seq || 0);
+        }).map(function (g) {
+          var active = g.goal_id === selectedGoal ? ' cc-goal-list-item-active' : '';
+          return (
+            '<button type="button" class="cc-goal-list-item cc-goal-pick' + active + '" data-goal-id="' +
+            escapeHtml(g.goal_id) + '">' +
+            '<strong>' + escapeHtml(goalStatusLabel(g.display_status || g.status)) + '</strong>' +
+            '<div class="cc-meta-line">' + escapeHtml(truncate(g.statement, 100)) + '</div>' +
+            '<div class="cc-meta-line">goal_id: ' + escapeHtml(String(g.goal_id).slice(0, 12)) + '…</div>' +
+            '</button>'
+          );
+        }).join('')
+      : '<div class="cc-empty">No goals for this project yet.</div>';
+    var runRows = runs.length
+      ? runs.slice().sort(function (a, b) {
+          return (b.last_seq || b.started_seq || 0) - (a.last_seq || a.started_seq || 0);
+        }).slice(0, 12).map(function (r) {
+          var pct = runProgressPct(r);
+          return (
+            '<div class="cc-run-row cc-run-row-compact">' +
+            '<div class="cc-run-meta"><strong>' + escapeHtml(String(r.run_id || '').slice(0, 12)) + '…</strong>' +
+            '<div class="cc-run-summary">' + escapeHtml(goalStatusLabel(r.status)) + ' · tier ' + escapeHtml(r.tier || '—') + '</div></div>' +
+            '<div><div class="cc-run-bar"><span style="width:' + pct + '%;background:' + runBarColor(r) + '"></span></div></div>' +
+            '</div>'
+          );
+        }).join('')
+      : '<div class="cc-empty">No driver runs recorded for this project.</div>';
+    host.innerHTML =
+      '<article class="cc-card">' +
+      '<header class="cc-card-head"><span>' + CCIcons.icon('goals') + '</span><h2>Goals for this project</h2></header>' +
+      '<p class="cc-card-desc">Click a goal to see its progress, take action, or review results.</p>' +
+      '<div class="cc-goal-list">' + goalRows + '</div></article>' +
+      '<article class="cc-card">' +
+      '<header class="cc-card-head"><span>' + CCIcons.icon('runs') + '</span><h2>Recent runs</h2></header>' +
+      '<p class="cc-card-desc">Latest Driver executions for the selected project.</p>' +
+      runRows + '</article>';
+    host.querySelectorAll('[data-goal-id]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        void viewGoalLifecycle(btn.getAttribute('data-goal-id'), state.goalRunner.selectedProjectId);
+      });
+    });
+  }
+
+  async function archiveStaleGoalsForProject(projectId) {
+    if (!projectId) return;
+    var btn = $('ccArchiveStaleBtn');
+    var repoPath = await resolveDriverRepoPath(projectId, null).catch(function () { return ''; });
+    if (btn) btn.classList.add('cc-busy');
+    try {
+      var preview = await govFetch(
+        'projects/' + encodeURIComponent(projectId) + '/goals/archive-stale',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_path: repoPath || '', dry_run: true })
+        }
+      );
+      var staleCount = preview.stale_count || (preview.goal_ids && preview.goal_ids.length) || 0;
+      if (!staleCount) {
+        window.alert('No stale duplicate goals to archive for this project.');
+        return;
+      }
+      var ok = window.confirm(
+        'Archive ' + staleCount + ' stale duplicate goal(s)? The newest open copy in each group is kept.'
+      );
+      if (!ok) return;
+      await govFetch(
+        'projects/' + encodeURIComponent(projectId) + '/goals/archive-stale',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_path: repoPath || '', dry_run: false })
+        }
+      );
+      await loadGoalRunnerProjectActivity(projectId);
+      if (state.section === 'overview') {
+        await loadGoalsAndRunsAcrossProjects();
+        renderAll();
+      }
+    } catch (err) {
+      window.alert(String(err.message || err));
+    } finally {
+      if (btn) btn.classList.remove('cc-busy');
+    }
+  }
+
+  function updateArchiveStaleButton(staleCount) {
+    var btn = $('ccArchiveStaleBtn');
+    if (!btn) return;
+    if (staleCount > 0) {
+      btn.hidden = false;
+      btn.textContent = 'Archive ' + staleCount + ' stale duplicate' + (staleCount === 1 ? '' : 's');
+    } else {
+      btn.hidden = true;
+      btn.textContent = 'Archive stale duplicates';
+    }
+    if (!btn.dataset.wired) {
+      btn.dataset.wired = '1';
+      btn.addEventListener('click', function () {
+        void archiveStaleGoalsForProject(state.goalRunner.selectedProjectId);
+      });
+    }
+  }
+
+  async function loadGoalRunnerProjectActivity(projectId, loadSeq) {
+    if (!projectId) return;
+    try {
+      var results = await Promise.all([
+        govFetch('goals?project_id=' + encodeURIComponent(projectId)),
+        govFetch('runs?limit=24&project_id=' + encodeURIComponent(projectId))
+      ]);
+      if (loadSeq != null && loadSeq !== projectLoadSeq) return;
+      state.goalRunner.projectGoals = results[0].goals || [];
+      state.goalRunner.projectRuns = results[1].runs || [];
+      updateArchiveStaleButton(results[0].stale_count || 0);
+      syncGoalsRunsForProject(projectId, state.goalRunner.projectGoals, state.goalRunner.projectRuns);
+      if (!state.goalRunner.selectedGoalId && state.goalRunner.projectGoals.length) {
+        var firstVisible = visibleProjectGoals()[0];
+        if (firstVisible) state.goalRunner.selectedGoalId = firstVisible.goal_id;
+      }
+      renderGoalFilterTabs();
+      renderGoalList();
+    } catch (err) {
+      var listHost = $('ccGoalList');
+      if (listHost) {
+        listHost.innerHTML = '<div class="cc-form-error">' + escapeHtml(err.message) + '</div>';
+      }
+    }
+  }
+
+  async function viewGoalLifecycle(goalId, projectId) {
+    state.goalRunner.selectedGoalId = goalId;
+    state.goalRunner.selectedProjectId = projectId;
+    switchSection('goals');
+    renderGoalList();
+    void expandGoalCard(goalId, projectId);
   }
 
   async function renderGoalRunnerForm() {
-    var controlsHost = $('ccGoalRunnerControls');
+    var controlsHost = $('ccGoalNewGoalHost') || $('ccGoalRunnerControls');
     if (!controlsHost) return;
     controlsHost.innerHTML = '<div class="cc-meta-line">Loading Goal Runner…</div>';
     try {
@@ -620,61 +2154,75 @@ var CCGoalRunnerHelpers = {
         var data = await govFetch('projects');
         state.projects = data.projects || [];
       }
-      var options = state.projects.map(function (project) {
-        var selected = project.project_id === state.goalRunner.selectedProjectId ? ' selected' : '';
-        return (
-          '<option value="' + escapeHtml(project.project_id) + '"' + selected + '>' +
-          escapeHtml(CCGoalRunnerHelpers.formatProjectOptionLabel(project)) +
-          '</option>'
-        );
-      }).join('');
+      var projectId = state.goalRunner.selectedProjectId || CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID;
       controlsHost.innerHTML =
-        '<article class="cc-card" id="ccGoalRunnerPanel">' +
-        '<header class="cc-card-head"><span>' + CCIcons.icon('goals') + '</span><h2>Goal Runner</h2></header>' +
-        '<label class="cc-form-label">Project<select data-goal-runner-field="project_id" id="ccGoalRunnerProject">' +
-        options + '</select></label>' +
+        '<article class="cc-card cc-goal-new-card" id="ccGoalRunnerPanel">' +
+        '<p class="cc-form-help">Describe what you want achieved for the project selected above. Animus will research, plan, and — with your approval — execute.</p>' +
+        '<input type="hidden" data-goal-runner-field="project_id" id="ccGoalRunnerProject" value="' +
+        escapeHtml(projectId) + '">' +
         '<div class="cc-meta-line" id="ccGoalRunnerProjectMeta"></div>' +
-        '<label class="cc-form-label">Goal statement<textarea data-goal-runner-field="statement" id="ccGoalRunnerStatement" rows="4"></textarea></label>' +
+        '<label class="cc-form-label">' +
+        '<span class="cc-form-label-head">What should be done? ' +
+        goalRunnerHelpHtml('Goal statement help', CCGoalRunnerHelpers.GOAL_STATEMENT_HELP) +
+        '</span>' +
+        '<textarea data-goal-runner-field="statement" id="ccGoalRunnerStatement" rows="4" ' +
+        'placeholder="Example: Add retry logic to the intake API with tests."></textarea></label>' +
+        '<details class="cc-advanced-options">' +
+        '<summary>Advanced options</summary>' +
         '<div class="cc-form-row">' +
-        '<label class="cc-form-label">Research mode<select data-goal-runner-field="research_mode" id="ccGoalRunnerResearchMode">' +
-        '<option value="off">off</option><option value="light" selected>light</option>' +
-        '<option value="standard">standard</option><option value="deep">deep</option></select></label>' +
-        '<label class="cc-form-label">Run mode<select data-goal-runner-field="run_mode" id="ccGoalRunnerRunMode">' +
-        '<option value="draft_only" selected>Research + plan only</option>' +
-        '<option value="approve_only">Research + plan + approve</option>' +
-        '<option value="run">Full run</option></select></label>' +
-        '<label class="cc-form-label">Approval mode<select data-goal-runner-field="approval_mode" id="ccGoalRunnerApprovalMode">' +
-        '<option value="manual_approval" selected>manual_approval</option>' +
-        '<option value="auto_approve_if_policy_clean">auto_approve_if_policy_clean</option>' +
-        '<option value="auto_run_if_policy_clean">auto_run_if_policy_clean</option></select></label>' +
+        '<label class="cc-form-label">' +
+        '<span class="cc-form-label-head">Research depth ' +
+        goalRunnerHelpHtml('Research storage', CCGoalRunnerHelpers.RESEARCH_HELP) +
+        '</span>' +
+        '<select data-goal-runner-field="research_mode" id="ccGoalRunnerResearchMode">' +
+        '<option value="off">None</option><option value="light" selected>Light</option>' +
+        '<option value="standard">Standard</option><option value="deep">Deep</option></select></label>' +
+        '<label class="cc-form-label">How far to go<select data-goal-runner-field="run_mode" id="ccGoalRunnerRunMode">' +
+        '<option value="draft_only" selected>Plan only — research + breakdown</option>' +
+        '<option value="approve_only">Plan + auto-approve breakdown</option>' +
+        '<option value="run">Full run — through execution</option></select></label>' +
+        '<label class="cc-form-label">' +
+        '<span class="cc-form-label-head">Approval ' +
+        goalRunnerHelpHtml('Approval modes', CCGoalRunnerHelpers.APPROVAL_HELP) +
+        '</span>' +
+        '<select data-goal-runner-field="approval_mode" id="ccGoalRunnerApprovalMode">' +
+        '<option value="manual_approval" selected>I approve manually</option>' +
+        '<option value="auto_approve_if_policy_clean">Auto-approve if policy clean</option>' +
+        '<option value="auto_run_if_policy_clean">Auto-run if policy clean</option></select></label>' +
         '</div>' +
         '<div class="cc-form-row">' +
-        '<label class="cc-form-label">Budget max runs<input data-goal-runner-field="max_run_count" id="ccGoalRunnerMaxRuns" type="number" min="1"></label>' +
-        '<label class="cc-form-label">Budget wall-clock hours<input data-goal-runner-field="max_wall_clock_hours" id="ccGoalRunnerMaxHours" type="number" min="0.1" step="0.1"></label>' +
-        '</div>' +
+        '<label class="cc-form-label">Max runs<input data-goal-runner-field="max_run_count" id="ccGoalRunnerMaxRuns" type="number" min="1"></label>' +
+        '<label class="cc-form-label">Max hours<input data-goal-runner-field="max_wall_clock_hours" id="ccGoalRunnerMaxHours" type="number" min="0.1" step="0.1"></label>' +
+        '</div></details>' +
         '<div id="ccGoalRunnerWarnings"></div>' +
         '<div class="cc-form-actions">' +
-        '<button type="button" class="cc-primary-btn" id="ccGoalRunnerRun">Run draft_only</button>' +
-        '<button type="button" class="cc-ghost-btn" id="ccGoalRunnerRefresh">Refresh</button>' +
+        '<button type="button" class="cc-primary-btn" id="ccGoalRunnerRun">Run plan only</button>' +
+        '<button type="button" class="cc-ghost-btn" id="ccGoalRunnerRefresh">Refresh goals</button>' +
         '</div>' +
         '<div class="cc-meta-line" id="ccGoalRunnerResult"></div>' +
         '</article>';
 
-      $('ccGoalRunnerProject').addEventListener('change', function () {
-        void loadGoalRunnerProjectProfile($('ccGoalRunnerProject').value);
-      });
       ['ccGoalRunnerResearchMode', 'ccGoalRunnerRunMode', 'ccGoalRunnerApprovalMode'].forEach(function (id) {
         var el = $(id);
-        if (el) el.addEventListener('change', updateGoalRunnerWarnings);
+        if (el) {
+          el.addEventListener('change', function () {
+            updateGoalRunnerWarnings();
+            updateGoalRunnerRunButton();
+          });
+        }
       });
       $('ccGoalRunnerRun').addEventListener('click', function () { void submitProjectGoalRun(); });
-      $('ccGoalRunnerRefresh').addEventListener('click', function () { void refreshGoalRunnerView(); });
+      $('ccGoalRunnerRefresh').addEventListener('click', function () {
+        void loadGoalRunnerProjectActivity(state.goalRunner.selectedProjectId);
+      });
 
       await loadGoalRunnerProjectProfile(
         state.goalRunner.selectedProjectId || CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID
       );
       state.goalRunner.wired = true;
-      if (state.goalRunner.lastResponse) await refreshGoalRunnerView();
+      await loadGoalRunnerProjectActivity(
+        state.goalRunner.selectedProjectId || CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID
+      );
     } catch (err) {
       controlsHost.innerHTML = '<div class="cc-empty">' + escapeHtml(err.message) + '</div>';
     }
@@ -686,10 +2234,21 @@ var CCGoalRunnerHelpers = {
     var validation = CCGoalRunnerHelpers.validateGoalStatement(
       form.statement,
       form.projectId,
-      state.goalRunner.running
+      state.goalRunner.running,
+      state.goalRunner.projectGoals
     );
     if (!validation.ok) {
       if (resultHost) resultHost.textContent = validation.error;
+      if (validation.existingGoalId) {
+        state.goalRunner.selectedGoalId = validation.existingGoalId;
+        state.goalRunner.filterTab = CCGoalRunnerHelpers.goalFilterBucket(
+          state.goalRunner.projectGoals.find(function (g) {
+            return g.goal_id === validation.existingGoalId;
+          }) || {}
+        ) || 'active';
+        renderGoalFilterTabs();
+        renderGoalList();
+      }
       return;
     }
     var payload = CCGoalRunnerHelpers.buildGoalRunPayload(form, state.goalRunner.selectedProfile);
@@ -702,33 +2261,55 @@ var CCGoalRunnerHelpers = {
         body: JSON.stringify(payload)
       });
       state.goalRunner.lastResponse = response;
+      state.goalRunner.selectedGoalId = response.goal_id || state.goalRunner.selectedGoalId;
+      if ($('ccGoalRunnerStatement')) {
+        $('ccGoalRunnerStatement').value = '';
+      }
       if (resultHost) {
         resultHost.textContent =
-          'goal_run_id ' + (response.goal_run_id || '—') +
-          ' · goal_id ' + (response.goal_id || '—') +
-          ' · status ' + (response.status || '—');
+          'Submitted — goal ' + truncate(response.goal_id || '—', 16) +
+          ' · status ' + goalStatusLabel(response.status);
       }
-      await refreshGoalRunnerView();
+      await loadGoalRunnerProjectActivity(form.projectId);
+      if (response.goal_id) {
+        state.goalRunner.filterTab = CCGoalRunnerHelpers.goalFilterBucket(
+          state.goalRunner.projectGoals.find(function (g) {
+            return g.goal_id === response.goal_id;
+          }) || { status: response.status }
+        ) || 'active';
+        renderGoalFilterTabs();
+        renderGoalList();
+        void expandGoalCard(response.goal_id, form.projectId);
+      }
     } catch (err) {
-      if (resultHost) resultHost.textContent = String(err.message || err);
+      var msg = String(err.message || err);
+      if (resultHost) resultHost.textContent = msg;
+      if (/duplicate_goal|409/.test(msg)) {
+        try {
+          await loadGoalRunnerProjectActivity(form.projectId);
+        } catch (_refreshErr) { /* ignore */ }
+      }
     } finally {
       state.goalRunner.running = false;
     }
   }
 
-  async function refreshGoalRunnerView() {
-    var response = state.goalRunner.lastResponse;
-    var summaryHost = $('ccGoalRunnerSummary');
-    var timelineHost = $('ccGoalRunnerTimeline');
-    var panelsHost = $('ccGoalRunnerPanels');
-    if (!response || !summaryHost || !timelineHost || !panelsHost) {
-      if (summaryHost && !response) {
-        summaryHost.innerHTML = '<div class="cc-empty">Run a goal to see lifecycle output.</div>';
-      }
-      return;
+  async function refreshGoalRunnerView(options) {
+    options = options || {};
+    var response = options.response || state.goalRunner.lastResponse;
+    var projectId = options.projectId || (response && response.project_id) || state.goalRunner.selectedProjectId;
+    var goalId = options.goalId || (response && response.goal_id) || state.goalRunner.selectedGoalId;
+    if (!goalId) return null;
+    if (!response) {
+      response = {
+        goal_id: goalId,
+        project_id: projectId,
+        status: null,
+        research: {},
+        breakdown: {},
+        driver: {}
+      };
     }
-    var projectId = response.project_id || state.goalRunner.selectedProjectId;
-    var goalId = response.goal_id;
     var goalDetail = null;
     var queuePayload = null;
     var driverPayload = null;
@@ -749,25 +2330,19 @@ var CCGoalRunnerHelpers = {
       queuePayload = results[1];
       driverPayload = results[2];
       goalRunProjection = results[3] || null;
+      if (!response.status && goalDetail) {
+        response = Object.assign({}, response, {
+          status: goalDetail.status,
+          research: { status: goalDetail.research_status, mode: goalDetail.research_mode }
+        });
+      }
     } catch (_err) {
       goalDetail = goalDetail || {};
     }
-    summaryHost.innerHTML =
-      '<article class="cc-card"><header class="cc-card-head"><h2>Run summary</h2></header>' +
-      '<div class="cc-meta-line">goal_run_id: ' + escapeHtml(response.goal_run_id || '—') +
-      ' · goal_id: ' + escapeHtml(goalId || '—') +
-      ' · status: ' + escapeHtml(response.status || '—') + '</div>' +
-      '<div class="cc-meta-line">research: ' + escapeHtml((response.research && response.research.status) || '—') +
-      ' · breakdown: ' + escapeHtml((response.breakdown && response.breakdown.status) || '—') +
-      ' · driver started: ' + ((response.driver && response.driver.started) ? 'yes' : 'no') + '</div></article>';
-
-    var timelineState = (goalRunProjection && goalRunProjection.state) || response.status || 'created';
-    timelineHost.innerHTML =
-      '<article class="cc-card"><header class="cc-card-head"><h2>Timeline</h2></header>' +
-      CCGoalRunnerHelpers.buildTimelineHtml(timelineState, response) +
-      '</article>';
-
-    panelsHost.innerHTML =
+    if (goalDetail) {
+      state.goalRunner.goalDetailsCache[goalId] = goalDetail;
+    }
+    var panelsHtml =
       '<article class="cc-card"><header class="cc-card-head"><h2>Research</h2></header>' +
       CCGoalRunnerHelpers.buildResearchPanelHtml(response, goalDetail) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Breakdown</h2></header>' +
@@ -780,25 +2355,76 @@ var CCGoalRunnerHelpers = {
       CCGoalRunnerHelpers.buildMemoryPanelHtml(response) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Outcome report</h2></header>' +
       CCGoalRunnerHelpers.buildOutcomePanelHtml(response, goalDetail) + '</article>';
+    if (options.panelsTarget) {
+      options.panelsTarget.innerHTML = panelsHtml;
+    }
+    return { goalDetail: goalDetail, panelsHtml: panelsHtml };
   }
 
   function renderAll() {
     renderStats();
-    renderCharts();
+    renderActionInbox();
+    renderOverviewBody();
     renderProjects();
-    renderRuns();
-    renderDriver();
-    renderRelease();
+    var overviewIntro = $('ccOverviewIntro');
+    if (overviewIntro) {
+      overviewIntro.textContent =
+        'Platform snapshot across all registered projects. Open Projects to manage repos, Goals to run work, History for run audit.';
+    }
+    var goalsIntro = $('ccGoalsIntro');
+    if (goalsIntro) {
+      goalsIntro.textContent =
+        'Choose a project, submit a new goal, then manage goals here — filter by status, run the Driver per goal, approve, or sign off inline. ' +
+        'The Driver is the autonomous executor; use the play/pause/stop icons on each goal card.';
+    }
+    var projectsIntro = $('ccProjectsIntro');
+    if (projectsIntro) {
+      projectsIntro.textContent =
+        'All projects registered in Command Center. Add or edit repo paths, validators, and approval policy.';
+    }
+    var historyIntro = $('ccHistoryIntro');
+    if (historyIntro) {
+      historyIntro.textContent =
+        'Execution history for the selected project. Expand a run for details.';
+    }
+    if (state.section === 'goals' && state.goalRunner.wired) {
+      renderGoalsProjectSelect();
+      renderNewGoalForm();
+      renderGoalFilterTabs();
+      renderGoalList();
+    }
+    if (state.section === 'history') {
+      renderHistoryProjectSelect();
+      renderHistoryList();
+    }
   }
 
-  async function refreshData() {
+  async function refreshData(options) {
+    options = options || {};
+    if (refreshInFlight) return;
+    refreshInFlight = true;
     var shell = $('ccShell');
-    if (shell) shell.classList.add('cc-loading');
+    var showLoading = !!options.showLoading;
+    if (showLoading && shell) shell.classList.add('cc-loading', 'cc-loading-manual');
     try {
       var projectsPayload = await govFetch('projects');
       state.projects = projectsPayload.projects || [];
-      await loadProjectDetails();
-      await loadGoalsAndRunsAcrossProjects();
+      rebuildProjectIndex();
+      seedProjectDetailsFromList();
+      if (options.loadDetails) {
+        await loadProjectDetails();
+        await loadGoalsAndRunsAcrossProjects();
+      } else if (state.goalRunner.selectedProjectId) {
+        await mergeProjectGoalsAndRuns(state.goalRunner.selectedProjectId);
+      }
+      if (state.goalRunner.selectedProjectId) {
+        state.goalRunner.projectGoals = state.goals.filter(function (g) {
+          return g.project_id === state.goalRunner.selectedProjectId;
+        });
+        state.goalRunner.projectRuns = state.runs.filter(function (r) {
+          return r.project_id === state.goalRunner.selectedProjectId;
+        });
+      }
       state.driver = await govFetch(driverStatusPath());
       try { state.meta = await govFetch('meta'); } catch (_m) { state.meta = null; }
       setConnection(true);
@@ -810,23 +2436,33 @@ var CCGoalRunnerHelpers = {
       state.driver = null;
       setConnection(false, err.message);
     } finally {
-      if (shell) shell.classList.remove('cc-loading');
+      refreshInFlight = false;
+      if (showLoading && shell) shell.classList.remove('cc-loading', 'cc-loading-manual');
       renderAll();
-      if (state.section === 'goals' && state.goalRunner.wired) {
-        renderProjects();
+      if (!state.goalRunner.wired && state.section === 'goals') {
+        void initGoalsTab();
+      }
+      if (state.section === 'history') {
+        void loadHistoryForProject(state.history.selectedProjectId || state.goalRunner.selectedProjectId);
       }
     }
   }
 
   function init() {
+    if (initialized) return;
+    initialized = true;
+    wireGovernanceActionsOnce();
     CCIcons.mount($('ccRefreshIcon'), 'refresh');
-    CCIcons.mount($('ccActivityIcon'), 'activity');
-    CCIcons.mount($('ccStatusIcon'), 'health');
     buildNav();
     switchSection('overview');
-    $('ccRefreshBtn').addEventListener('click', refreshData);
-    refreshData();
-    setInterval(refreshData, 30000);
+    $('ccRefreshBtn').addEventListener('click', function () {
+      void refreshData({ showLoading: true, loadDetails: true });
+    });
+    void refreshData({ showLoading: true, loadDetails: true });
+    if (refreshTimerId) clearInterval(refreshTimerId);
+    refreshTimerId = setInterval(function () {
+      void refreshData({ showLoading: false, loadDetails: false });
+    }, AUTO_REFRESH_MS);
   }
 
   if (document.readyState === 'loading') {

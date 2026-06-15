@@ -54,8 +54,31 @@ class CommandCenterD141Tests(unittest.TestCase):
 
     def test_draft_only_submission_renders_goal_run_id(self) -> None:
         self.assertIn("goal_run_id", self.app_js)
-        self.assertIn("Run draft_only", self.app_js)
+        self.assertIn("Run plan only", self.app_js)
         self.assertIn("draft_only", self.app_js)
+
+    def test_goal_statement_help_tooltip(self) -> None:
+        self.assertIn("GOAL_STATEMENT_HELP", self.app_js)
+        self.assertIn("cc-info-btn", self.app_js)
+        self.assertIn("RESEARCH_HELP", self.app_js)
+        self.assertIn("APPROVAL_HELP", self.app_js)
+
+    def test_goal_runner_shows_project_activity(self) -> None:
+        self.assertIn("ccGoalList", self.index_html)
+        self.assertIn("ccGoalNewGoalCollapsible", self.index_html)
+        self.assertIn("runsForGoal", self.app_js)
+        self.assertIn("r.goal_id", self.app_js)
+        self.assertIn("cc-stat-scope", self.styles_css)
+        self.assertIn("cc-goal-new-collapsible", self.styles_css)
+        self.assertIn("loadGoalRunnerProjectActivity", self.app_js)
+        self.assertIn("renderGoalList", self.app_js)
+        self.assertIn("viewGoalLifecycle", self.app_js)
+        self.assertIn("ccProjectAddBtn", self.index_html)
+        self.assertIn("ccProjectModal", self.index_html)
+        self.assertIn("openProjectEditor", self.app_js)
+        self.assertIn("method: 'POST'", self.app_js.split("async function saveProject")[1].split("function wireProjectEditorChrome")[0])
+        self.assertIn("projects/' + encodeURIComponent(state.projectEditor.projectId) + '/update'", self.app_js)
+        self.assertIn("Add project", self.index_html)
 
     def test_timeline_renders_states(self) -> None:
         self.assertIn("TIMELINE_STATES", self.app_js)
@@ -75,15 +98,51 @@ class CommandCenterD141Tests(unittest.TestCase):
         self.assertIn("shouldShowRunModeWarning", self.app_js)
         self.assertIn("Full run mode may start Driver", self.app_js)
 
-    def test_no_self_sign_off_action(self) -> None:
+    def test_no_auto_sign_off_on_goal_submit(self) -> None:
         chunk = self.app_js.split("async function submitProjectGoalRun")[1].split("async function refreshGoalRunnerView")[0]
+        self.assertNotIn("postGoalSignOff", chunk)
         self.assertNotIn("signOffGoal", chunk)
-        self.assertNotIn("governanceDriverSignOff", chunk)
-        self.assertIn("No self-sign-off from Goal Runner", self.app_js)
+        self.assertIn("postGoalSignOff", self.app_js)
+        self.assertIn("data-goal-action=\"sign-off\"", self.app_js)
+        self.assertIn("buildGoalApprovalPanelHtml", self.app_js)
+        self.assertIn("wireGovernanceActionsOnce", self.app_js)
+        self.assertIn("governanceActionInFlight", self.app_js)
+        self.assertNotIn("wireDriverControls", self.app_js)
+        self.assertNotIn("enrichDriverOverviewPanel", self.app_js)
 
-    def test_driver_controls_remain_disabled(self) -> None:
-        self.assertIn("Driver controls disabled", self.app_js)
-        self.assertIn("disabled", self.app_js.split("renderDriver")[1].split("function renderRelease")[0])
+    def test_governance_actions_use_single_delegated_handler(self) -> None:
+        self.assertIn("dataset.govActionsWired", self.app_js)
+        self.assertIn("refreshAfterGovernanceAction", self.app_js)
+        self.assertIn("mergeProjectGoalsAndRuns", self.app_js)
+        self.assertIn("ccGoalApprovalPanel", self.app_js)
+        self.assertIn("window.confirm", self.app_js)
+        self.assertIn("cc-approval-panel", self.styles_css)
+
+    def test_runs_show_project_and_full_progress(self) -> None:
+        self.assertIn("_project_name", self.app_js)
+        self.assertIn("runProgressPct", self.app_js)
+        self.assertIn("return 100", self.app_js.split("function runProgressPct")[1].split("function runBarColor")[0])
+
+    def test_tab_scoped_goals_layout(self) -> None:
+        self.assertIn("ccGoalsProjectSelect", self.index_html)
+        self.assertIn("ccGoalFilterTabs", self.index_html)
+        self.assertIn("ccHistoryProjectSelect", self.index_html)
+        self.assertIn("ccPanelHistory", self.index_html)
+        self.assertIn("renderGoalFilterTabs", self.app_js)
+        self.assertIn("buildInlineApprovalHtml", self.app_js)
+        self.assertIn("buildGoalQuickActionsHtml", self.app_js)
+        self.assertIn("loadHistoryForProject", self.app_js)
+        self.assertIn("buildSimpleProgressHtml", self.app_js)
+        self.assertIn("GOAL_FILTER_TABS", self.app_js)
+        self.assertIn(".cc-goal-card", self.styles_css)
+        self.assertIn(".cc-history-item", self.styles_css)
+
+    def test_driver_controls_in_command_center(self) -> None:
+        self.assertIn("postDriverControl", self.app_js)
+        self.assertIn("data-driver-action", self.app_js)
+        self.assertIn("The Driver is the autonomous executor", self.app_js)
+        self.assertNotIn("Controls live in Animus Chat", self.app_js)
+        self.assertNotIn("Animus Chat", self.app_js)
 
     def test_goal_run_detail_endpoints(self) -> None:
         self.assertIn("goal-runs/' + encodeURIComponent", self.app_js)

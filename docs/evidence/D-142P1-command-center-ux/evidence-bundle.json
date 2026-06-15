@@ -1,0 +1,49 @@
+{
+  "decision": "D-142P1",
+  "status": "COMMAND_CENTER_UX_STABILIZED",
+  "baseline_commit": "7a1203c03",
+  "repo": "animus",
+  "scope": {
+    "included": [
+      "Mission Control tab layout (Overview/Projects/Goals/History)",
+      "Animus purple theme and taste-skill visual polish",
+      "LAN host binding (COMMAND_CENTER_HOST=0.0.0.0)",
+      "Silent auto-refresh and governance action delegation fix",
+      "Driver status panel on Overview",
+      "Contract tests D-140/D-141 (27 passed)"
+    ],
+    "excluded_deferred": [
+      "animus-platform project registry CRUD API (D-142P2)",
+      "animus-platform goal freshness/archive/cancel API (D-142P3)",
+      "Projection DB operations",
+      "D-143 self-hosting"
+    ]
+  },
+  "files": [
+    "animus-command-center/app/index.html",
+    "animus-command-center/app/app.js",
+    "animus-command-center/app/styles.css",
+    "animus-command-center/app/icons.js",
+    "animus-command-center/app/ghostonlyicon.png",
+    "animus-command-center/server.py",
+    "scripts/run-command-center.sh",
+    "scripts/command-center-launch.sh",
+    "scripts/install-command-center-desktop.sh",
+    "animus.env.example",
+    "tests/test_command_center_d140.py",
+    "tests/test_command_center_d141.py"
+  ],
+  "ui_contract": "docs/evidence/D-142P1-command-center-ux/ui-contract-summary.md",
+  "test_results": {
+    "command": "pytest -q tests/test_command_center_d140.py tests/test_command_center_d141.py",
+    "result": "27 passed"
+  },
+  "launch_proof": {
+    "healthz": "http://127.0.0.1:3010/healthz",
+    "governance_proxy": true
+  },
+  "constraints": {
+    "animus_chat_expansion": false,
+    "self_hosting": false
+  }
+}

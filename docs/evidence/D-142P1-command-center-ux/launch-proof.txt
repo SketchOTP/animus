@@ -1,0 +1,14 @@
+$ curl -s http://127.0.0.1:3010/healthz | python3 -m json.tool
+{
+    "status": "ok",
+    "service": "animus_command_center",
+    "rev": "20260614-d140-command-center-shell-v1",
+    "governance_proxy": true,
+    "governance_proxy_error": null
+}
+
+$ ./scripts/run-command-center.sh (excerpt)
+Starting Animus Command Center on http://0.0.0.0:3010/
+Local browser: http://127.0.0.1:3010/
+LAN access:    http://<host-ip>:3010/
+Governance API: http://127.0.0.1:8120

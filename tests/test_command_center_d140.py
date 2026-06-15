@@ -27,14 +27,22 @@ class CommandCenterD140Tests(unittest.TestCase):
             "ccPanelOverview",
             "ccPanelProjects",
             "ccPanelGoals",
-            "ccPanelRuns",
-            "ccPanelDriver",
-            "ccPanelRelease",
-            "ccActivityChart",
-            "ccHealthDonut",
-            "ccDriverRing",
+            "ccPanelHistory",
+            "ccGoalList",
+            "ccGoalFilterTabs",
+            "ccGoalsProjectSelect",
+            "ccGoalNewGoalCollapsible",
+            "ccHistoryList",
+            "ccOverviewBody",
+            "ccStatGrid",
+            "ccBrandMark",
         ):
             self.assertIn(f'id="{element_id}"', self.index_html)
+
+    def test_ghost_icon_linked(self) -> None:
+        self.assertIn('src="/ghostonlyicon.png"', self.index_html)
+        self.assertIn('href="/ghostonlyicon.png"', self.index_html)
+        self.assertTrue((APP_DIR / "ghostonlyicon.png").is_file())
 
     def test_visual_assets_linked(self) -> None:
         self.assertIn('href="/styles.css"', self.index_html)
@@ -42,9 +50,8 @@ class CommandCenterD140Tests(unittest.TestCase):
         self.assertIn('src="/charts.js"', self.index_html)
         self.assertIn('src="/app.js"', self.index_html)
 
-    def test_apple_style_tokens_in_css(self) -> None:
-        self.assertIn("-apple-system", self.styles_css)
-        self.assertIn("backdrop-filter", self.styles_css)
+    def test_animus_purple_theme_tokens_in_css(self) -> None:
+        self.assertIn("--cc-accent: #7c3aed", self.styles_css)
         self.assertIn(".cc-stat-grid", self.styles_css)
         self.assertIn(".cc-nav-btn", self.styles_css)
 
@@ -64,18 +71,32 @@ class CommandCenterD140Tests(unittest.TestCase):
         self.assertIn("/api/governance/", self.app_js)
 
     def test_navigation_sections_defined(self) -> None:
-        for section in ("overview", "projects", "goals", "runs", "driver", "release"):
+        for section in ("overview", "projects", "goals", "history"):
             self.assertIn(section, self.app_js)
+        self.assertNotIn("{ id: 'driver'", self.app_js)
+        self.assertNotIn("{ id: 'release'", self.app_js)
 
-    def test_driver_controls_read_only_shell_v1(self) -> None:
-        self.assertIn("Read-only shell v1", self.app_js)
-        self.assertIn("disabled", self.app_js)
+    def test_overview_renders_labeled_stats_and_driver(self) -> None:
+        self.assertIn("renderDriverPanelHost", self.app_js)
+        self.assertIn("driverStatusLabel", self.app_js)
+        self.assertIn("Projects", self.app_js)
+        self.assertIn("renderGoalList", self.app_js)
+        self.assertIn("buildGoalCardHtml", self.app_js)
+        self.assertIn("cc-stat-scope", self.styles_css)
+        self.assertNotIn("function renderDriver(", self.app_js)
 
     def test_server_reuses_governance_hub_proxy(self) -> None:
         self.assertIn("governance_hub_route_table", self.server_py)
         self.assertIn("StaticFiles", self.server_py)
         self.assertIn("/healthz", self.server_py)
         self.assertNotIn("animus-chat", self.server_py)
+
+    def test_command_center_desktop_launcher(self) -> None:
+        self.assertTrue((REPO_ROOT / "scripts" / "command-center-launch.sh").is_file())
+        self.assertTrue((REPO_ROOT / "scripts" / "install-command-center-desktop.sh").is_file())
+        launcher = (REPO_ROOT / "scripts" / "command-center-launch.sh").read_text(encoding="utf-8")
+        self.assertIn("run-command-center.sh", launcher)
+        self.assertIn("ghostonlyicon.png", launcher)
 
     def test_no_animus_chat_files_touched(self) -> None:
         hub = (REPO_ROOT / "animus-chat" / "app" / "governance-hub.js").read_text(encoding="utf-8")

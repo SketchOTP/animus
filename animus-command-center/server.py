@@ -38,7 +38,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 COMMAND_CENTER_REV = "20260614-d140-command-center-shell-v1"
-HOST = (os.environ.get("COMMAND_CENTER_HOST") or "127.0.0.1").strip() or "127.0.0.1"
+HOST = (os.environ.get("COMMAND_CENTER_HOST") or "0.0.0.0").strip() or "0.0.0.0"
 PORT = int(os.environ.get("COMMAND_CENTER_PORT", "3010"))
 
 _GOVERNANCE_HUB_ROUTES: list = []

@@ -423,6 +423,65 @@ var CCGoalRunnerHelpers = {
     }
     return { ok: true, reason: '' };
   },
+  computeSignOffGate: function (ctx) {
+    ctx = ctx || {};
+    var readiness = ctx.readiness || null;
+    if (readiness && readiness.ready === false) {
+      return {
+        ok: false,
+        reason: readiness.display_reason ||
+          (readiness.blocking_reason ? String(readiness.blocking_reason).replace(/_/g, ' ') : 'Sign-off blocked')
+      };
+    }
+    if (readiness && readiness.ready === true) {
+      return { ok: true, reason: '' };
+    }
+    var goalDetail = ctx.goalDetail || {};
+    var status = String(goalDetail.display_status || goalDetail.status || '').toLowerCase();
+    if (status !== 'pending_completion') {
+      return { ok: false, reason: 'Goal is not pending completion.' };
+    }
+    return { ok: false, reason: 'Sign-off readiness not loaded — refresh and retry.' };
+  },
+  buildSignOffReadinessPanelHtml: function (readiness, queueDetail) {
+    if (!readiness) {
+      return '<div class="cc-meta-line">Sign-off readiness: not loaded</div>';
+    }
+    var ready = readiness.ready === true;
+    var reason = readiness.display_reason ||
+      (readiness.blocking_reason ? String(readiness.blocking_reason).replace(/_/g, ' ') : '—');
+    var lines = [
+      'sign-off ready: ' + (ready ? 'yes' : 'no'),
+      'blocking reason: ' + reason
+    ];
+    var entries = (queueDetail && queueDetail.queue_entries) || [];
+    if (entries.length) {
+      lines.push('completed entries: ' + entries.filter(function (e) {
+        return e.materialization === 'completed';
+      }).length + ' / ' + entries.length);
+    }
+    return lines.map(function (line) {
+      return '<div class="cc-meta-line cc-signoff-readiness-line">' + line + '</div>';
+    }).join('');
+  },
+  buildCompletionMetadataHtml: function (goalDetail) {
+    var completion = (goalDetail && goalDetail.completion) || null;
+    if (!completion) {
+      return '';
+    }
+    var commits = Array.isArray(completion.commits) ? completion.commits : [];
+    var commitLine = commits.length
+      ? commits.map(function (row) {
+          return String(row.commit_sha || '').slice(0, 12);
+        }).join(', ')
+      : '—';
+    return (
+      '<div class="cc-meta-line">signed off by ' + escapeHtml(String(completion.sign_off_actor || '—')) +
+      ' · ' + escapeHtml(String(completion.sign_off_at || '—')) + '</div>' +
+      '<div class="cc-meta-line">entries: ' + escapeHtml(String(completion.entry_count || '—')) +
+      ' · commits: ' + escapeHtml(commitLine) + '</div>'
+    );
+  },
   buildLaunchReadinessPanelHtml: function (readiness) {
     if (!readiness) {
       return '<div class="cc-meta-line">Launch readiness: not loaded</div>';
@@ -565,7 +624,9 @@ var CCGoalRunnerHelpers = {
       wired: false,
       filterTab: 'active',
       goalDetailsCache: {},
-      launchReadinessCache: {}
+      launchReadinessCache: {},
+      signOffReadinessCache: {},
+      queueDetailsCache: {}
     },
     history: {
       selectedProjectId: CCGoalRunnerHelpers.ANIMA_LINUX_PROJECT_ID
@@ -973,11 +1034,18 @@ var CCGoalRunnerHelpers = {
       );
     }
     if (shouldShowGoalSignOff(goalDetail || goal)) {
+      var signOffGate = CCGoalRunnerHelpers.computeSignOffGate({
+        goalDetail: goalDetail || goal,
+        readiness: state.goalRunner.signOffReadinessCache[goal.goal_id]
+      });
       return (
         '<div class="cc-goal-inline-approval">' +
         '<span>Work finished — sign off when ready.</span>' +
-        '<button type="button" class="cc-primary-btn cc-btn-sm" data-goal-action="sign-off"' + baseAttrs +
-        '>Sign off</button></div>'
+        (signOffGate.ok
+          ? '<button type="button" class="cc-primary-btn cc-btn-sm" data-goal-action="sign-off"' + baseAttrs +
+            '>Sign off</button>'
+          : '<span class="cc-meta-line">' + escapeHtml(signOffGate.reason) + '</span>') +
+        '</div>'
       );
     }
     return '';
@@ -1460,6 +1528,16 @@ var CCGoalRunnerHelpers = {
     throw new Error('No repo path — set the repo path when editing the project above.');
   }
 
+  async function fetchSignOffReadiness(goalId, projectId) {
+    if (!goalId) return null;
+    var repoPath = await resolveDriverRepoPath(projectId, goalId);
+    var query = 'goals/' + encodeURIComponent(goalId) + '/sign-off-readiness?repo_path=' +
+      encodeURIComponent(repoPath) + '&actor=operator';
+    var payload = await govFetch(query);
+    state.goalRunner.signOffReadinessCache[goalId] = payload;
+    return payload;
+  }
+
   async function fetchDriverLaunchReadiness(goalId, projectId) {
     if (!goalId) return null;
     var repoPath = await resolveDriverRepoPath(projectId, goalId);
@@ -1506,7 +1584,9 @@ var CCGoalRunnerHelpers = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         repo_path: repoPath,
-        request_id: 'cc-sign-off-' + Date.now()
+        request_id: 'cc-sign-off-' + Date.now(),
+        actor: 'operator',
+        source: 'command_center'
       })
     });
   }
@@ -1582,6 +1662,11 @@ var CCGoalRunnerHelpers = {
     }
 
     if (shouldShowGoalSignOff(goalDetail)) {
+      var signOffGate = CCGoalRunnerHelpers.computeSignOffGate({
+        goalDetail: goalDetail,
+        readiness: state.goalRunner.signOffReadinessCache[goalId]
+      });
+      var queueDetail = state.goalRunner.queueDetailsCache[goalId] || null;
       return (
         '<article class="cc-card cc-approval-panel" id="ccGoalApprovalPanel">' +
         '<header class="cc-card-head"><h2>Ready for sign-off</h2></header>' +
@@ -1590,10 +1675,26 @@ var CCGoalRunnerHelpers = {
         '<dt>Status</dt><dd>' + escapeHtml(status) + '</dd>' +
         '<dt>Goal</dt><dd class="cc-mono">' + gid + '</dd>' +
         '</dl>' +
+        CCGoalRunnerHelpers.buildSignOffReadinessPanelHtml(
+          state.goalRunner.signOffReadinessCache[goalId],
+          queueDetail
+        ) +
         '<div class="cc-form-actions">' +
-        '<button type="button" class="cc-primary-btn" data-goal-action="sign-off"' + baseAttrs +
-        '>Sign off completion</button>' +
+        (signOffGate.ok
+          ? '<button type="button" class="cc-primary-btn" data-goal-action="sign-off"' + baseAttrs +
+            '>Sign off completion</button>'
+          : '<div class="cc-meta-line">' + escapeHtml(signOffGate.reason) + '</div>') +
         '</div>' +
+        '<div class="cc-meta-line cc-approval-result" id="ccGoalActionResult" data-governance-result></div>' +
+        '</article>'
+      );
+    }
+
+    if (String((goalDetail && goalDetail.status) || '') === 'completed') {
+      return (
+        '<article class="cc-card cc-approval-panel" id="ccGoalApprovalPanel">' +
+        '<header class="cc-card-head"><h2>Goal completed</h2></header>' +
+        CCGoalRunnerHelpers.buildCompletionMetadataHtml(goalDetail) +
         '<div class="cc-meta-line cc-approval-result" id="ccGoalActionResult" data-governance-result></div>' +
         '</article>'
       );
@@ -1720,6 +1821,21 @@ var CCGoalRunnerHelpers = {
               if (!window.confirm('Sign off marks this goal complete in governance. Continue?')) {
                 return;
               }
+              var signOffDetail = state.goalRunner.goalDetailsCache[goalId] || {};
+              var signOffReadiness = null;
+              try {
+                signOffReadiness = await fetchSignOffReadiness(goalId, projectId);
+              } catch (_signOffErr) {
+                signOffReadiness = state.goalRunner.signOffReadinessCache[goalId] || null;
+              }
+              var signOffGate = CCGoalRunnerHelpers.computeSignOffGate({
+                goalDetail: signOffDetail,
+                readiness: signOffReadiness
+              });
+              if (!signOffGate.ok) {
+                if (resultHost) resultHost.textContent = signOffGate.reason;
+                return;
+              }
             }
             if (gAction === 'sign-off') {
               await postGoalSignOff(goalId, projectId);
@@ -1738,7 +1854,11 @@ var CCGoalRunnerHelpers = {
             await refreshAfterGovernanceAction(projectId, goalId);
           }
         } catch (err) {
-          if (resultHost) resultHost.textContent = String(err.message || err);
+          var msg = String(err.message || err);
+          if (err && err.detail && err.detail.blocking_reason) {
+            msg = String(err.detail.display_reason || err.detail.blocking_reason).replace(/_/g, ' ');
+          }
+          if (resultHost) resultHost.textContent = msg;
         } finally {
           governanceActionInFlight = false;
           if (activeBtn) {
@@ -2535,9 +2655,17 @@ var CCGoalRunnerHelpers = {
     if (goalDetail) {
       state.goalRunner.goalDetailsCache[goalId] = goalDetail;
     }
+    if (queuePayload) {
+      state.goalRunner.queueDetailsCache[goalId] = queuePayload;
+    }
     try {
       await fetchDriverLaunchReadiness(goalId, projectId);
     } catch (_launchReadyErr) { /* mirror falls back to client-side gate */ }
+    if (shouldShowGoalSignOff(goalDetail)) {
+      try {
+        await fetchSignOffReadiness(goalId, projectId);
+      } catch (_signOffReadyErr) { /* mirror falls back to client-side gate */ }
+    }
     var panelsHtml =
       '<article class="cc-card"><header class="cc-card-head"><h2>Research</h2></header>' +
       CCGoalRunnerHelpers.buildResearchPanelHtml(response, goalDetail) + '</article>' +
@@ -2545,6 +2673,13 @@ var CCGoalRunnerHelpers = {
       CCGoalRunnerHelpers.buildBreakdownPanelHtml(response, queuePayload, state.goalRunner.selectedProfile, milestonesPayload, goalDetail) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Launch readiness</h2></header>' +
       CCGoalRunnerHelpers.buildLaunchReadinessPanelHtml(state.goalRunner.launchReadinessCache[goalId]) + '</article>' +
+      (shouldShowGoalSignOff(goalDetail)
+        ? '<article class="cc-card"><header class="cc-card-head"><h2>Sign-off readiness</h2></header>' +
+          CCGoalRunnerHelpers.buildSignOffReadinessPanelHtml(
+            state.goalRunner.signOffReadinessCache[goalId],
+            queuePayload
+          ) + '</article>'
+        : '') +
       '<article class="cc-card"><header class="cc-card-head"><h2>Execution</h2></header>' +
       CCGoalRunnerHelpers.buildExecutionPanelHtml(response, driverPayload, response.run_mode || readGoalRunnerForm().runMode) + '</article>' +
       '<article class="cc-card"><header class="cc-card-head"><h2>Blocker / Recovery</h2></header>' +

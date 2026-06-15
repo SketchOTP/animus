@@ -88,7 +88,7 @@ class CommandCenterD141Tests(unittest.TestCase):
     def test_goal_run_detail_endpoints(self) -> None:
         self.assertIn("goal-runs/' + encodeURIComponent", self.app_js)
         self.assertIn("goals/' + encodeURIComponent", self.app_js)
-        self.assertIn("govFetch('driver/status')", self.app_js)
+        self.assertIn("driverStatusPath()", self.app_js)
 
     def test_evidence_links_supported(self) -> None:
         self.assertIn("cc-evidence-link", self.app_js)

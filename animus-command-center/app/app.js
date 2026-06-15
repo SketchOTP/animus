@@ -234,6 +234,7 @@ var CCGoalRunnerHelpers = {
   var state = {
     section: 'overview',
     connected: false,
+    workspaceId: null,
     projects: [],
     projectDetails: {},
     goals: [],
@@ -292,6 +293,46 @@ var CCGoalRunnerHelpers = {
     pill.textContent = ok ? 'Live' : 'Offline';
     pill.className = 'cc-pill ' + (ok ? 'cc-pill-ok' : 'cc-pill-warn');
     pill.title = ok ? 'Governance API connected' : (detail || 'API unreachable');
+  }
+
+  function resolveWorkspaceId() {
+    if (state.workspaceId) return state.workspaceId;
+    for (var i = 0; i < state.projects.length; i += 1) {
+      if (state.projects[i] && state.projects[i].workspace_id) {
+        state.workspaceId = state.projects[i].workspace_id;
+        return state.workspaceId;
+      }
+    }
+    return null;
+  }
+
+  function driverStatusPath() {
+    var workspaceId = resolveWorkspaceId();
+    return workspaceId
+      ? 'driver/status?workspace_id=' + encodeURIComponent(workspaceId)
+      : 'driver/status';
+  }
+
+  async function loadGoalsAndRunsAcrossProjects() {
+    state.goals = [];
+    state.runs = [];
+    for (var i = 0; i < state.projects.length; i += 1) {
+      var project = state.projects[i];
+      var projectId = project && project.project_id;
+      if (!projectId) continue;
+      try {
+        var goalsPayload = await govFetch(
+          'goals?project_id=' + encodeURIComponent(projectId)
+        );
+        state.goals = state.goals.concat(goalsPayload.goals || []);
+      } catch (_goalsErr) { /* per-project goals optional */ }
+      try {
+        var runsPayload = await govFetch(
+          'runs?limit=24&project_id=' + encodeURIComponent(projectId)
+        );
+        state.runs = state.runs.concat(runsPayload.runs || []);
+      } catch (_runsErr) { /* per-project runs optional */ }
+    }
   }
 
   function buildNav() {
@@ -696,7 +737,7 @@ var CCGoalRunnerHelpers = {
       var fetches = [
         govFetch('goals/' + encodeURIComponent(goalId) + '?project_id=' + encodeURIComponent(projectId)),
         govFetch('goals/' + encodeURIComponent(goalId) + '/queue'),
-        govFetch('driver/status')
+        govFetch(driverStatusPath())
       ];
       if (response.goal_run_id) {
         fetches.push(
@@ -757,11 +798,8 @@ var CCGoalRunnerHelpers = {
       var projectsPayload = await govFetch('projects');
       state.projects = projectsPayload.projects || [];
       await loadProjectDetails();
-      var goalsPayload = await govFetch('goals');
-      state.goals = goalsPayload.goals || [];
-      var runsPayload = await govFetch('runs?limit=24');
-      state.runs = runsPayload.runs || [];
-      state.driver = await govFetch('driver/status');
+      await loadGoalsAndRunsAcrossProjects();
+      state.driver = await govFetch(driverStatusPath());
       try { state.meta = await govFetch('meta'); } catch (_m) { state.meta = null; }
       setConnection(true);
     } catch (err) {

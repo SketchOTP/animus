@@ -56,9 +56,11 @@ class CommandCenterD140Tests(unittest.TestCase):
 
     def test_app_fetches_governance_read_endpoints(self) -> None:
         self.assertIn("govFetch('projects')", self.app_js)
-        self.assertIn("govFetch('goals')", self.app_js)
-        self.assertIn("govFetch('runs?limit=24')", self.app_js)
-        self.assertIn("govFetch('driver/status')", self.app_js)
+        self.assertIn("loadGoalsAndRunsAcrossProjects", self.app_js)
+        self.assertIn("goals?project_id=", self.app_js)
+        self.assertIn("runs?limit=24&project_id=", self.app_js)
+        self.assertIn("driverStatusPath()", self.app_js)
+        self.assertIn("driver/status?workspace_id=", self.app_js)
         self.assertIn("/api/governance/", self.app_js)
 
     def test_navigation_sections_defined(self) -> None:
